@@ -30,8 +30,8 @@ class SyrinxMembrane extends Chugen
     34740 => float c; //m //speed of sound from Smyth, 34740 cm/s, so 347.4 m/s, 
 
     1.0 => float V; //volume of the bronchius - in cm^3
-    3 => float pG; //pressure from the air sac ==> change to create sound, 0.3 or 300 used in Flectcher 1988
-    300.0 => float k; //damping coeff. sec^-1, to make it sec /10
+    300 => float pG; //pressure from the air sac ==> change to create sound, 0.3 or 300 used in Flectcher 1988
+    300 => float k; //damping coeff. sec^-1, to make it sec /10
     [12.0, 89.0] @=> float E[]; //a number of order 10 to 100 to represent stickiness
     [150.0*2.0*pi, 250.0*2.0*pi] @=> float w[]; //radian freq of mode n, freq. of membranes: 1, 1.6, 2 & higher order modes are not needed Fletcher, Smyth
     
@@ -44,7 +44,7 @@ class SyrinxMembrane extends Chugen
 
     0.0 => float U; //volume velocity flowing out
     10.0 => float membraneNLCoeff; //membrane non-linear coeff. for masses, etc.
-    0.04 => float x0; //equillibrium opening, in cm 
+    0.4 => float x0; //equillibrium opening, in cm 
     //100 => float d; //thickness of the membrane, 100 micrometers, 1mm, 0.01cm -- leave in micrometers
     0.01 => float d; //thickness of the membrane, 100 micrometers, 1mm, 0.01cm -- leave in micrometers, 1mm
 
@@ -61,7 +61,7 @@ class SyrinxMembrane extends Chugen
     0.0 => float totalX; // all the x's added for total displacement
     
     [0.0, 0.0] @=> float m[]; //the masses involved in vibration of each mode
-    2 => float A3; // constant in the mass equation -- changed bc there was an NAN after membrane density was put into 
+    3 => float A3; // constant in the mass equation -- changed bc there was an NAN after membrane density was put into 
     //the correct units from kg/m^3 to g/cm^3
     
     //c => float pM; //material density of the syrinx membrane, from Düring, et. al, 2017, itself from mammalian not avian folds, kg/m 
@@ -72,9 +72,11 @@ class SyrinxMembrane extends Chugen
     1.0/SRATE => float T; //to make concurrent with Smyth paper
    
      (p*c)/(pi*a*a) => float z0; //impedence of bronchus --small compared to trachea, trying this dummy value until more info 
-     z0 / 2.0 => float zG; //an arbitrary impedance smaller than z0, Fletcher
+     z0 / 3 => float zG; //an arbitrary impedance smaller than z0, Fletcher
      
      0.0 => float inP1; //to output for debugging
+     
+     [2.0, 1.0] @=> float epsilonForceCouple[]; //try -- mode 1 should be dominant.
      
      //1 => int testAngle;  
          
@@ -92,11 +94,14 @@ class SyrinxMembrane extends Chugen
         for( 0 => int i; i < x.cap() ; i++ )
         {
             0.0 => F[i]; 
+            //a*h*(p0 + p1) => F[i]; //Smyth
+
 
             if( x[i] > 0.0 )
             {
-                //a*h*(p0 + p1) - (2.0*p*U*U*h)/(7.0*Math.pow(a*x[i], 1.5)) => F[i]; //-- Smyth 
-                4*a*h*(p0 + p1) - 4*a*h*((p*U*U)/(7.0*Math.sqrt(a*totalX*totalX*totalX))) => F[i]; //fletcher
+                a*h*(p0 + p1) - (2.0*p*U*U*h)/(7.0*Math.pow(a*x[i], 1.5)) => F[i]; //-- Smyth 
+                //4*a*h*(p0 + p1) 
+                //F[i] - 4*a*h*((p*U*U)/(7.0*Math.sqrt(a*totalX*totalX*totalX))) => F[i]; //fletcher
             }
         }
         
@@ -129,13 +134,13 @@ class SyrinxMembrane extends Chugen
             //2*Math.sqrt(a*totalX)/p => float D; //actually inverse
   
             //from Fletcher and Smyth -- mas o menos
-           // timeStep*(dU + D*(p0-p1-(C*U*U))) => dU; //0 < x <= a
+           //timeStep*(dU + D*(p0-p1-(C*U*U))) => dU; //0 < x <= a
            
            
             //Smyth at the beginning of Ch. 5??? but does not correspond to fletcher quite.
             a*totalX => float At;
-            ((2*Math.sqrt(At))/p)*(p0 - p1) => dU; 
-            dU - ( (U*U) / Math.pow(4*At, 1.5) )  => dU;
+            ( (2*Math.sqrt(At) )/p)*(p0 - p1) => dU; 
+            dU - ( (U*U) / ( 4*Math.pow(At, 3.0/2.0) ) )  => dU;
         
             //dU + U => U; 
             U + (timeStep)*(dUPrev + dU) => U;
@@ -182,7 +187,7 @@ class SyrinxMembrane extends Chugen
             
             //update d2x
             //epsilon is taken as unary
-            (T/2.0)*(d2x[i] + F[i]/m[i] - 2.0*modifiedK*dx[i] - w[i]*w[i]*(x[i]-x0)) => d2x[i];
+            (T/2.0)*(d2x[i] + (F[i]*epsilonForceCouple[i])/m[i] - 2.0*modifiedK*dx[i] - w[i]*w[i]*(x[i]-x0)) => d2x[i];
             
             //update dx, integrate
             dx[i] => float dxPrev;
@@ -202,7 +207,7 @@ class SyrinxMembrane extends Chugen
     
     fun void updateP1()
     {
-        U*z0 + p1 => p1;
+        U*z0 => p1;
     }
     
     
@@ -210,8 +215,7 @@ class SyrinxMembrane extends Chugen
     fun float tick(float in)
     {
         in => p1;
-        p1 => inP1;
-                 
+                         
         updateBrochialPressure();
         updateU(); 
         
@@ -286,13 +290,14 @@ class WallLossAttenuation extends Chugen
     }  
 }
 
+//this is redundant but I definitely know what is happening here and will stop any crazy magical thinking debug loops on this topic cold.
 class Flip extends Chugen
 {
     
     //the pressure up, pressure down difference
     fun float tick(float in)
     {
-       return in*-1;   
+       return in*-1.0;   
     }  
 }
 
@@ -306,15 +311,17 @@ class Flip extends Chugen
 
 //<<< wa.wallLossCoeff >>>;
 
-SyrinxMembrane mem => DelayA delay => WallLossAttenuation wa => BiQuad loop => blackhole;
-wa => BiQuad hpOut => dac; 
+SyrinxMembrane mem => DelayA delay => WallLossAttenuation wa => BiQuad loop => blackhole; //from membrane to trachea
+wa => BiQuad hpOut => Gain reduce => dac; //from trachea to sound out
 
-loop => Flip flip => Delay delay2 => WallLossAttenuation wa2 => delay;
-//note: check whether this adding does what I want it to do
-Gain p1Add => OneZero oz => mem;
-delay2 => p1Add;
-flip => p1Add; 
+loop => Flip flip =>  Delay delay2 => WallLossAttenuation wa2 => delay; //reflection from trachea end back to bronchus beginning
+Gain adder; 
+wa2 => adder; 
+mem => adder; 
+adder => OneZero oz =>  mem; //the reflection also is considered in the pressure output of the syrinx
 
+
+1.0/323483.5625 => hpOut.gain; 
 
 //trachea length -- 70mm, from Fletcher
 0.07 => float L; //in m 
@@ -329,7 +336,7 @@ period::samp => delay2.delay;
 //approximating from Smyth diss. 
 setParamsForReflectionFilter();
        
-/*
+
 FileIO fout;
 
 
@@ -342,29 +349,42 @@ if( !fout.good() )
     cherr <= "can't open file for writing..." <= IO.newline();
     me.exit();
 }
-*/
+
+
+//10::second => now; 
+
+0.0 => float mMax; 
+0.0 => float mMin; 
 
 now => time start;
  while(now - start < 10::second)
  {
 //       <<< " dp0:" + mem.dp0 +" zG:" + mem.zG + " d2x: " + mem.d2x[0] + "  U: " + mem.U + " F0: " + mem.F[0] +  "  x: " + mem.totalX + "  p0:" + mem.p0 + "  p1:" + mem.p1 + "  input p1: " + mem.inP1 >>> ;
-//      mem.p0 + "," + mem.U + "," + mem.totalX + "," + mem.inP1 + "\n" => string output; 
+      mem.p0 + "," + mem.U + "," + mem.totalX + "," + mem.p1 + "\n" => string output; 
 
-      <<<"  p0:" + mem.p0+ "  dU: " + mem.dU + "  U: " + mem.U + "  x: " + mem.totalX + " p1:" + mem.p1 + "  input p1: " + mem.inP1 >>> ;
+      <<<"  p0:" + mem.p0+ "  dU: " + mem.dU + "  U: " + mem.U + "  x: " + mem.totalX + " p1:" + mem.p1  >>> ;
 
-    //<<< "#2 ==> F: " + mem.F[0] + " x[0]: " + mem.x[0] + " dx[0]: " + mem.dx[0] + " d2x[0]: " + mem.d2x[0]  +" x[1]: " + mem.x[1] + " dx[1]" + mem.dx[1] + " d2x[1]: " + mem.d2x[1]  + "  x: " + mem.totalX  >>> ;
+    //<<< "#2 ==> F: " + mem.F[0] + " m[0]: " + mem.m[0] + " x[0]: " + mem.x[0] + " dx[0]: " + mem.dx[0] + " d2x[0]: " + mem.d2x[0]  +" x[1]: " + mem.x[1] + " dx[1]" + mem.dx[1] + " d2x[1]: " + mem.d2x[1]  + "  x: " + mem.totalX  >>> ;
 
-//      fout.write( output ); 
+     fout.write( output ); 
+     
+     Math.max(mMax, hpOut.last()) => mMax;
+     Math.min(mMin, hpOut.last()) => mMin;
 
 /*
 delay.last() => float upFlow; 
 delay2.last() => float downFlow; 
-p1Add.last() => float diff; 
+//p1Add.last() => float diff; 
 <<< "upFlow: " + upFlow + " downFlow: " + downFlow + " diff: " + diff  >>>;
 */
 
-1::samp => now;   
+
+50::ms=> now;   
  } 
+ 
+ <<< "mMax: " + mMax>>>;
+  <<< "mMin: " + mMin>>>;
+
  
  // close the thing
 //fout.close();
