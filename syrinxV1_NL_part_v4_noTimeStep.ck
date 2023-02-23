@@ -22,7 +22,7 @@ class SyrinxMembrane extends Chugen
     //1.204 => float p; //air density (value used for 68F & atmospheric pressure 101.325 kPa (abs), 1.204 kg/m3
     //0.00118 => float p; //air density from Smyth diss., 0.00118cm, 0---- NOTE: Needs to match the input -- meters
     1.18 * Math.pow(10, -3) => float p; //air density from Smyth diss., 0.00118cm, 0---- NOTE: Needs to match the input -- meters
-    // 1.18 => float p; //over m, air density from Smyth diss., 0.00118cm, 0---- NOTE: Needs to match the input -- meters
+    //1.18 => float p; //over m, air density from Smyth diss., 0.00118cm, 0---- NOTE: Needs to match the input -- meters
 
     
     //1.18 => float p; //air density from Smyth diss., 0.00118cm, 0.0118 mm
@@ -30,20 +30,20 @@ class SyrinxMembrane extends Chugen
 
     0.0 => float p0; //brochial side pressure
     0.0 => float p1; //tracheal side pressure -- **output that is the time-varying signal for audio 
-    //3.3129 => float c; //speed of sound (m/s) for now
+    //347.4 => float c; //speed of sound (m/s) for now
     34740 => float c; //m //speed of sound from Smyth, 34740 cm/s, so 347.4 m/s, 
 
     1.0 => float V; //volume of the bronchius - in cm^3
-    300.0 => float pG; //pressure from the air sac ==> change to create sound, 0.3 or 300 used in Flectcher 1988
+    30 => float pG; //pressure from the air sac ==> change to create sound, 0.3 or 300 used in Flectcher 1988, possibly 3 in cm units.
     300.0 => float k; //damping coeff. sec^-1, to make it sec /10
-    [12.0, 20.0] @=> float E[]; //a number of order 10 to 100 to represent stickiness
+    10.0 => float E; //a number of order 10 to 100 to represent stickiness
     [150.0*2.0*pi, 250.0*2.0*pi] @=> float w[]; //radian freq of mode n, freq. of membranes: 1, 1.6, 2 & higher order modes are not needed Fletcher, Smyth
     
     //3.5 => float a; //  1/2 diameter of trachea, in 3.5mm        ??area of membrane at a point
     0.35 => float a; //  1/2 diameter of trachea, in cm        ??area of membrane at a point
 
     0.0 => float F; //force driving fundamental mode of membrane
-    //3.5 => float h; //1/2 diameter of the syringeal membrane, 3.5mm, 0.35cm
+   // 3.5 => float h; //1/2 diameter of the syringeal membrane, 3.5mm, 0.35cm
     0.35 => float h; //1/2 diameter of the syringeal membrane, 3.5mm, 0.35cm
 
     0.0 => float U; //volume velocity flowing out
@@ -52,7 +52,7 @@ class SyrinxMembrane extends Chugen
     //100 => float d; //thickness of the membrane, 100 micrometers, 1mm, 0.01cm -- leave in micrometers
     0.01 => float d; //thickness of the membrane, 100 micrometers, 1mm, 0.01cm -- leave in micrometers, 1mm
 
-    0.7 => float L; //length of the trachea, in 0.7cm -- HOLD for this one
+    7.0 => float L; //length of the trachea, in 7cm -- HOLD for this one
     
     //the rate of change that we find at each tick
     0.0 => float dp0; //change in p0, bronchial pressure
@@ -70,17 +70,21 @@ class SyrinxMembrane extends Chugen
     
     //c => float pM; //material density of the syrinx membrane, from Düring, et. al, 2017, itself from mammalian not avian folds, kg/m 
     //0.000102 => float pM; //material density in kg/m^3
-    1.0 => float pM; //values from Smyth 1000.0 kg/m^3, but it should be g/cm3 to match the rest of the units, so 1 g/cm^3
+    1 => float pM; //values from Smyth 1000.0 kg/m^3, but it should be g/cm3 to match the rest of the units, so 1 g/cm^3
     
     second/samp => float SRATE;
     1.0/SRATE => float T; //to make concurrent with Smyth paper
    
      (p*c)/(pi*a*a) => float z0; //impedence of bronchus --small compared to trachea, trying this dummy value until more info 
-     z0 / 2 => float zG; //an arbitrary impedance smaller than z0, Fletcher
+     z0 / 4 => float zG; //an arbitrary impedance smaller than z0, Fletcher
      
      0.0 => float inP1; //to output for debugging
      
-     [2.0, 1.0] @=> float epsilonForceCouple[]; //try -- mode 1 should be dominant.
+     [1.0, 1.0] @=> float epsilonForceCouple[]; //try -- mode 1 should be dominant.
+     
+     0.0 => float forceComponent; 
+     0.0 => float stiffness; 
+     0.0 => float moreDrag; 
      
      //1 => int testAngle;  
          
@@ -95,29 +99,26 @@ class SyrinxMembrane extends Chugen
         // z(y) = x + (a-x)(y/h)^2
         
         //for Fletcher force equation
-        1.5 => float A1; 
+        1 => float A1; 
         
-        totalX + x0 => float x; 
+        //totalX + x0 => float x; 
+        totalX => float x; 
 
         2*A1*a*h => float memArea;
         ( p0 + p1 )/2 => float pressureDiff;
         p*U*U => float UFactor;
         7.0*Math.sqrt(a*x*x*x) => float overArea; 
 
-        0.0 => F; 
         //a*h*(p0 + p1) => F[i]; //Smyth
         //2*a*h*(p0 + p1)  => F[i]; //this works to start the model w. a zero x value -- Fletcher
         
-        
-
-        if( totalX > 0.0 )
+        if( x > 0.0 )
         {
-           //a*h*(p0 + p1) - (2.0*p*U*U*h)/(7.0*Math.pow(a*totalX, 1.5)) => F; //-- Smyth 
-                //4*a*h*(p0 + p1) 
-           memArea* ( ( pressureDiff ) - ( UFactor/overArea  ) ) => F; //fletcher
+           a*h*(p0 + p1) - (2.0*p*U*U*h)/(7.0*Math.pow(a*x, 1.5)) => F; //-- Smyth 
+           //memArea* ( ( pressureDiff ) - ( UFactor/overArea  ) ) => F; //fletcher
 
          }
-         else memArea*pressureDiff => F; 
+         else a*h*(p0 + p1) => F; // not sure about this, so
      }
      
     fun void updateBrochialPressure()
@@ -125,6 +126,7 @@ class SyrinxMembrane extends Chugen
         dp0 => float dp0Prev;
         
         (T/2.0) => float timeStep; 
+        //(1/2.0) => float timeStep; 
         (p*c*c) / V => float physConstants; 
         (pG - p0) / zG => float preshDiff; 
 
@@ -150,20 +152,22 @@ class SyrinxMembrane extends Chugen
            //timeStep*(dU + D*(p0-p1-(C*U*U))) => dU; //0 < x <= a
            
            
-            //Smyth at the beginning of Ch. 5??? but does not correspond to fletcher quite.
+            //Smyth at she beginning of Ch. 5??? but does not correspond to fletcher quite.
             a*totalX => float At;
             ( (2*Math.sqrt(At) )/p)*(p0 - p1) => dU; 
             dU - ( (U*U) / ( 4*Math.pow(At, 3.0/2.0) ) )  => dU;
+            
+             (timeStep)*(dUPrev + dU) => dU; 
+             dU + U => U; 
         
-            //dU + U => U; 
-            U + (timeStep)*(dUPrev + dU) => U;
         }
         else
         { 
-            0.0 => U; 
-            0.0 => dU; 
+            0.0 => dU;   
+            0.0 => U;          
         }
-        
+
+
         //<<< "after U: " + "x: "  + totalX + " p0: " + p0 + " p1: " + p1 + " U: " + U + " dU " + dU >>>;
 
  
@@ -179,6 +183,7 @@ class SyrinxMembrane extends Chugen
             square*square => float squared;
             
             (A3*pM*pi*a*h*d)/4 => m[i];
+            //0.045 => m[i];
             m[i] * ( 1 + ( membraneNLCoeff*squared) ) => m[i]; 
         }
         
@@ -187,28 +192,36 @@ class SyrinxMembrane extends Chugen
     fun void updateX()
     {
         0.0 => totalX;
+        (T/2.0) => float timeStep; 
+        //(1.0/2.0) => float timeStep; 
+
         for( 0 => int i; i < x.cap() ; i++ )
         {
-            
+            //w=> k;
             k => float modifiedK;
             //maybe take out for testing
             if( x[i] <= 0 )
             {
-                k*E[i] => modifiedK;
+                k*E => modifiedK;
             }
 
             
             //update d2x
             //epsilon is taken as unary
-            (F*epsilonForceCouple[i])/m[i] - 2.0*modifiedK*dx[i] - w[i]*w[i]*(x[i]-x0) => float nextDx2;
-            (T/2.0)*(d2x[i] + nextDx2) => d2x[i];
+           ( F*epsilonForceCouple[i] ) / m[i] =>  forceComponent; 
+           ( - 2.0*modifiedK*dx[i]  ) =>  stiffness; 
+           (- w[i]*w[i]*(x[i]-x0) ) =>  moreDrag; 
+           
             
+            forceComponent + stiffness + moreDrag => float nextDx2;
+            timeStep*(d2x[i] + nextDx2) => d2x[i];
+                        
             //update dx, integrate
             dx[i] => float dxPrev;
             dx[i] + d2x[i] => dx[i];
             
             //update x, integrate again
-            x[i] + (T/2.0)*(dxPrev + dx[i]) => x[i];
+            x[i] + timeStep*(dxPrev + dx[i]) => x[i]; 
             
             x[i] + totalX => totalX; 
 
@@ -231,13 +244,13 @@ class SyrinxMembrane extends Chugen
         p1 => inP1; 
                          
         updateBrochialPressure();
-        updateU(); 
+        updateU();
         
         //update x & params needed for x
         updateForce(); 
         updateMass();
         updateX();
-        
+
         updateP1(); 
         
         return p1;
@@ -325,14 +338,21 @@ class Flip extends Chugen
 
 //<<< wa.wallLossCoeff >>>;
 
+
 SyrinxMembrane mem => DelayA delay => WallLossAttenuation wa => BiQuad loop => blackhole; //from membrane to trachea
 wa => BiQuad hpOut => Gain reduce => dac; //from trachea to sound out
 
-loop => Flip flip =>  Delay delay2 => WallLossAttenuation wa2 => delay; //reflection from trachea end back to bronchus beginning
+loop => Flip flip => DelayA delay2 => WallLossAttenuation wa2 => delay; //reflection from trachea end back to bronchus beginning
 Gain adder; 
 wa2 => adder; 
 mem => adder; 
-adder => OneZero oz =>  mem; //the reflection also is considered in the pressure output of the syrinx
+adder => DelayA oz =>  mem; //the reflection also is considered in the pressure output of the syrinx
+1.0::samp => oz.delay; 
+
+
+//test w.0 trachea
+//SyrinxMembrane mem => Gain g => blackhole; 
+//g => mem; 
 
 
 //(1.0/(323483.5625*50.0) ) => hpOut.gain; 
@@ -346,6 +366,7 @@ c/(4*L) => float LFreq; // -- the resonant freq. of the tube (?? need to look at
 
 period::samp => delay.delay;
 period::samp => delay2.delay;
+
 
 //approximating from Smyth diss. 
 setParamsForReflectionFilter();
@@ -366,25 +387,33 @@ if( !fout.good() )
 
 
 0.0 => float mMax; 
-0.0 => float mMin; 
+1.0 => float mMin; 
 
-5::second => now;
+2::second => now; 
+
 now => time start;
- while(now - start < 3::second)
+ while(now - start < 1::second)
  {
-//       <<< " dp0:" + mem.dp0 +" zG:" + mem.zG + " d2x: " + mem.d2x[0] + "  U: " + mem.U + " F0: " + mem.F[0] +  "  x: " + mem.totalX + "  p0:" + mem.p0 + "  p1:" + mem.p1 + "  input p1: " + mem.inP1 >>> ;
-      mem.p0 + "," + mem.U + "," + mem.totalX + "," + mem.p1 + "\n" => string output; 
+       <<< " dp0:" + mem.dp0 +" p0:" + mem.p0 +" d2x[0]:" + mem.d2x[0] + " dU: " + mem.dU + "  U: " + mem.U + " p1: " +  mem.inP1 + " x: " + mem.totalX >>> ;
+      //mem.p0 + "," + mem.U + "," + mem.totalX + "," + mem.inP1 + "\n" => string output; 
 
-      <<<"  p0:" + mem.p0+ "  dU: " + mem.dU + "  U: " + mem.U + "  x: " + mem.totalX + " p1:" + mem.p1  >>> ;
 
-    <<< "#2 ==> F: " + mem.F + " m[0]: " + mem.m[0] + " x[0]: " + mem.x[0] + " dx[0]: " + mem.dx[0] + " d2x[0]: " + mem.d2x[0]  +" x[1]: " + mem.x[1] + " dx[1]" + mem.dx[1] + " d2x[1]: " + mem.d2x[1]  + "  x: " + mem.totalX  >>> ;
+hpOut.last() => float trachP1; 
+wa2.last() => float returnTrachp1;
 
-     fout.write( output ); 
+
+      //<<<"  p0:" + mem.p0+ "  dU: " + mem.dU + "  U: " + mem.U + "  x: " + mem.totalX + " in-p1:" + mem.inP1 + " p1:" + mem.p1 + " trachP1: " + trachP1 + " returnTrachp1: " + returnTrachp1  >>> ;
+
+   // <<< "#2 ==> F: " + mem.F + " m[0]: " + mem.m[0] + " x[0]: " + mem.x[0] + " dx[0]: " + mem.dx[0] + " d2x[0]: " + mem.d2x[0]  +" x[1]: " + mem.x[1] + " dx[1]" + mem.dx[1] + " d2x[1]: " + mem.d2x[1]  + "  x: " + mem.totalX  >>> ;
+
+    //<<< "forceComponant: " + mem.forceComponent + " stiffness: " + mem.stiffness + " moreDrag: " + mem.moreDrag >>>;
+
+     //fout.write( output ); 
      
-     Math.max(mMax, mem.p0) => mMax;
-     Math.min(mMin, mem.p0) => mMin;
+     Math.max(mMax, mem.totalX) => mMax;
+     Math.min(mMin, mem.totalX) => mMin;
 
-2::samp => now;   
+1::ms => now;   
  }  
  
  <<< "mMax: " + mMax>>>;
