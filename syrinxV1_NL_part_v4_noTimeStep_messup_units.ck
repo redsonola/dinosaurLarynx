@@ -27,19 +27,39 @@ class SyrinxMembrane extends Chugen
 {
     //1.204 => float p; //air density (value used for 68F & atmospheric pressure 101.325 kPa (abs), 1.204 kg/m3
     //0.00118 => float p; //air density from Smyth diss., 0.00118cm, 0---- NOTE: Needs to match the input -- meters
-    //1.18 => float p; //over m, air density from Smyth diss., 0.00118cm, 0---- NOTE: Needs to match the input -- meters
     1.18 * Math.pow(10, -3) => float p; //air density from Smyth diss., 0.00118cm, 0---- NOTE: Needs to match the input -- meters
-    
-    //347.4 => float c; //speed of sound (m/s) for now
-    34740 => float c; //m //speed of sound from Smyth, 34740 cm/s, so 347.4 m/s,
-    
-    //pG
-    3000.0 => float pG; //pressure from the air sac ==> change to create sound, 0.3 or 300 used in Flectcher 1988, possibly 3 in cm units.
+    //1.18 => float p; //over m, air density from Smyth diss., 0.00118cm, 0---- NOTE: Needs to match the input -- meters
 
-    //main values for differential equation, except for x, defined below in it's own block
+    
+    //1.18 => float p; //air density from Smyth diss., 0.00118cm, 0.0118 mm
+
+
     0.0 => float p0; //brochial side pressure
     0.0 => float p1; //tracheal side pressure -- **output that is the time-varying signal for audio 
+    //347.4 => float c; //speed of sound (m/s) for now
+    34740 => float c; //m //speed of sound from Smyth, 34740 cm/s, so 347.4 m/s, 
+
+    1.0 => float V; //volume of the bronchius - in cm^3
+    300.0 => float pG; //pressure from the air sac ==> change to create sound, 0.3 or 300 used in Flectcher 1988, possibly 3 in cm units.
+    300.0 => float k; //damping coeff. sec^-1, to make it sec /10
+    100.0 => float E; //a number of order 10 to 100 to represent stickiness
+    [150.0*2.0*pi, 250.0*2.0*pi] @=> float w[]; //radian freq of mode n, freq. of membranes: 1, 1.6, 2 & higher order modes are not needed Fletcher, Smyth
+    
+    3.5 => float a; //  1/2 diameter of trachea, in 3.5mm        ??area of membrane at a point
+    //0.35 => float a; //  1/2 diameter of trachea, in cm        ??area of membrane at a point
+
+    0.0 => float F; //force driving fundamental mode of membrane
+    3.5 => float h; //1/2 diameter of the syringeal membrane, 3.5mm, 0.35cm
+    //0.35 => float h; //1/2 diameter of the syringeal membrane, 3.5mm, 0.35cm
+
     0.0 => float U; //volume velocity flowing out
+    10.0 => float membraneNLCoeff; //membrane non-linear coeff. for masses, etc.
+    0.0 => float x0; //equillibrium opening, in cm -- if this is 0.3, close to a -- it does oscillate, but incorrectly
+                     //if Force is not added when x is 0, then it will eventually stabilize into a high tone.
+    100 => float d; //thickness of the membrane, 100 micrometers, 1mm, 0.01cm -- leave in micrometers
+    //0.01 => float d; //thickness of the membrane, 100 micrometers, 1mm, 0.01cm -- leave in micrometers, 1mm
+
+    7.0 => float L; //length of the trachea, in 7cm -- HOLD for this one
     
     //the rate of change that we find at each tick
     0.0 => float dp0; //change in p0, bronchial pressure
@@ -50,50 +70,25 @@ class SyrinxMembrane extends Chugen
     //initialized to prevent x going to 0
     [0.0, 0.0] @=> float x[];  //displacement of the membrane per mode
     0.0 => float totalX; // all the x's added for total displacement
-    0.0 => float F; //force driving fundamental mode of membrane
-    0.0 => float x0; //equillibrium opening, in cm -- if this is 0.3, close to a -- it does oscillate, but incorrectly
-                     //if Force is not added when x is 0, then it will eventually stabilize into a high tone.
-    //coefficients for d2x updates
-    300.0 => float k; //damping coeff. sec^-1, to make it sec /10
-    100.0 => float E; //a number of order 10 to 100 to represent stickiness
-    10.0 => float membraneNLCoeff; //membrane non-linear coeff. for masses, etc.
-    [1.0, 1.0] @=> float epsilonForceCouple[]; //try -- mode 1 should be dominant.
-
-
-    //biological parameters *******
-    1.0 => float V; //volume of the bronchius - in cm^3
-    [150.0*2.0*pi, 250.0*2.0*pi] @=> float w[]; //radian freq of mode n, freq. of membranes: 1, 1.6, 2 & higher order modes are not needed Fletcher, Smyth
     
-    //3.5 => float a; //  1/2 diameter of trachea, in 3.5mm        ??area of membrane at a point
-    0.35 => float a; //  1/2 diameter of trachea, in cm        ??area of membrane at a point
-
-   // 3.5 => float h; //1/2 diameter of the syringeal membrane, 3.5mm, 0.35cm
-    0.35 => float h; //1/2 diameter of the syringeal membrane, 3.5mm, 0.35cm
-
-    //100 => float d; //thickness of the membrane, 100 micrometers, 1mm, 0.01cm -- leave in micrometers
-    0.01 => float d; //thickness of the membrane, 100 micrometers, 1mm, 0.01cm -- leave in micrometers, 1mm
-
-    7.0 => float L; //length of the trachea, in 7cm -- HOLD for this one
-    
-        //c => float pM; //material density of the syrinx membrane, from During, et. al, 2017, itself from mammalian not avian folds, kg/m 
-    //0.000102 => float pM; //material density in kg/m^3
-    1 => float pM; //values from Smyth 1000.0 kg/m^3, but it should be g/cm3 to match the rest of the units, so 1 g/cm^3
-    
-    [0.0, 0.0] @=> float m[]; //the masses involved in vibration of each mode 
+    [0.0, 0.0] @=> float m[]; //the masses involved in vibration of each mode
     0.5 => float A3; // constant in the mass equation -- changed bc there was an NAN after membrane density was put into 
     //the correct units from kg/m^3 to g/cm^3
     
-    //***** end biological parameters
+    //c => float pM; //material density of the syrinx membrane, from Düring, et. al, 2017, itself from mammalian not avian folds, kg/m 
+    //0.000102 => float pM; //material density in kg/m^3
+    1 => float pM; //values from Smyth 1000.0 kg/m^3, but it should be g/cm3 to match the rest of the units, so 1 g/cm^3
     
-    //time steps
     second/samp => float SRATE;
     1/SRATE => float T; //to make concurrent with Smyth paper
    
-     //impedences
      (p*c)/(pi*a*a) => float z0; //impedence of bronchus --small compared to trachea, trying this dummy value until more info 
      z0/6   => float zG; //an arbitrary impedance smaller than z0, Fletcher
      
-     0.0 => float inP1; //to output for debugging     
+     0.0 => float inP1; //to output for debugging
+     
+     [1.0, 1.0] @=> float epsilonForceCouple[]; //try -- mode 1 should be dominant.
+     
      0.0 => float forceComponent; 
      0.0 => float stiffness; 
      0.0 => float moreDrag; 
@@ -158,7 +153,7 @@ class SyrinxMembrane extends Chugen
             //2*Math.sqrt(a*totalX)/p => float D; //actually inverse
   
             //from Fletcher and Smyth -- mas o menos
-           //(dU + timeStep*D*(p0-p1-(C*U*U))) => dU; //0 < x <= a
+           //timeStep*(dU + D*(p0-p1-(C*U*U))) => dU; //0 < x <= a
            
            
             //Smyth at she beginning of Ch. 5??? but does not correspond to fletcher quite.
@@ -358,17 +353,17 @@ adder => DelayA oz =>  mem; //the reflection also is considered in the pressure 
 
 
 //test w.0 trachea
-//SyrinxMembrane mem =>sGain g => blackhole; 
+//SyrinxMembrane mem => Gain g => blackhole; 
 //g => mem; 
 
 
-(1.0/(4330.1421) ) => hpOut.gain; 
+//(1.0/(65189.1641) ) => hpOut.gain; 
 
 //trachea length -- 70mm, from Fletcher
 0.07 => float L; //in m 
 347.4 => float c; // in m/s
 c/(4*L) => float LFreq; // -- the resonant freq. of the tube (?? need to look at this)
-( (second / samp) / (2*LFreq) - 1) => float period; //* 0.5 in the STK for the clarinet model... clarinet.cpp hmmm
+( (second / samp) / 2*(LFreq) - 1) => float period; //* 0.5 in the STK for the clarinet model... clarinet.cpp hmmm
 
 
 
@@ -411,6 +406,9 @@ wa2.last() => float returnTrachp1;
      
        <<<"trachP1:" + trachP1 + " z0: "+ mem.z0 +" dp0:" + mem.dp0 +" p0:" + mem.p0 +" d2x[0]:" + mem.d2x[0] + " dU: " + mem.dU + "  U: " + mem.U + " p1-in: " +  mem.inP1 + " x: " + mem.totalX  +  " p1-out:" + mem.p1  >>> ;
       //mem.p0 + "," + mem.U + "," + mem.totalX + "," + mem.inP1 + "\n" => string output; 
+
+
+
 
 
       //<<<"  p0:" + mem.p0+ "  dU: " + mem.dU + "  U: " + mem.U + "  x: " + mem.totalX + " in-p1:" + mem.inP1 + " p1:" + mem.p1 + " trachP1: " + trachP1 + " returnTrachp1: " + returnTrachp1  >>> ;
@@ -474,18 +472,22 @@ wa2.last() => float returnTrachp1;
  
 
  
- 
  /*
  Questions: 
  1. how to add reflection, etc. values to p1? -- it says just to sum the traveling waves --NOTE: working on this see above solution
+ 
+ solution should be as above, implemented the exact circuit diagram
+ 
  2. the U is too small, x is too small, etc. everything except for p0 is too small..
  
+ now, there are different problems
+ 
  More: 
- which force equation is the best equation?
- why are D & C equations modified in the Symth?
+ which force equation is the best equation? -- they should be the same (fixed)
+ why are D & C equations modified in the Symth? -- it is just a reduction from the Fletcher
  
- are there measurement unit differences/errors in the constants?
+ are there measurement unit differences/errors in the constants? -- DONE-ISH: this, yes, modified to all be cm but still does not work
  
- how does it start with all the x values being 0? -- it works if the force is create w.o x, the term with x is just dropped.....s
+ how does it start with all the x values being 0? -- DONE: it starts bc the force from P1 & p2 are added w/o other variables
  
  */
