@@ -537,7 +537,7 @@ fout.close();
 //--2/21 1p fixed reflection filter
  function void setParamsForReflectionFilter()
  {
-     3.5 => float a; //radius of opening; from Smyth diss
+     0.35 => float a; //radius of opening; from Smyth diss
      0.5 => float ka; //from Smyth
      ka*(mem.c/a)*mem.T => float wT; 
      0.5 => float s; 
