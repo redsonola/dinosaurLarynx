@@ -36,14 +36,14 @@ class SyrinxMembrane extends Chugen
     //347.4 => float c; //speed of sound (m/s) for now
     34740 => float c; //m //speed of sound from Smyth, 34740 cm/s, so 347.4 m/s,
     
-    //pG
-    3000 => float pG; //pressure from the air sac ==> change to create sound, 0.3 or 300 used in Flectcher 1988, possibly 3 in cm units.
+    //pG -  3.0591486389338
+    3.0591486389338 => float pG; //pressure from the air sac ==> change to create sound, 0.3 or 300 used in Flectcher 1988, possibly 3 in cm units.
 
     //main values for differential equation, except for x, defined below in it's own block
     0.0 => float p0; //brochial side pressure
     0.0 => float p1; //tracheal side pressure -- **output that is the time-varying signal for audio 
     0.0 => float U; //volume velocity flowing out
-    
+   
     //the rate of change that we find at each tick
     0.0 => float dp0; //change in p0, bronchial pressure
     0.0 => float dU; //chage in U, volume velocity
@@ -60,7 +60,7 @@ class SyrinxMembrane extends Chugen
     300.0 => float k; //damping coeff. sec^-1, to make it sec /10
     100.0 => float E; //a number of order 10 to 100 to represent stickiness
     10.0 => float membraneNLCoeff; //membrane non-linear coeff. for masses, etc.
-    [1.0, 0.5] @=> float epsilonForceCouple[]; //try -- mode 1 should be dominant.
+    [0.3, 0.3] @=> float epsilonForceCouple[]; //try -- mode 1 should be dominant.
 
 
     //biological parameters *******
@@ -74,7 +74,7 @@ class SyrinxMembrane extends Chugen
     0.35 => float h; //1/2 diameter of the syringeal membrane, 3.5mm, 0.35cm
 
     //100 => float d; //thickness of the membrane, 100 micrometers, 1mm, 0.01cm -- leave in micrometers
-    0.01 => float d; //thickness of the membrane, 100 micrometers, 1mm, 0.01cm -- leave in micrometers, 1mm
+    0.01 => float d; //thickness of the membrane, 100 micrometers, 1mm, 0.01cm -- leave in micrometers, 1mm, decreasing it to 0.01 shows same behavior as 3000pa
 
     7.0 => float L; //length of the trachea, in 7cm -- HOLD for this one
     
@@ -101,7 +101,7 @@ class SyrinxMembrane extends Chugen
      0.0 => float stiffness; 
      0.0 => float moreDrag; 
      
-     //1 => int testAngle;  
+     0.0 => float testAngle;  
          
     fun void updateForce()
     {
@@ -139,7 +139,7 @@ class SyrinxMembrane extends Chugen
     fun void updateBrochialPressure()
     {        
         (T/2.0) => float timeStep; 
-        //(1/2.0) => float timeStep; 
+
         (p*c*c) / V => float physConstants; 
         (pG - p0) / zG => float preshDiff; 
 
@@ -152,7 +152,7 @@ class SyrinxMembrane extends Chugen
     {
         //<<< "before U: " + "x: "  + totalX + " p0: " + p0 + " p1: " + p1 + " U: " + U + " dU " + dU >>>;
      
-        if(totalX > 0.0 && totalX <= a)
+        if( totalX > 0.0 )
         {
             dU => float dUPrev; 
         
@@ -169,6 +169,7 @@ class SyrinxMembrane extends Chugen
             ( (2*Math.sqrt(At) )/p)*(p0 - p1) => dU; 
             dU - ( (U*U) / ( 4*Math.pow(At, 3.0/2.0) ) )  => dU;
             
+             //integrate
              (timeStep)*(dUPrev + dU) => dU; 
              dU + U => U; 
         
@@ -242,6 +243,11 @@ class SyrinxMembrane extends Chugen
     fun void updateP1()
     {
         U*z0 => p1;
+        //Math.cos(testAngle) * 900.0 => p1; 
+        //testAngle + T*100.0 => testAngle; 
+        
+        //300.0 => p1;
+        
     }
     
     
@@ -258,6 +264,7 @@ class SyrinxMembrane extends Chugen
         updateForce(); 
         updateMass();
         updateX();
+        
 
         updateP1(); 
         
@@ -272,13 +279,13 @@ class WallLossAttenuation extends Chugen
     34740 => float c; // in m/s
     c/(4*L) => float freq;
     //wFromFreq(freq) => float w;   
-    200.0*2.0*pi => float w;  
+    150.0*2.0*pi => float w;  
     
     0.35 => float a; //  1/2 diameter of trachea, in m - NOTE this is from SyrinxMembrane -- 
                      //TODO:  to factor out the constants that are used across scopes: a, L, c, etc
     calcPropogationAttenuationCoeff() => float propogationAttenuationCoeff; //theta in Fletcher1988 p466
     calcWallLossCoeff() => float wallLossCoeff; //beta in Fletcher
-                    
+    0.0 => float out;           
                  
     
     fun float calcConstants()
@@ -312,8 +319,14 @@ class WallLossAttenuation extends Chugen
     //the two different bronchi as they connect in1 & in2
     fun float tick(float in)
     {
-        return wallLossCoeff*in; 
-    }  
+        in*wallLossCoeff => out;
+        return out; 
+    } 
+    
+    fun float last()
+    {
+        return out; 
+    } 
 }
 
 //this is redundant but I definitely know what is happening here and will stop any crazy magical thinking debug loops on this topic cold.
@@ -368,6 +381,22 @@ class ScatteringJunction extends Chubgraph
     tracheaZ => tracheaZout  => outlet;
 }
 
+//okay, this is just to test -- sanity debug check -- make sure -- obviously I can't keep this as a chugen, but probably
+//in end result will not be using chugens at all.
+class BirdTracheaFilter extends Chugen
+{
+    1.0 => float a1;
+    1.0 => float b0;
+    0.0 => float lastOut; 
+
+    fun float tick(float in)
+    {
+        b0*in - a1*lastOut => float out;
+        out => float lastOut; 
+        return out; 
+    }     
+}
+
 
 //waveguides/tubes altered to model clarinet for an intermediate testable outcome before bronchus, trachea, junction are modeled
 //used https://quod.lib.umich.edu/cgi/p/pod/dod-idx/efficient-simulation-of-the-reed-bore-and-bow-string.pdf?c=icmc;idno=bbp2372.1986.054;format=pdf
@@ -375,18 +404,25 @@ class ScatteringJunction extends Chubgraph
 
 //WallLossAttenuation wa;
 
-//<<< wa.wallLossCoeff >>>;
+
+//BiQuad loop;
+BirdTracheaFilter loop; 
+//WallLossAttenuation wallLoss; 
+//wallLoss. float waCoeff;
 
 
-SyrinxMembrane mem => DelayA delay => WallLossAttenuation wa => BiQuad loop => blackhole; //from membrane to trachea
-wa => BiQuad hpOut => Gain reduce => dac; //from trachea to sound out
+SyrinxMembrane mem => DelayA delay => WallLossAttenuation wa => OneZero lp => blackhole; //from membrane to trachea
+lp => BiQuad hpOut => Gain reduce => dac; //from trachea to sound out
 
-loop => Flip flip => DelayA delay2 => WallLossAttenuation wa2 => delay; //reflection from trachea end back to bronchus beginning
+lp => Flip flip => DelayA delay2 => WallLossAttenuation wa2 => delay; //reflection from trachea end back to bronchus beginning
 Gain adder; 
 wa2 => adder; 
 mem => adder; 
 adder => DelayA oz =>  mem; //the reflection also is considered in the pressure output of the syrinx
 1.0::samp => oz.delay; 
+//-1.0 => flip.gain;
+
+//<<< wa2.wallLossCoeff >>>;
 
 
 //test w.0 trachea
@@ -394,11 +430,15 @@ adder => DelayA oz =>  mem; //the reflection also is considered in the pressure 
 //g => mem; 
 
 
-(1.0/(4330.1421) ) => hpOut.gain; 
+(1.0/(3.8925) ) => hpOut.gain; 
 
 
 //trachea length -- 70mm, from Fletcher
+//0.7 => float L; //in m 
+
 0.7 => float L; //in m 
+
+
 347.4 => float c; // in m/s
 c/(4*L) => float LFreq; // -- the resonant freq. of the tube (?? need to look at this)
 ( (second / samp) / (2*LFreq) - 1) => float period; //* 0.5 in the STK for the clarinet model... clarinet.cpp hmmm
@@ -441,17 +481,29 @@ if( !fout.good() )
 0.0 => float mMax; 
 1.0 => float mMin; 
 
-2::second => now; 
+10::second => now; 
+
+<<<wa2.wallLossCoeff>>>;
 
 now => time start;
- while(now - start < 0.01::second)
+ while(now - start < 0.1::second)
  {
      
 hpOut.last() => float trachP1; 
-wa2.last() => float returnTrachp1;
+delay.last() => float returnTrachp1;
+wa.last() => float afterWA; 
+lp.last() => float afterLP; 
+oz.last() => float adderOut; 
+delay2.last() => float beforeAdd;  
+
      
-       <<<"trachP1:" + trachP1 + " z0: "+ mem.z0 +" dp0:" + mem.dp0 +" p0:" + mem.p0 +" d2x[0]:" + mem.d2x[0] + " dU: " + mem.dU + "  U: " + mem.U + " p1-in: " +  mem.inP1 + " x: " + mem.totalX  +  " p1-out:" + mem.p1  >>> ;
-      mem.p0 + "," + mem.U + "," + mem.totalX + "," + mem.inP1 + "\n" => string output; 
+      <<<"adderOut: " +  adderOut + " afterLP: " + afterLP + " afterWA: " + afterWA + " returnTrachp1: " + returnTrachp1 + " trachP1:" + trachP1 + " z0: "+ mem.z0 +" dp0:" + mem.dp0 +" p0:" + mem.p0 +" d2x[0]:" + mem.d2x[0] + " dU: " + mem.dU + "  U: " + mem.U + " p1-in: " +  mem.inP1 + " x: " + mem.totalX  +  " p1-out:" + mem.p1  >>> ;
+      mem.p0 + "," + mem.U + "," + mem.totalX + "," + mem.inP1 + "\n"  => string output; 
+      
+      
+   //    <<<"adderOut: " +  adderOut + " afterLP: " + afterLP + " afterWA: " + afterWA + " returnTrachp1: " + returnTrachp1 
+   //    + " trachP1:" + trachP1 + " beforeAdd " + beforeAdd + " p1-in: " +  mem.inP1 +" p1-out:" + mem.p1  >>> ;
+   //   mem.p0 + "," + mem.U + "," + mem.totalX + "," + mem.inP1  => string output;       
 
 
       //<<<"  p0:" + mem.p0+ "  dU: " + mem.dU + "  U: " + mem.U + "  x: " + mem.totalX + " in-p1:" + mem.inP1 + " p1:" + mem.p1 + " trachP1: " + trachP1 + " returnTrachp1: " + returnTrachp1  >>> ;
@@ -470,6 +522,7 @@ wa2.last() => float returnTrachp1;
 
 1::samp => now;   
  }  
+ 
  
  <<< "mMax: " + mMax>>>;
   <<< "mMin: " + mMin>>>;
@@ -499,9 +552,9 @@ fout.close();
      //for the low-pass reflector
      a1 => loop.a1;
      b0 => loop.b0; 
-     b0 => loop.b1;
-     0 => loop.b2; 
-     0 => loop.a2; 
+    // b0 => loop.b1;
+    // 0 => loop.b2; 
+    // 0 => loop.a2; 
      
      //for the highpass output, from Smyth, again
      a1 => hpOut.a1; 

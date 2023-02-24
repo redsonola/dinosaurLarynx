@@ -25,6 +25,9 @@
 
 //another reference to look at: http://legacy.spa.aalto.fi/research/avesound/pubs/akusem04.pdf
 
+//non-linear oscillation
+//https://web.physics.ucsb.edu/~fratus/phys103/LN/NLO.pdf
+
 //Syrinx Membrane
 class SyrinxMembrane extends Chugen
 {
@@ -37,7 +40,7 @@ class SyrinxMembrane extends Chugen
     34740 => float c; //m //speed of sound from Smyth, 34740 cm/s, so 347.4 m/s,
     
     //pG
-    3000 => float pG; //pressure from the air sac ==> change to create sound, 0.3 or 300 used in Flectcher 1988, possibly 3 in cm units.
+    300 => float pG; //pressure from the air sac ==> change to create sound, 0.3 or 300 used in Flectcher 1988, possibly 3 in cm units.
 
     //main values for differential equation, except for x, defined below in it's own block
     0.0 => float p0; //brochial side pressure
@@ -268,11 +271,11 @@ class SyrinxMembrane extends Chugen
 
 class WallLossAttenuation extends Chugen
 {
-    7.0 => float L; //in cm 
-    34740 => float c; // in m/s
+    3.5 => float L; //in cm 
+    34740 => float c; // in cm/s
     c/(4*L) => float freq;
     //wFromFreq(freq) => float w;   
-    200.0*2.0*pi => float w;  
+    150*2.0*pi => float w;  
     
     0.35 => float a; //  1/2 diameter of trachea, in m - NOTE this is from SyrinxMembrane -- 
                      //TODO:  to factor out the constants that are used across scopes: a, L, c, etc
@@ -332,23 +335,24 @@ class Flip extends Chugen
 //pnOut = pJ - pnOut
 //Zn - impedences 
 //pJ = 2*sumOf(pnOuts*1/Zns)/sumOf(Zns)
-class ScatteringJunction extends Chubgraph
+function void scatteringJunction(WallLossAttenuation bronch1, WallLossAttenuation bronch2, WallLossAttenuation trachea, 
+                            DelayA bronch1Delay, DelayA bronch2Delay, DelayA tracheaDelay)
 { 
     
-    inlet => Gain bronchus1Z => Gain add; 
-    inlet => Gain bronchus2Z =>  add;; 
-    inlet => Gain tracheaZ =>   add; 
+    bronch1 => Gain bronchus1Z => Gain add; 
+    bronch2 => Gain bronchus2Z => add; 
+    trachea => Gain tracheaZ => add; 
     
     0.00118 => float p; 
     0.35 => float a; 
     34740 => float c; 
     (p*c)/(pi*a*a) => float z0;
     
-    //assume they have the same tube radius for now - I guess they prob. don't
+    //assume they have the same tube radius for now - I guess they prob. don't IRL
     1.0/z0 => bronchus1Z.gain;
     1.0/z0 => bronchus2Z.gain;
     1.0/z0 => tracheaZ.gain;
-    2 => add.gain; 
+    2.0 => add.gain; 
     
     (1.0/z0 + 1.0/z0 + 1.0/z0) => float zSum; 
     
@@ -356,16 +360,16 @@ class ScatteringJunction extends Chubgraph
     1.0/zSum => pJ.gain; 
     
     pJ => Gain bronchus1Zout;
-    bronchus1Z => bronchus1Zout => outlet;
     bronchus1Zout.op(2); 
+    bronch1 => bronchus1Zout => bronch1Delay;
     
     pJ => Gain bronchus2Zout;
-    bronchus1Z => bronchus2Zout => outlet;
     bronchus2Zout.op(2);
+    bronch2 => bronchus2Zout => bronch2Delay;
     
     pJ => Gain tracheaZout;
     tracheaZout.op(2); 
-    tracheaZ => tracheaZout  => outlet;
+    trachea => tracheaZout => tracheaDelay;
 }
 
 
@@ -373,20 +377,55 @@ class ScatteringJunction extends Chubgraph
 //used https://quod.lib.umich.edu/cgi/p/pod/dod-idx/efficient-simulation-of-the-reed-bore-and-bow-string.pdf?c=icmc;idno=bbp2372.1986.054;format=pdf
 //& Cook's Real Sound Synthesis as a guide
 
-//WallLossAttenuation wa;
+//trachea length -- 70mm, from Fletcher
+0.35 => float L; //in m, just halved, it -- half for upper bronchus, and half for trachea, just testing
+347.4 => float c; // in m/s
+c/(4*L) => float LFreq; // -- the resonant freq. of the tube (?? need to look at this)
+( (second / samp) / (2*LFreq) - 1) => float period; //* 0.5 in the STK for the clarinet model... clarinet.cpp hmmm
+//( (second / samp) / (2*LFreq) - 1) => float period; //* 0.5 in the STK for the clarinet model... clarinet.cpp hmmm
 
-//<<< wa.wallLossCoeff >>>;
+
+//from membrane to scattering junction - upper bronchus out
+SyrinxMembrane mem => DelayA delay => WallLossAttenuation wa; 
+SyrinxMembrane mem2 => DelayA delayMem2 => WallLossAttenuation waBronch2; 
+period::samp => delay.delay;
+period::samp => delayMem2.delay;
 
 
-SyrinxMembrane mem => DelayA delay => WallLossAttenuation wa => BiQuad loop => blackhole; //from membrane to trachea
-wa => BiQuad hpOut => Gain reduce => dac; //from trachea to sound out
+//from the scattering junction out to the mouth
+DelayA tracheaOut => WallLossAttenuation tracheaWA => BiQuad loop => blackhole;
+period::samp => tracheaOut.delay;
 
-loop => Flip flip => DelayA delay2 => WallLossAttenuation wa2 => delay; //reflection from trachea end back to bronchus beginning
+//reflection back to scattering junction
+loop  => Flip flip => DelayA tracheaBack => WallLossAttenuation tracheaWABack;
+period::samp => tracheaBack.delay;
+
+
+//from trachea to sound out the 'mouth'
+tracheaWA => Gain reduce => BiQuad hpOut => dac; //from trachea to sound out
+
+//reflection from scattering junction back to bronchus beginning -- 1st bronchus
+DelayA bronch1Back => WallLossAttenuation waBronchBack => delay; 
 Gain adder; 
-wa2 => adder; 
+waBronchBack => adder; 
 mem => adder; 
 adder => DelayA oz =>  mem; //the reflection also is considered in the pressure output of the syrinx
 1.0::samp => oz.delay; 
+period::samp => bronch1Back.delay;
+
+
+//reflection from scattering junction back to bronchus beginning -- 2nd bronchus
+DelayA bronch2Back => WallLossAttenuation waBronch2Back => delayMem2; //reflection from trachea end back to bronchus beginning
+Gain adder2; 
+waBronch2Back => adder2; 
+mem2 => adder2; 
+adder2 => DelayA oz2 =>  mem2; //the reflection also is considered in the pressure output of the syrinx
+1.0::samp => oz2.delay; 
+period::samp => bronch2Back.delay;
+
+
+//Aaaand -- setup the scattering junction here to connect all the passage ways
+scatteringJunction( wa, waBronch2, tracheaWABack, bronch1Back, bronch2Back, tracheaOut);
 
 
 //test w.0 trachea
@@ -394,28 +433,14 @@ adder => DelayA oz =>  mem; //the reflection also is considered in the pressure 
 //g => mem; 
 
 
-(1.0/(4330.1421) ) => hpOut.gain; 
-
-
-//trachea length -- 70mm, from Fletcher
-0.7 => float L; //in m 
-347.4 => float c; // in m/s
-c/(4*L) => float LFreq; // -- the resonant freq. of the tube (?? need to look at this)
-( (second / samp) / (2*LFreq) - 1) => float period; //* 0.5 in the STK for the clarinet model... clarinet.cpp hmmm
-//( (second / samp) / (2*LFreq) - 1) => float period; //* 0.5 in the STK for the clarinet model... clarinet.cpp hmmm
-
-period::samp => delay.delay;
-period::samp => delay2.delay;
+(1.0/7044.2310 ) => hpOut.gain;
+//(1.0/5673679.5000 ) => reduce.gain; 
 
 
 /*
 70::samp => delay.delay;
 70::samp => delay2.delay;
 */
-
-
-
-
 
 //approximating from Smyth diss. 
 setParamsForReflectionFilter();
@@ -441,14 +466,14 @@ if( !fout.good() )
 0.0 => float mMax; 
 1.0 => float mMin; 
 
-2::second => now; 
+6::second => now; 
 
 now => time start;
- while(now - start < 0.01::second)
+ while(now - start < 2::second)
  {
      
 hpOut.last() => float trachP1; 
-wa2.last() => float returnTrachp1;
+tracheaWA.last() => float returnTrachp1;
      
        <<<"trachP1:" + trachP1 + " z0: "+ mem.z0 +" dp0:" + mem.dp0 +" p0:" + mem.p0 +" d2x[0]:" + mem.d2x[0] + " dU: " + mem.dU + "  U: " + mem.U + " p1-in: " +  mem.inP1 + " x: " + mem.totalX  +  " p1-out:" + mem.p1  >>> ;
       mem.p0 + "," + mem.U + "," + mem.totalX + "," + mem.inP1 + "\n" => string output; 

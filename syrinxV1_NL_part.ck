@@ -23,20 +23,20 @@ class SyrinxMembrane extends Chugen
     0.0 => float p0; //brochial side pressure
     0.0 => float p1; //tracheal side pressure -- **output that is the time-varying signal for audio 
     //3.3129 => float c; //speed of sound (m/s) for now
-    347400 => float c; //speed of sound from Smyth, 34740 cm/s, so 347.4 m/s, 
+    34740 => float c; //speed of sound from Smyth, 34740 cm/s, so 347.4 m/s, 
 
     1.0 => float V; //volume of the bronchius - in cm^3
     300 => float pG; //pressure from the air sac ==> change to create sound, 0.3 or 300 used in Flectcher 1988
     300.0 => float k; //damping coeff. sec^-1, to make it sec /10
     [12.0, 89.0] @=> float E[]; //coupling btw F and mode n -- unity for simplicity, should be a number of order 10 to 100 
     [150.0*2.0*pi, 250.0*2.0*pi] @=> float w[]; //radian freq of mode n, freq. of membranes: 1, 1.6, 2 & higher order modes are not needed Fletcher, Smyth
-    3.5 => float a; //  1/2 diameter of trachea        ??area of membrane at a point
+    0.35 => float a; //  1/2 diameter of trachea        ??area of membrane at a point
     0.0 => float F; //force driving fundamental mode of membrane
-    3.5 => float h; //1/2 diameter of the syringeal membrane
+     0.35 => float h; //1/2 diameter of the syringeal membrane
     0.0 => float U; //volume velocity flowing out
     10.0 => float membraneNLCoeff; //membrane non-linear coeff. for masses, etc.
-    0.001 => float x0; //equillibrium opening
-    100.0 => float d; //thickness of the membrane
+    0.0 => float x0; //equillibrium opening
+    0.01 => float d; //thickness of the membrane
     70.0 => float L; //length of the trachea
     0.0 => float D; //density of the mass
     
@@ -53,7 +53,7 @@ class SyrinxMembrane extends Chugen
     [0.0, 0.0] @=> float m[]; //the masses involved in vibration of each mode
     0.3 => float A3; // constant in the mass equation
     
-    0.1020 => float pM; //material density of the syrinx membrane, from Düring, et. al, 2017, itself from mammalian not avian folds, kgm 
+    1 => float pM; //material density of the syrinx membrane, from Düring, et. al, 2017, itself from mammalian not avian folds, kgm 
     
     
     second/samp => float SRATE;
@@ -84,6 +84,7 @@ class SyrinxMembrane extends Chugen
             F - (2.0*p*U*U*h)/(7.0*Math.pow(a*totalX, 1.5)) => F; //-- Smyth 
             //F - ((p*U*U)/(7.0*Math.sqrt(a*totalX*totalX*totalX))) => F; //fletcher
         }
+        else a*h*(p0 + p1);
         
      }
      
@@ -147,10 +148,10 @@ class SyrinxMembrane extends Chugen
             
             k => float modifiedK;
             //add back later
-            //if( x[i] <= 0 )
-            //{
-            //    k*E[i] => modifiedK;
-            //}
+            if( x[i] <= 0 )
+            {
+                k*E[i] => modifiedK;
+            }
 
             
             //update d2x
@@ -216,14 +217,14 @@ SyrinxMembrane mem => DelayA delay => PoleZero loop => blackhole;
 loop => Delay delay2 => delay;
 loop => Gain p1Add;
 delay2 => p1Add; 
-p1Add => OnePole lp => mem; 
+p1Add => OneZero oz => mem; 
 
 //second/50 = delay.max;
 //500 => float freq; 
 
 //((second / samp) / freq - 1) => float period;
 70 => float LFreq; //trachea length -- 70mm, from Fletcher -- need to see if this is calculated from length correctly in Cook & Smyth 
-((second / samp) / LFreq - 1) => float period; 
+((second / samp) / (2*LFreq) - 1) => float period; 
 period::samp => delay.delay;
 period::samp => delay2.delay;
 
@@ -276,7 +277,7 @@ fout.close();
      
      a1 => loop.a1;
      b0 => loop.b0; 
-     0 => loop.b1; 
+     1 => loop.b1; 
      
      //<<< "wT: " + wT + " oT: " + oT + " a1: "+ a1 + " b0: " + b0 >>>;
 
