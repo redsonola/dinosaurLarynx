@@ -40,12 +40,14 @@ class SyrinxMembrane extends Chugen
     34740 => float c; //m //speed of sound from Smyth, 34740 cm/s, so 347.4 m/s,
     
     //pG - 3.0591486389338
-    30000.0 => float pG; //pressure from the air sac ==> change to create sound, 0.3 or 300 used in Flectcher 1988, possibly 3 in cm units.
+    300.0 => float pG; //pressure from the air sac ==> change to create sound, 0.3 or 300 used in Flectcher 1988, possibly 3 in cm units.
+    //3.0591486389338 => float pG; //pressure from the air sac ==> change to create sound, 0.3 or 300 used in Flectcher 1988, possibly 3 in cm units.
+
 
     //main values for differential equation, except for x, defined below in it's own block
     0.0 => float p0; //brochial side pressure
     0.0 => float p1; //tracheal side pressure -- **output that is the time-varying signal for audio 
-    0.0 => float U; //volume velocity flowing out
+    0.0 => float U; //volume velocity flowing 
    
     //the rate of change that we find at each tick
     0.0 => float dp0; //change in p0, bronchial pressure
@@ -59,16 +61,19 @@ class SyrinxMembrane extends Chugen
     0.0 => float F; //force driving fundamental mode of membrane
     0.0 => float x0; //equillibrium opening, in cm -- if this is 0.3, close to a -- it does oscillate, but incorrectly
                      //if Force is not added when x is 0, then it will eventually stabilize into a high tone.
-    //coefficients for d2x updates
-    300.0 => float k; //damping coeff. sec^-1, to make it sec /10
-    100.0 => float E; //a number of order 10 to 100 to represent stickiness
-    10.0 => float membraneNLCoeff; //membrane non-linear coeff. for masses, etc.
-    [2.0, 1.0] @=> float epsilonForceCouple[]; //try -- mode 1 should be dominant.
 
 
     //biological parameters *******
     1.0 => float V; //volume of the bronchius - in cm^3
     [150.0*2.0*pi, 250.0*2.0*pi] @=> float w[]; //radian freq of mode n, freq. of membranes: 1, 1.6, 2 & higher order modes are not needed Fletcher, Smyth
+    
+    
+    //coefficients for d2x updates
+    2.0 => float q1; 
+    w[1]/(q1*2.0) => float k; //damping coeff. -- k = w1/2*Q1
+    100.0 => float E; //a number of order 10 to 100 to represent stickiness
+    10.0 => float membraneNLCoeff; //membrane non-linear coeff. for masses, etc.
+    [1.0, 1.0] @=> float epsilonForceCouple[]; //try -- mode 1 should be dominant.
     
     //3.5 => float a; //  1/2 diameter of trachea, in 3.5mm        ??area of membrane at a point
     0.35 => float a; //  1/2 diameter of trachea, in cm        ??area of membrane at a point
@@ -182,11 +187,7 @@ class SyrinxMembrane extends Chugen
             0.0 => dU;   
             0.0 => U;          
         }
-
-
         //<<< "after U: " + "x: "  + totalX + " p0: " + p0 + " p1: " + p1 + " U: " + U + " dU " + dU >>>;
-
- 
     }
     
     fun void updateMass()
@@ -253,8 +254,6 @@ class SyrinxMembrane extends Chugen
         
     }
     
-    
-    
     fun float tick(float in)
     {
         in => p1;
@@ -267,7 +266,6 @@ class SyrinxMembrane extends Chugen
         updateForce(); 
         updateMass();
         updateX();
-        
 
         updateP1(); 
         
@@ -297,7 +295,6 @@ class WallLossAttenuation extends Chugen
         wFromFreq(freq) => w;
         calcPropogationAttenuationCoeff() => propogationAttenuationCoeff;
         calcWallLossCoeff() => wallLossCoeff;
-        
     } 
     
     fun float calcWallLossCoeff()
@@ -307,7 +304,7 @@ class WallLossAttenuation extends Chugen
     
     fun float calcPropogationAttenuationCoeff()
     {
-        return (2*Math.pow(10, -5)*Math.sqrt(w)) / a; 
+        return (2.0*Math.pow(10, -5)*Math.sqrt(w)) / a; 
     }
     
     fun float wFromFreq(float frq)
@@ -441,7 +438,7 @@ BirdTracheaFilter loop;
 SyrinxMembrane mem => DelayA delay => WallLossAttenuation wa => loop => blackhole; //from membrane to trachea
 loop => HPFilter hpOut => Gain reduce => dac; //from trachea to sound out
 
-loop => Flip flip => DelayA delay2 => WallLossAttenuation wa2 => delay; //reflection from trachea end back to bronchus beginning
+loop =>  Flip flip => DelayA delay2 => WallLossAttenuation wa2 => delay; //reflection from trachea end back to bronchus beginning
 Gain adder; 
 wa2 => adder; 
 mem => adder; 
@@ -465,7 +462,7 @@ adder => DelayA oz =>  mem; //the reflection also is considered in the pressure 
 0.07 => float L; //in m 
 347.4 => float c; // in m/s
 c/(4*L) => float LFreq; // -- the resonant freq. of the tube (?? need to look at this)
-( (second / samp) / (2*LFreq) - 1) => float period; //* 0.5 in the STK for the clarinet model... clarinet.cpp hmmm
+( (second / samp) / (LFreq) - 1) => float period; //* 0.5 in the STK for the clarinet model... clarinet.cpp hmmm
 //( (second / samp) / (2*LFreq) - 1) => float period; //* 0.5 in the STK for the clarinet model... clarinet.cpp hmmm
 
 period::samp => delay.delay;

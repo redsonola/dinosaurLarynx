@@ -37,7 +37,7 @@ class SyrinxMembrane extends Chugen
     34740 => float c; //m //speed of sound from Smyth, 34740 cm/s, so 347.4 m/s,
     
     //pG -  3.0591486389338
-    3.0591486389338 => float pG; //pressure from the air sac ==> change to create sound, 0.3 or 300 used in Flectcher 1988, possibly 3 in cm units.
+    300.0591486389338 => float pG; //pressure from the air sac ==> change to create sound, 0.3 or 300 used in Flectcher 1988, possibly 3 in cm units.
 
     //main values for differential equation, except for x, defined below in it's own block
     0.0 => float p0; //brochial side pressure
@@ -437,8 +437,6 @@ adder => DelayA oz =>  mem; //the reflection also is considered in the pressure 
 //0.7 => float L; //in m 
 
 0.7 => float L; //in m 
-
-
 347.4 => float c; // in m/s
 c/(4*L) => float LFreq; // -- the resonant freq. of the tube (?? need to look at this)
 ( (second / samp) / (2*LFreq) - 1) => float period; //* 0.5 in the STK for the clarinet model... clarinet.cpp hmmm
