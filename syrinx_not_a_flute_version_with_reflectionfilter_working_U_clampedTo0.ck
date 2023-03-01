@@ -46,7 +46,7 @@ class SyrinxMembrane extends Chugen
     34740 => float c; //m //speed of sound from Smyth, 34740 cm/s, so 347.4 m/s,
     
     //pG -  3.0591486389338 --//
-    300 => float pG; //pressure from the air sac ==> change to create sound, 0.3 or 300 used in Flectcher 1988, possibly 3 in cm units.
+    50 => float pG; //pressure from the air sac ==> change to create sound, 0.3 or 300 used in Flectcher 1988, possibly 3 in cm units.
     //3.0591486389338 => float pG; //pressure from the air sac ==> change to create sound, 0.3 or 300 used in Flectcher 1988, possibly 3 in cm units.
 
 
@@ -146,7 +146,7 @@ class SyrinxMembrane extends Chugen
            //memArea* ( ( pressureDiff ) - ( UFactor/overArea  ) ) => F; //fletcher
 
          }
-         else 0.5*a*h*(p0 + p1) => F; // not sure about this, so -- ok checked this, and am more sure
+         else 0.5*a*h*(p0 + p1) => F; //not sure, but divided by 2 produced the results
          
          //testing
      }
@@ -477,7 +477,7 @@ audioOut => BiQuad hpOut => dac;
 //**********/
 
 /* 
-//********* diss
+//********* diss -- NOT IMPLEMENTED YET
 SyrinxMembrane mem => DelayA delay => lp => Flip flip => DelayA delay2 => WallLossAttenuation wa; //reflection from trachea end back to bronchus beginning
 ; //from membrane to trachea
 //loop => BiQuad hpOut => Gain reduce => dac; //from trachea to sound out
@@ -508,7 +508,7 @@ audioOut => BiQuad hpOut => dac;
 //g => mem; 
 
 
-(1.0/(218.6922) ) => hpOut.gain; 
+//(1.0/(218.6922) ) => hpOut.gain; 
 
 
 //trachea length -- 70mm, from Fletcher
@@ -551,9 +551,11 @@ if( !fout.good() )
 
 <<<wa.wallLossCoeff>>>;
 
+
+mouseEventLoopControllingAirPressure();
+
+/*
 2::second => now; 
-
-
 now => time start;
  while(now - start < 0.05::second)
  {
@@ -591,7 +593,7 @@ delay2.last() => float beforeAdd;
 
 1::samp => now;   
  }  
- 
+ */
  
  <<< "mMax: " + mMax>>>;
   <<< "mMin: " + mMin>>>;
@@ -643,20 +645,64 @@ fout.close();
      //<<< "wT: " + wT + " oT: " + oT + " a1: "+ a1 + " b0: " + b0 >>>;
  }
  
+ 
+ //mouse event loop controlling air pressure
+ function void mouseEventLoopControllingAirPressure()
+ {
+     // HID input and a HID message
+     Hid hi;
+     HidMsg msg;
+     
+     // which mouse
+     0 => int device;
+     // get from command line
+     if( me.args() ) me.arg(0) => Std.atoi => device;
+     
+     // open mouse 0, exit on fail
+     if( !hi.openMouse( device ) ) me.exit();
+     <<< "mouse '" + hi.name() + "' ready", "" >>>;
+     0.0 => float max;
+     
+     // infinite event loop
+     while( true )
+     {
+         // wait on HidIn as event
+         hi => now;
+         
+         // messages received
+         while( hi.recv( msg ) )
+         {
+             // mouse motion
+             if( msg.isMouseMotion() )
+             {
+                 // get the normalized X-Y screen cursor pofaition
+                // <<< "mouse normalized position --",
+                // "x:", msg.scaledCursorX, "y:", msg.scaledCursorY >>>;
+                Math.sqrt(msg.deltaY*msg.deltaY + msg.deltaX*msg.deltaX) => float totVal;
+                Math.max(max, totVal) => max; 
+                totVal / 42 => totVal; 
+                msg.scaledCursorY * 50 => mem.pG; 
+                
+                <<< "max delta:", max >>>;
+                <<< "pG:", mem.pG >>>;
+                <<< "totVal:", totVal >>>;
+
+             }
+         }  
+     }  
+     
+ }
 
  
  
  /*
+ 
  Questions: 
- 1. how to add reflection, etc. values to p1? -- it says just to sum the traveling waves --NOTE: working on this see above solution
- 2. the U is too small, x is too small, etc. everything except for p0 is too small..
- 
- More: 
- which force equation is the best equation?
- why are D & C equations modified in the Symth?
- 
- are there measurement unit differences/errors in the constants?
- 
- how does it start with all the x values being 0? -- it works if the force is create w.o x, the term with x is just dropped.....s
- 
+1. It is now the correct frequency, but still not sure why 300pa = 3.09etc.g/cm^3 doesn't seem to do anything
+
+2. No one mentions clamping the U to 0 if U<0 but it stabilized EVERYTHING & it still seems like it should rise quite a bit -- when/if I implement the full model, will it? or 
+is something still wrong with the waveguide/filter parts? (eg. p1 is wrong?) conversely my equation for force when x < 0 could be mistaken, though fiddling with that yeilds nothing 
+
+3. In the reflection filter -- it is not clear how 13.187 kHz is wT given the equations in the Smyth diss. -- am I missing something?
+
  */
