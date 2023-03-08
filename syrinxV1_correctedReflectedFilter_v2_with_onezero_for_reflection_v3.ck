@@ -40,7 +40,7 @@ class SyrinxMembrane extends Chugen
     34740 => float c; //m //speed of sound from Smyth, 34740 cm/s, so 347.4 m/s,
     
     //pG - 3.0591486389338
-    7 => float pG; //pressure from the air sac ==> change to create sound, 0.3 or 300 used in Flectcher 1988, possibly 3 in cm units.
+    3.0591486389338 => float pG; //pressure from the air sac ==> change to create sound, 0.3 or 300 used in Flectcher 1988, possibly 3 in cm units.
     //3.0591486389338 => float pG; //pressure from the air sac ==> change to create sound, 0.3 or 300 used in Flectcher 1988, possibly 3 in cm units.
 
 
@@ -301,7 +301,7 @@ class WallLossAttenuation extends Chugen
     fun float calcWallLossCoeff()
     {
         //return 1.0 - (2*propogationAttenuationCoeff*L);
-        return 1.0 - (1.2*propogationAttenuationCoeff*L);
+        return 1.0 - (2*propogationAttenuationCoeff*L);
 
     }
     
