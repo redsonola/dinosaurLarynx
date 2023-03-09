@@ -134,16 +134,33 @@ class RingDoveSyrinxLTM extends Chugen
         }
         else if( z<=d3 )
         {
-            return ( (w - x0[1] - x[1])/d3 )*(x0[1] - x[1]) + (x0[0] + x[0]);            
+            return ( (w - x0[1] - x[1])/d3 )*(z-(d1+d2)) + (x0[1] + x[1]);            
+        }
+        else return 0.0; 
+    }
+    
+    //find x distance (opening) given z -- from diss.
+    fun float plateXZDebug(float z, float x1, float x2)
+    {
+        if(z >= 0 && z <= d1)
+        {
+            return ( (x0[0] + x1 - w)/d1 )*z + w;
+        }
+        else if( z<= d1 + d2 )
+        {
+            return ( (x0[1] + x2 - x0[0] - x1)/d2 )*(z-d1) + (x0[0] + x1);
+        }
+        else if( z<=d3 )
+        {
+            return ( (w - x0[1] - x2)/d3 )*(z-(d1+d2)) + (x0[1] + x2);            
         }
         else return 0.0; 
     }
     
     
-    //from diss.
     fun float syringealArea(float z)
     {
-        if( z >=0 && z<=d3 )
+        if( z >=0 && z<=d1+d2+d3 ) //check this statement......, a2 is always 0 bc of that and it's false!
             return 2.0*l*plateXZ(z); 
         else return 0.0; 
     }
@@ -244,11 +261,16 @@ now => time start;
 <<<ltm.defIForce(ltm.d1, ltm.dM)>>>;
 <<<ltm.defIForce(ltm.dM, ltm.d2)>>>;
 
+<<<ltm.plateXZDebug(ltm.d1+ltm.d2, 0.2798, 0.2343)>>>;
 
 
-while(now - start < 10::second)
+
+while(now - start < 1::second)
 {
-    <<< ltm.dU  + " , " + ltm.x[0] + " , " +  ltm.d2x[0] + " , " + ltm.F[0] + " , " + ltm.I[0] + " , " + ltm.a1 + " , " + ltm.a2 + " , " + ltm.zM >>>;
+//    <<< ltm.dU  + " , " + ltm.x[0] + " , " +  ltm.d2x[0] + " , " + ltm.F[0] + " , " + ltm.I[0] + " , " + ltm.a1 + " , " + ltm.a2 + " , " + ltm.zM >>>;
+    <<< ltm.dU  + " , " + ltm.x[1] + " , " + ltm.x[0] +" , " +  ltm.d2x[1] + " , " + ltm.F[1] + " , " + ltm.I[1] + " , " + ltm.a1 + " , " + ltm.a2 + " , " + ltm.zM >>>;
+
+
     1::samp => now;   
 }  
 
