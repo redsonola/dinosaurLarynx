@@ -74,7 +74,7 @@ class RingDoveSyrinxLTM extends Chugen
     
     0.00113 => float p; //air density
     
-    //need to confirm this, it's not correct yet
+    //need to confirm this, it's not correct yet 
     3.0 => float c1; 
     3.0 => float c2; 
 
@@ -160,7 +160,7 @@ class RingDoveSyrinxLTM extends Chugen
     
     fun float syringealArea(float z)
     {
-        if( z >=0 && z<=d1+d2+d3 ) //check this statement......, a2 is always 0 bc of that and it's false!
+        if( z >=0 && z<=(d1+d2+d3 ) )//check this statement......, a2 is always 0 bc of that and it's false!
             return 2.0*l*plateXZ(z); 
         else return 0.0; 
     }
@@ -231,10 +231,12 @@ class RingDoveSyrinxLTM extends Chugen
          }
          else
          {
+             //this is what makes everything blow up... need to look at this.
              updateCPO();
              zM - cpo1 => float L1; 
              cpo3 - zM => float L2; 
              
+
              -c1/(4*l)*( a1 + (aM*d2)/( 2*L1 ) ) => I[0];
              -c2/(4*l)*( a2 + (aM*d2)/( 2*L2 ) ) => I[1];
          }
@@ -264,11 +266,10 @@ now => time start;
 <<<ltm.plateXZDebug(ltm.d1+ltm.d2, 0.2798, 0.2343)>>>;
 
 
-
-while(now - start < 1::second)
+while(now - start < 4::second)
 {
-//    <<< ltm.dU  + " , " + ltm.x[0] + " , " +  ltm.d2x[0] + " , " + ltm.F[0] + " , " + ltm.I[0] + " , " + ltm.a1 + " , " + ltm.a2 + " , " + ltm.zM >>>;
-    <<< ltm.dU  + " , " + ltm.x[1] + " , " + ltm.x[0] +" , " +  ltm.d2x[1] + " , " + ltm.F[1] + " , " + ltm.I[1] + " , " + ltm.a1 + " , " + ltm.a2 + " , " + ltm.zM >>>;
+    <<< ltm.dU  + " , " + ltm.x[0] + " , " +  ltm.d2x[0] + " , " + ltm.F[0] + " , " + ltm.I[0] + " , " + ltm.a1 + " , " + ltm.a2 + " , " + ltm.zM >>>;
+  //  <<< ltm.dU  + " , " + ltm.x[1] + " , " + ltm.x[0] +" , " +  ltm.d2x[1] + " , " + ltm.F[1] + " , " + ltm.I[1] + " , " + ltm.a1 + " , " + ltm.a2 + " , " + ltm.zM >>>;
 
 
     1::samp => now;   
