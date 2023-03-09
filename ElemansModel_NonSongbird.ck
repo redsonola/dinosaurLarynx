@@ -13,12 +13,16 @@
 //check reference list
 //biorxiv.org/content/biorxiv/early/2019/10/02/790857.full.pdf
 
+//found the dissertation with all the equations:
+//https://edoc.hu-berlin.de/bitstream/handle/18452/17159/zaccarelli.pdf?sequence=1
+
 //Syrinx Membrane
 class RingDoveSyrinxLTM extends Chugen
 {
     //time steps
     second/samp => float SRATE;
     1/SRATE => float T; //to make concurrent with Smyth paper
+    T/2.0 => float timeStep;
     
     //membrane displacement
     [0.0, 0.0] @=> float x[]; 
@@ -26,6 +30,7 @@ class RingDoveSyrinxLTM extends Chugen
     [0.0, 0.0] @=> float d2x[]; 
     [0.0, 0.0] @=> float F[]; //force
     0.001 => float m; //mass
+    [0.0, 0.0] @=> float x0[]; 
     
     //damping and stiffness coefficients 
     0.001 => float r; //damping
@@ -39,12 +44,13 @@ class RingDoveSyrinxLTM extends Chugen
     0.2 => float l; //length of the trachea
     0.003 => float a01; //lower rest area
     0.003 => float a02; //upper rest area
+    2.0*l*w => float a0; 
     0.04 => float d1; //1st mass height
     0.24 - d1 => float d2; //2nd mass displacement from first
     0.28 - (d1+d2) => float d3; //3rd mass displacement from 2nd
     
     //pressure values
-    0.0 => float Ps; //pressure in the syringeal lumen
+    8 => float Ps; //pressure in the syringeal lumen, 0.008 or 8
     
     //geometry
     d1 + (d2/2) => float dM; //imaginary horizontal midline -- above act on upper mass, below on lower
@@ -54,16 +60,50 @@ class RingDoveSyrinxLTM extends Chugen
     0.0 => float a2; 
     0.0 => float aMin;
     0.0 => float zM; 
-    0.0 => float min0;  
     0.0 => float aM;  
-    [3.0, 3.0] => float cSpringConstants; //Steineke & Herzel, 1994 
-
     
+    //collision point ordinates
+    0.0 => float minCPO; //min. collision point ordinate -- cpo
+    0.0 => float cpo1; 
+    0.0 => float cpo2; 
+    0.0 => float cpo3; 
+    
+    [3.0, 3.0] @=> float cSpringConstants[]; //Steineke & Herzel, 1994  -- ah this is c1, c2. maybe bah-lete this dup.
+    
+    0.0 => float dU;
+    
+    0.00113 => float p; //air density
+    
+    //need to confirm this, it's not correct yet
+    3.0 => float c1; 
+    3.0 => float c2; 
+
+    fun void updateU()
+    {
+       timeStep*(dU + ( 2*l*Math.sqrt((2*Ps)/p)*(heaveiside(a2-a1)*dx[0] + heaveiside(a1-a2)*dx[1]) ) )=> dU;
+    }
     
     fun void updateX()
     {
-        (1.0/m) * ( F[0] - r*dx[0] - k*x[0] + I[0] - kc*( x[0] - x[1] )) => d2x[0]; 
-        (1.0/m) * ( F[1] - r*dx[1] - k*x[1] + I[1] - kc*( x[1] - x[0] )) => d2x[1];  
+       timeStep * ( d2x[0] + ( (1.0/m) * ( F[0] - r*dx[0] - k*x[0] + I[0] - kc*( x[0] - x[1] )) ) ) => d2x[0]; 
+       timeStep * ( d2x[1] + ( (1.0/m) * ( F[1] - r*dx[1] - k*x[1] + I[1] - kc*( x[1] - x[0] )) ) )=> d2x[1];  
+     
+     //??? does this need smoothing or no?
+    //   ( (1.0/m) * ( F[0] - r*dx[0] - k*x[0] + I[0] - kc*( x[0] - x[1] )) ) => d2x[0]; 
+    //   ( (1.0/m) * ( F[1] - r*dx[1] - k*x[1] + I[1] - kc*( x[1] - x[0] )) ) => d2x[1];  
+
+       
+       for( 0=>int i; i<x.cap(); i++ )
+       {
+           //update dx, integrate
+           dx[i] => float dxPrev;
+           dx[i] + d2x[i] => dx[i];
+           
+           //update x, integrate again
+           x[i] + timeStep*(dxPrev + dx[i]) => x[i]; 
+           //x[i] + dx[i] => x[i]; 
+
+       }
     }
     
     //linear equations that id each plate on the plane xz
@@ -79,15 +119,33 @@ class RingDoveSyrinxLTM extends Chugen
     {
         return x[0] - s*d1 => b;  
     }
+    
+    
+    //find x distance (opening) given z -- from diss.
     fun float plateXZ(float z)
     {
-        slope() => float s;
-        return s*z + b(s); 
+        if(z >= 0 && z <= d1)
+        {
+            return ( (x0[0] + x[0] - w)/d1 )*z + w;
+        }
+        else if( z<= d1 + d2 )
+        {
+            return ( (x0[1] + x[1] - x0[0] - x[0])/d2 )*(z-d1) + (x0[0] + x[0]);
+        }
+        else if( z<=d3 )
+        {
+            return ( (w - x0[1] - x[1])/d3 )*(x0[1] - x[1]) + (x0[0] + x[0]);            
+        }
+        else return 0.0; 
     }
-
+    
+    
+    //from diss.
     fun float syringealArea(float z)
     {
-        return 2.0*l*plateXZ(z); 
+        if( z >=0 && z<=d3 )
+            return 2.0*l*plateXZ(z); 
+        else return 0.0; 
     }
     
     fun float heaveiside(float val)
@@ -101,95 +159,27 @@ class RingDoveSyrinxLTM extends Chugen
             return 0.0;
         }
      }
-/*
-     fun void pressure(float z)
-     {
-         0.0 => float zM; //ordinate at which aMin is found -- 1 or 2
-         syringealArea(d1) => float a1;
-         syringealArea(d1+d2) => float a2;
 
-         if( a1 < a2 )
-         {
-             a1=> aMin;
-             d1 => zM;
-         }
-         else
-         {
-             a1 => aMin;
-             d1+d2 => zM;             
-         }
-
-         if (aMin > 0)
-         {
-             ( aMin / syringealArea(z) ) => float sAreaRatio;
-             pS*( 1 - sAreaRatio*sAreaRatio )*heaveiside( zM - z );
-         }
-         else
-         {
-            minOrd() => float minCollisionOrd; //minimum ordinate z for which a(z) <= 0
-            pS*heaveiside( minCollisionOrd );
-         }
-     }
-*/
-     
-     //P(z), integrated
-     fun float forceX(float z)
+     fun void updateCPO()
      {
-         x[0] => float x1; 
-         x[1] => float x2; 
-         
-         float F; 
-         
-         //p(z) integrated via sympy, and not simplified so this is messy
-         if( aMin > 0 )
-         {
-             if( z < zM )
-             {
-                  (Ps*z) + (Ps*aMin*aMin*x1*x1 - 2*Ps*aMin*aMin*x1*x2 + Ps*aMin*aMin*x2*x2)/(-4*Math.pow(d1,3)*l*l + 8*d1*d1*d2*l*l - 4*d1*d2*d2*l*l 
-                  + 4*d1*l*l*x1*x1 - 4*d1*l*l*x1*x2 - 4*d2*l*l*x1*x1 + 4*d2*l*l*x1*x2 + z*(4*d1*d1*l*l - 8*d1*d2*l*l + 4*d2*d2*l*l)) => F;
-             }
-             else
-             {
-                 (Ps*zM) + (Ps*aMin*aMin*x1*x1 - 2*Ps*aMin*aMin*x1*x2 + Ps*aMin*aMin*x2*x2)/(-4*Math.pow(d1,3)*l*l + 8*d1*d1*d2*l*l - 4*d1*d2*d2*l*l + 
-                 4*d1*l*l*x1*x1 - 4*d1*l*l*x1*x2 - 4*d2*l*l*x1*x1 + 4*d2*l*l*x1*x2 + zM*(4*d1*d1*l*l - 8*d1*d2*l*l + 4*d2*d2*l*l)) => F;    
-             }
-         }
-         else
-         {
-             updateMin0();
-             if( min0 > z )
-             {
-                 Ps*z => F; 
-             }
-             else 
-             {
-                 Ps*min0 => F;
-             }
-         } 
-         return F;      
-     }
-    
-     fun void updateMin0()
-     {
-         0.0 => float m; 
-         0.0 => float b1; 
-
-         if(a1<=0)
-         {
-             d1/x[0] => m; 
-             x[0] - m*d1 => b1;
-             -b1/m => min0; 
-         }
-         else
-         {
-            slope() => m; 
-            -b(m)/m => min0; 
-         }
+         //find all the CPOs
+         (a0*d1)/(a0-a1) =>  cpo1; 
+         d1 - ( (a1*d2)/(a2-a1) ) =>  cpo2; 
+         d1 + d2 - ( (a2*d3)/(a0-a2) ) =>  cpo3;  
      }
      
+     //replace with equation from diss.
      fun float defIForce(float z0, float z1)
      {
-         return l*(forceX(z1) - forceX(z0)); 
+         //try making it work w/heaviside-style if statement ????
+         syringealArea(z0) => float aZ0;
+         syringealArea(z1) => float aZ1;
+   
+         if( aZ0 <= 0 || aZ1 <=0 )
+         {
+             return l*Ps*(z1 - z0); 
+         }
+         else return l*Ps*(z1 - z0)*(1 - ( (aMin*aMin)/(aZ0*aZ1) )  );
      }
      
      fun float updateForce()
@@ -197,7 +187,6 @@ class RingDoveSyrinxLTM extends Chugen
          0.0 => float zM; //ordinate at which aMin is found -- 1 or 2
          syringealArea(d1) => a1;
          syringealArea(d1+d2) => a2;     
-         float min0; 
  
          
          if( a1 < a2 )
@@ -215,22 +204,51 @@ class RingDoveSyrinxLTM extends Chugen
          defIForce(dM, d2) => F[1];
      }
      
-     float void updateCollisions()
+     fun void updateCollisions()
      {
          syringealArea(dM) => aM;
-         if( a1 > 0 && a2 > 0 && aM > 0 )
+         if( a1 > 0.0 && a2 > 0.0 && aM > 0.0 )
          {
              0.0 => I[0];
              0.0 => I[1];             
          }
-         
-         //ok, now need to write for the nonzero part.
+         else
+         {
+             updateCPO();
+             zM - cpo1 => float L1; 
+             cpo3 - zM => float L2; 
+             
+             -c1/(4*l)*( a1 + (aM*d2)/( 2*L1 ) ) => I[0];
+             -c2/(4*l)*( a2 + (aM*d2)/( 2*L2 ) ) => I[1];
+         }
      }
     
     fun float tick(float in)
     {
         updateX();
         updateForce();
+        updateCollisions();
+        updateU(); 
         
+        return dU; 
     }
 }
+
+RingDoveSyrinxLTM ltm => Dyno limiter => dac; 
+limiter.limit(); 
+
+//1::second => now; 
+now => time start;
+
+<<<ltm.defIForce(0, ltm.d1)>>>;
+<<<ltm.defIForce(ltm.d1, ltm.dM)>>>;
+<<<ltm.defIForce(ltm.dM, ltm.d2)>>>;
+
+
+
+while(now - start < 10::second)
+{
+    <<< ltm.dU  + " , " + ltm.x[0] + " , " +  ltm.d2x[0] + " , " + ltm.F[0] + " , " + ltm.I[0] + " , " + ltm.a1 + " , " + ltm.a2 + " , " + ltm.zM >>>;
+    1::samp => now;   
+}  
+
