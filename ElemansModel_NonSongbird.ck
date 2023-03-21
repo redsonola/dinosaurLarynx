@@ -19,6 +19,9 @@
 //Note look at: 
 //Riede et al., 2004
 
+//2010 paper on the oscine bird
+//http://www.lsd.df.uba.ar/papers/PhysRevE_comp_model.pdf
+
 //Syrinx Membrane
 class RingDoveSyrinxLTM extends Chugen
 {
@@ -79,7 +82,7 @@ class RingDoveSyrinxLTM extends Chugen
     
     0.00113 => float p; //air density
     
-    //need to confirm this, it's not correct yet 
+    //need to confirm this, it's not correct yet ??
     3.0 * k => float c1; 
     3.0 * k => float c2; 
 
@@ -168,8 +171,8 @@ class RingDoveSyrinxLTM extends Chugen
     
     fun float syringealArea(float z)
     {
-        if( z >=0 && z<=(d1+d2+d3 ) )//check this statement......, a2 is always 0 bc of that and it's false!
-            return a01 + 2.0*l*plateXZ(z); 
+        if( z >=0 && z<=(d1+d2+d3 ) )
+            return a01 + 2.0*l*plateXZ(z); //adding a01, since it equals a02
         else return 0.0; 
     }
     
