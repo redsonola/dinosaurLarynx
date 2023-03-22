@@ -60,6 +60,12 @@ class RingDoveSyrinxLTM extends Chugen
         
     0.0 => float dU;
     0.0 => float U; 
+    0.0 => float prevU; 
+    0.0 => float intU; //U from integration....
+    0.0 => float subDU; //dU from derivation
+    0.0 => float testDU1; 
+    0.0 => float testDU2; 
+
 
     
     0.00113 => float p; //air density
@@ -74,13 +80,31 @@ class RingDoveSyrinxLTM extends Chugen
     0.0 => float a2; 
     
     
-    
     fun void updateU()
     {
-        timeStep*(dU + ( 2*l*Math.sqrt((2*Ps)/p)*(heaveiside(a2-a1)*dx[0] + heaveiside(a1-a2)*dx[1]) ) )=> dU;
-        //( 2*l*Math.sqrt((2*Ps)/p)*(heaveiside(a2-a1)*dx[0] + heaveiside(a1-a2)*dx[1]) )=> dU;
-        U + dU => U; 
+        if(aMin > 0)
+        {
+            //breaking up the equation so I can easily see order of operations is correct
+            2*l*Math.sqrt((2*Ps)/p) => float firstMult; 
+            heaveiside(a2-a1)*dx[0] => float firstAdd; 
+            heaveiside(a1-a2)*dx[1]=> float secondAdd;
+            
+            //timeStep*(dU + (firstMult*(firstAdd + secondAdd)) )=> dU;
+            firstMult*(firstAdd + secondAdd) => dU; 
+
+            //( 2*l*Math.sqrt((2*Ps)/p)*(heaveiside(a2-a1)*dx[0] + heaveiside(a1-a2)*dx[1]) )=> dU;
+        }
+        else
+        {
+            //timeStep*(dU + 0)=> dU; //current dU is 0, then have to smooth for integration just showing that in the code
+            0.0 => dU;
+        }
+        intU + dU => intU; 
         
+        U => prevU;
+        Math.sqrt((2*Ps)/p) => float sq; 
+        sq*aMin*heaveiside(Math.max(0, aMin)) => U;
+        U - prevU => subDU; //let's see?
     }
     
     fun void updateX()
@@ -88,8 +112,8 @@ class RingDoveSyrinxLTM extends Chugen
         timeStep * ( d2x[0] + ( (1.0/m[0]) * ( F[0] - r*dx[0] - k[0]*x[0] + I[0] - kc*( x[0] - x[1] )) ) ) => d2x[0]; 
         timeStep * ( d2x[1] + ( (1.0/m[1]) * ( F[1] - r*dx[1] - k[1]*x[1] + I[1] - kc*( x[1] - x[0] )) ) ) => d2x[1];  
         
-             // ( (1.0/m[0]) * ( F[0] - r*dx[0] - k[0]*x[0] + I[0] - kc*( x[0] - x[1] )) )  => d2x[0]; 
-            //  ( (1.0/m[1]) * ( F[1] - r*dx[1] - k[1]*x[1] + I[1] - kc*( x[1] - x[0] )) )  => d2x[1];  
+        //      ( (1.0/m[0]) * ( F[0] - r*dx[0] - k[0]*x[0] + I[0] - kc*( x[0] - x[1] )) )  => d2x[0]; 
+        //      ( (1.0/m[1]) * ( F[1] - r*dx[1] - k[1]*x[1] + I[1] - kc*( x[1] - x[0] )) )  => d2x[1];  
         
         
         for( 0=>int i; i<x.cap(); i++ )
@@ -101,11 +125,9 @@ class RingDoveSyrinxLTM extends Chugen
             //update x, integrate again
             x[i] + timeStep*(dxPrev + dx[i]) => x[i]; 
             //    x[i] + dx[i] => x[i]; 
-            
-            
         }
     }
-
+    
     fun float heaveiside(float val)
     {
         if( val > 0 )
@@ -117,6 +139,24 @@ class RingDoveSyrinxLTM extends Chugen
             return 0.0;
         }
     }
+
+    fun float heaveisideA(float val, float a)
+    {
+        if( val > 0 )
+        {
+            //return 1.0;
+            return Math.tanh(50*(val/a)); 
+        }
+        else 
+        {
+            return 0.0;
+        }
+    }
+    
+    fun float heaveisideAMin(float val)
+    {
+        return Math.max(val, 0); 
+    }
     
     fun float pressure()
     {
@@ -126,18 +166,8 @@ class RingDoveSyrinxLTM extends Chugen
         }
         else 
         {
-            return Ps * (1 - ( heaveiside(aMin)*(aMin/a1)*(aMin/a1) ) )*heaveiside(a1); 
+            return Ps * (1 - ( heaveiside(aMin)*(aMin/a1)*(aMin/a1) ) )*heaveisideA(a1, a1); 
         }
-    }
-    
-    
-    fun float stupidAbs(float x)
-    {
-        if(x < 0)
-        {
-            return -1 * x;
-        }
-        else return x; 
     }
     
     fun float updateForce()
@@ -145,18 +175,6 @@ class RingDoveSyrinxLTM extends Chugen
         a01 + 2*l*x[0]=> a1;
         a02 + 2*l*x[1]=> a2; 
         
-/*
-        if((0 > x[0]) && (x[0] < x[1]))
-        {
-            a1 => aMin; 
-        }
-        else if((0 > x[1]) && (x[1] <= x[0]))
-        {
-            a2 => aMin; 
-        }
-        else 0.0 => aMin; 
-*/
-
         Math.min(a1, a2) => aMin;
 
         pressure()*l*d1 => F[0];
@@ -166,8 +184,8 @@ class RingDoveSyrinxLTM extends Chugen
     //recheck w/table
     fun void updateCollisions()
     {  
-       -heaveiside(-a1)*c1*(a1/( 2*l)) => I[0];
-       -heaveiside(-a2)*c2*(a2/( 2*l)) => I[1];
+       -heaveisideA(-a1, a1)*c1*(a1/( 2*l)) => I[0];
+       -heaveisideA(-a2, a2)*c2*(a2/( 2*l)) => I[1];
     }
     
     fun float tick(float in)
@@ -202,7 +220,7 @@ if( !fout.good() )
 
 //10::second => now;
 //1::second => now; 
-    "x[0]"  + "," + "x[1]" +"," + "dx[0]"  + "," + "dx[1]" + "," + "a1" + "," + "a2" + "," + "dU"  + "," + "U"  + "," + "F[0]" + "," + "F[1]" + "," + "a1" + "," + "a2" + "," + "I[0]" + "," + "I[1]" + "\n" => string output; 
+    "x[0]"  + "," + "x[1]" +"," + "dx[0]"  + "," + "dx[1]" + "," + "a1" + "," + "a2" + "," + "dU"  + "," + "U"  + ","  + "intU"  + ","+ "subDU" + ","+"F[0]" + "," + "F[1]" + "," + "I[0]" + "," + "I[1]" + "," +  "testDU1" + "," + "testDU2" + "\n" => string output; 
     fout.write( output ); 
 
 now => time start; 
@@ -212,10 +230,10 @@ while(now - start < 10::ms)
     //  <<< ltm.dU  + " , " + ltm.x[0] + " , " +  ltm.d2x[0] + " , " + ltm.F[0] + " , " + ltm.I[0] + " , " + ltm.a1 + " , " + ltm.a2 + " , " + ltm.zM >>>;
     //<<< ltm.dU  + " , " + ltm.x[1] + " , " + ltm.x[0] +" , " +  ltm.d2x[1] + " , " + ltm.F[1] + " , " + ltm.I[1] + " , " + ltm.a1 + " , " + ltm.a2 + " , " + ltm.zM >>>;
     // <<<ltm.x[0] + " , " +  ltm.x[1] + " , " + ltm.cpo1 + " , " + ltm.cpo2 + " , "+ ltm.cpo3 + " , " + ltm.I[0] + " , " + ltm.I[1] + " , " + ltm.zM >>>;
-    ltm.x[0]  + "," + ltm.x[1] +"," + ltm.dx[0]  + "," + ltm.dx[1] + "," + ltm.a1 + "," + ltm.a2 + "," + ltm.dU*1000.0  + "," + ltm.U  + "," + ltm.F[0] + "," + ltm.F[1] + "," + ltm.a1 + "," + ltm.a2 + "," + ltm.I[0] + "," + ltm.I[1] + "\n" => string output; 
+    ltm.x[0]  + "," + ltm.x[1] +"," + ltm.dx[0]  + "," + ltm.dx[1] + "," + ltm.a1 + "," + ltm.a2 + "," + ltm.dU  + "," + ltm.U  + "," + ltm.intU  + "," + ltm.subDU  + "," + ltm.F[0] + "," + ltm.F[1]+ ","  + ltm.I[0] + "," + ltm.I[1]  + "," +  ltm.testDU1*1000.0 + "," + ltm.testDU2 +  "\n" => string output; 
   //  + ltm.cpo2 + ","+ ltm.cpo3 + "," + ltm.I[0] + "," + ltm.I[1] + "," + ltm.zM + "\n" => string output; 
     
-    <<< ltm.x[0]  + "," + ltm.x[1] +"," + ltm.dx[0]  + "," + ltm.dx[1] + "," + ltm.a1 + "," + ltm.a2 + "," + ltm.dU  + "," + ltm.U  + "," + ltm.F[0] + "," + ltm.F[1] + "," + ltm.a1 + "," + ltm.a2 + "," + ltm.I[0] + "," + ltm.I[1] + "\n" >>>;
+    <<< ltm.x[0]  + "," + ltm.x[1] +"," + ltm.dx[0]  + "," + ltm.dx[1] + "," + ltm.a1 + "," + ltm.a2 + "," + ltm.dU  + "," + ltm.U  + "," + ltm.F[0] + "," + ltm.F[1] + ","+ ltm.I[0] + "," + ltm.I[1] + "\n" >>>;
     fout.write( output ); 
     
     1::samp => now;   

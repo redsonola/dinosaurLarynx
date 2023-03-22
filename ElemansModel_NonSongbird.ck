@@ -28,7 +28,7 @@ class RingDoveSyrinxLTM extends Chugen
     //time steps
     second/samp => float SRATE;
     1/SRATE => float T; //to make concurrent with Smyth paper
-    T/2.0 => float timeStep;
+    (T*1000.0)/2.0 => float timeStep; //this is for integrating smoothly, change from Smyth (eg.*1000) bc everything here is in ms not sec, so convert
     
     //membrane displacement
     [0.0, 0.0] @=> float x[]; 
@@ -54,10 +54,10 @@ class RingDoveSyrinxLTM extends Chugen
     0.24 - d1 => float d2; //2nd mass displacement from first
     0.28 - (d1+d2) => float d3; //3rd mass displacement from 2nd
     
-    a01 + 2.0*l*w => float a0; 
+    a01 + 2.0*l*w => float a0; //a0 is the same for both masses since a01 == a02
 
     //pressure values
-    5.4 => float Ps; //pressure in the syringeal lumen, 0.008 or 8
+    0.008 => float Ps; //pressure in the syringeal lumen, 0.008 or 8
     
     //geometry
     d1 + (d2/2) => float dM; //imaginary horizontal midline -- above act on upper mass, below on lower
@@ -75,22 +75,33 @@ class RingDoveSyrinxLTM extends Chugen
     0.0 => float cpo2; 
     0.0 => float cpo3; 
     0.0 => float cpoM;
-    
-    [3.0, 3.0] @=> float cSpringConstants[]; //Steineke & Herzel, 1994  -- ah this is c1, c2. maybe bah-lete this dup.
-    
+        
     0.0 => float dU;
     
     0.00113 => float p; //air density
     
-    //need to confirm this, it's not correct yet ??
+    //Steineke & Herzel, 1994  --this part was not clear there but--->
+    //confirmed! Herzel, H., Berry, D., Titze, I., & Steinecke, I. (1995). Nonlinear dynamics of the voice: Signal analysis and biomechanical modeling. Chaos (Woodbury, N.Y.), 5(1), 30?34. 
+    //https://doi.org/10.1063/1.166078
     3.0 * k => float c1; 
     3.0 * k => float c2; 
 
     fun void updateU()
     {
-       timeStep*(dU + ( 2*l*Math.sqrt((2*Ps)/p)*(heaveiside(a2-a1)*dx[0] + heaveiside(a1-a2)*dx[1]) ) )=> dU;
-       //( 2*l*Math.sqrt((2*Ps)/p)*(heaveiside(a2-a1)*dx[0] + heaveiside(a1-a2)*dx[1]) )=> dU;
-
+        if(aMin > 0)
+        {
+            //breaking up the equation so I can easily see order of operations is correct
+            2*l*Math.sqrt((2*Ps)/p) => float firstMult; 
+            heaveiside(a2-a1)*dx[0] => float firstAdd; 
+            heaveiside(a1-a2)*dx[1]=> float secondAdd;
+            
+            firstMult*(firstAdd + secondAdd) => dU;
+            //( 2*l*Math.sqrt((2*Ps)/p)*(heaveiside(a2-a1)*dx[0] + heaveiside(a1-a2)*dx[1]) )=> dU;
+        }
+        else
+        {
+           0 => dU; //current dU is 0, then have to smooth for integration just showing that in the code
+        }                
     }
     
     fun void updateX()
@@ -115,21 +126,6 @@ class RingDoveSyrinxLTM extends Chugen
 
        }
     }
-    
-    //linear equations that id each plate on the plane xz
-    //a1, a2 --syringeal areas at 1st and 2nd mass heights
-    //d1 and d1+d2, mass heights
-    //aM - syringeal area at height dM
-    fun float slope()
-    {
-        return (x[1]-x[0])/((d1+d2)-d1);
-    }
-    
-    fun float b(float s)
-    {
-        return x[0] - s*d1 => b;  
-    }
-    
     
     //find x distance (opening) given z -- from diss.
     fun float plateXZ(float z)
@@ -172,7 +168,7 @@ class RingDoveSyrinxLTM extends Chugen
     fun float syringealArea(float z)
     {
         if( z >=0 && z<=(d1+d2+d3 ) )
-            return a01 + 2.0*l*plateXZ(z); //adding a01, since it equals a02
+            return a01 + 2.0*l*plateXZ(z); //adding a01, since it equals a02, so don't need to differentiate
         else return 0.0; 
     }
     
@@ -200,9 +196,6 @@ class RingDoveSyrinxLTM extends Chugen
          else d1 - ( (a1*d2)/(a2-a1) ) =>  cpo2; 
          
          d1 + d2 - ( (a2*d3)/(a0-a2) ) =>  cpo3;  
-         
-         //?? test
-         cpo1 + cpo2/2 => cpoM; 
      }
      
      fun float stupidAbs(float x)
@@ -256,7 +249,7 @@ class RingDoveSyrinxLTM extends Chugen
          }
          else 
          {
-            if(  ( ( ( z0==d1 ) && z1==dM  ) || ( z0==dM && z1==(d1+d2) ) ) && (zM == z0)  ) //it's F2
+            if(  ( ( ( z0==d1 ) && z1==dM  ) || ( z0==dM && z1==(d1+d2) ) ) && (dM == z0)  ) //it's F2
             {
                 return 0.0; 
             }
@@ -361,10 +354,9 @@ if( !fout.good() )
     me.exit();
 }
 
-//10::second => now;
-//1::second => now; 
+3::second => now; 
 now => time start;
-while(now - start < 15::second)
+while(now - start < 10::ms)
 {
   //  <<< ltm.dU  + " , " + ltm.x[0] + " , " +  ltm.d2x[0] + " , " + ltm.F[0] + " , " + ltm.I[0] + " , " + ltm.a1 + " , " + ltm.a2 + " , " + ltm.zM >>>;
     //<<< ltm.dU  + " , " + ltm.x[1] + " , " + ltm.x[0] +" , " +  ltm.d2x[1] + " , " + ltm.F[1] + " , " + ltm.I[1] + " , " + ltm.a1 + " , " + ltm.a2 + " , " + ltm.zM >>>;
@@ -376,7 +368,7 @@ while(now - start < 15::second)
      
     fout.write( output ); 
 
-    10::ms => now;   
+    1::samp => now;   
 }  
 
 // close the thing
