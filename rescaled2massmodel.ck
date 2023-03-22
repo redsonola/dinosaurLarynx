@@ -59,14 +59,14 @@ class RingDoveSyrinxLTM extends Chugen
     0.008 => float Ps; //pressure in the syringeal lumen, 0.008 or 8
         
     0.0 => float dU;
+    0.0 => float prevDU;
+    0.0 => float prevPrevDU; 
     0.0 => float U; 
     0.0 => float prevU; 
     0.0 => float intU; //U from integration....
     0.0 => float subDU; //dU from derivation
     0.0 => float testDU1; 
     0.0 => float testDU2; 
-
-
     
     0.00113 => float p; //air density
     
@@ -82,6 +82,9 @@ class RingDoveSyrinxLTM extends Chugen
     
     fun void updateU()
     {
+        prevDU => prevPrevDU; 
+        dU => prevDU;
+        
         if(aMin > 0)
         {
             //breaking up the equation so I can easily see order of operations is correct
@@ -144,7 +147,6 @@ class RingDoveSyrinxLTM extends Chugen
     {
         if( val > 0 )
         {
-            //return 1.0;
             return Math.tanh(50*(val/a)); 
         }
         else 
@@ -166,7 +168,7 @@ class RingDoveSyrinxLTM extends Chugen
         }
         else 
         {
-            return Ps * (1 - ( heaveiside(aMin)*(aMin/a1)*(aMin/a1) ) )*heaveisideA(a1, a1); 
+            return Ps * (1 - ( heaveisideA(aMin, aMin)*(aMin/a1)*(aMin/a1) ) )*heaveisideA(a1, a1); 
         }
     }
     
