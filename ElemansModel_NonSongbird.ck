@@ -93,8 +93,8 @@ class RingDoveSyrinxLTM extends Chugen
         {
             //breaking up the equation so I can easily see order of operations is correct
             2*l*Math.sqrt((2*Ps)/p) => float firstMult; 
-            heaveiside(a2-a1)*dx[0] => float firstAdd; 
-            heaveiside(a1-a2)*dx[1]=> float secondAdd;
+            heaveisideA(a2-a1, a1)*dx[0] => float firstAdd; 
+            heaveisideA(a1-a2, a2)*dx[1]=> float secondAdd;
             
             firstMult*(firstAdd + secondAdd) => dU;
         }
@@ -126,6 +126,8 @@ class RingDoveSyrinxLTM extends Chugen
 
        }
     }
+/*
+Not using right now......
     
     //find x distance (opening) given z -- from diss.
     fun float plateXZ(float z)
@@ -165,7 +167,7 @@ class RingDoveSyrinxLTM extends Chugen
         else return 0.0; 
     }
     
-/*   
+   
     fun float syringealArea(float z)
     {
         if( z >=0 && z<=(d1+d2+d3 ) )
@@ -198,7 +200,7 @@ fun float syringealArea(float z)
         }
      }
      
-     //from Steinecke, et. al  1994
+     //from Steinecke, et. al  1994 --> a smoothing heaveside not sure if this is important yet.
      fun float heaveisideA(float val, float a)
      {
          if( val > 0 )
@@ -359,7 +361,7 @@ fun float syringealArea(float z)
          defIForce(dM, d1+d2) => F[1]; //trying
      }
      
-     //recheck w/table
+     //TODO: recheck this w/table
      fun void updateCollisions()
      {  
          a01/(2*l) => float x01;
@@ -375,23 +377,11 @@ fun float syringealArea(float z)
          else 
          {
              //this is what makes everything blow up... need to look at this.
-             updateCPO();
              dM - cpo1 => float L1; 
              cpo3 - dM => float L2; 
 
-             //look at the original function, look at the heaviside
-             if( L1 > 0) //hmmmmmmmm -- look at this, yeees.
-             {
-                 ( -c1/(4*l) )*( a1 + ( (aM*d2)/( 2*L1 ) ) ) => I[0];
-             }
-             else 0.0 => I[0];
-             
-             if(L2 > 0)
-             {
-                 ( -c2/(4*l) )*( a2 + ( (aM*d2)/( 2*L2 ) ) ) => I[1];
-             }
-             else 0.0 => I[1];
-
+             ( -c1/(4*l) )*( a1 + ( (aM*d2)/( 2*L1 ) ) ) => I[0];
+             ( -c2/(4*l) )*( a2 + ( (aM*d2)/( 2*L2 ) ) ) => I[1];
          }
      }
     
@@ -443,9 +433,9 @@ if( !fout.good() )
     "x[0]"  + "," + "x[1]" +"," + "dx[0]"  + "," + "dx[1]" + "," + "a1" + "," + "a2" + "," + "dU"  + ", "+"F[0]" + "," + "F[1]" + "," + "I[0]" + "," + "I[1]" +"\n" => string output; 
     fout.write( output );
 
-6::second => now; 
+3::second => now; 
 now => time start;
-while(now - start < 10::ms)
+while(now - start < 1000::ms)
 {
   //  <<< ltm.dU  + " , " + ltm.x[0] + " , " +  ltm.d2x[0] + " , " + ltm.F[0] + " , " + ltm.I[0] + " , " + ltm.a1 + " , " + ltm.a2 + " , " + ltm.zM >>>;
     //<<< ltm.dU  + " , " + ltm.x[1] + " , " + ltm.x[0] +" , " +  ltm.d2x[1] + " , " + ltm.F[1] + " , " + ltm.I[1] + " , " + ltm.a1 + " , " + ltm.a2 + " , " + ltm.zM >>>;
@@ -471,6 +461,10 @@ while(now - start < 10::ms)
 
 // close the thing
 fout.close();
+
+//TODO for tomorrow:
+//1. recheck collision equations
+//2. recheck parameters
 
 
 
