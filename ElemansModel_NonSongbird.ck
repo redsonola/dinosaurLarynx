@@ -66,9 +66,10 @@ class RingDoveSyrinxLTM extends Chugen
     0.0 => float a1; 
     0.0 => float a2; 
     0.0 => float aMin;
-    0.0 => float zM; 
+    0.0 => float zAMin; 
     0.0 => float aM;  
-    
+    0.0 => float a3; 
+
     //collision point ordinates
     0.0 => float minCPO; //min. collision point ordinate -- cpo
     0.0 => float cpo1; 
@@ -135,11 +136,12 @@ class RingDoveSyrinxLTM extends Chugen
         }
         else if( z<= d1 + d2 )
         {
-            return ( (x0[1] + x[1] - x0[0] - x[0])/d2 )*(z-d1) + (x0[0] + x[0]);
+                                                    //check this....
+            return ( (x0[1] + x[1] - x0[0] - x[0])/(d2) )*(z-d1) + (x0[0] + x[0]);
         }
         else if( z<= (d1+d2+d3 ) )
         {
-                                        //check this
+                                        //check this.......
             return ( (w - x0[1] - x[1])/(d3) )*(z-(d1+d2)) + (x0[1] + x[1]);            
         }
         else return 0.0; 
@@ -163,14 +165,27 @@ class RingDoveSyrinxLTM extends Chugen
         else return 0.0; 
     }
     
-    
+/*   
     fun float syringealArea(float z)
     {
         if( z >=0 && z<=(d1+d2+d3 ) )
             return a01 + 2.0*l*plateXZ(z); //adding a01, since it equals a02, so don't need to differentiate
         else return 0.0; 
     }
-    
+*/
+   
+
+fun float syringealArea(float z)
+{
+    if( z >=0 && z<=d1)
+        return ((a1-a0)/d1)*z + a0;
+    else if( z > d1 && z <= d1+d2 )
+        return ((a2-a1)/d2)*(z-d1) + a1;
+    else if( z > d1+d2 && z <= d1+d2+d3 )
+        return ((a0-a2)/d3)*(z-d1-d2) + a2;
+    else return 0.0; 
+}
+  
     fun float heaveiside(float val)
     {
         if( val > 0 )
@@ -182,6 +197,20 @@ class RingDoveSyrinxLTM extends Chugen
             return 0.0;
         }
      }
+     
+     //from Steinecke, et. al  1994
+     fun float heaveisideA(float val, float a)
+     {
+         if( val > 0 )
+         {
+             return Math.tanh(50*(val/a)); 
+         }
+         else 
+         {
+             return 0.0;
+         }
+     }
+
 
      fun void updateCPO()
      {
@@ -204,7 +233,8 @@ class RingDoveSyrinxLTM extends Chugen
          }
          else return x; 
      }
-     
+
+/*     
      //replace with equation from diss.
      fun float defIForce(float z0, float z1)
      {
@@ -254,21 +284,75 @@ class RingDoveSyrinxLTM extends Chugen
             else return l*Ps*(z1 - z0)*(1 - ( (aMin*aMin)/(aZ0*aZ1) )  );
          }
      }
+*/
+
+//replace with equation from diss.
+     fun float defIForce(float z0, float z1)
+     {
+         //try making it work w/heaviside-style if statement ????
+         syringealArea(z0) => float aZ0;
+         syringealArea(z1) => float aZ1;
+    
+         //         <<< "aZ0: " + aZ0 >>>;
+         //         <<< "aZ1: " + aZ1 >>>;
+         //         <<< "aMin: " + aZ1 >>>;
+    
+    
+         if( aMin <=0 ) //closed configuration
+         {             
+             //find min c.p.o
+             updateCPO();
+             0.0 => float min0; 
+             Math.min(min0, cpo1) => min0; 
+             Math.min(min0, cpo2) => min0;  
+             Math.min(min0, cpo3) => min0; 
+        
+             //Zaccarelli, 2009, p110 -- for forces F2, in closed configuration
+             if(   ( ( z0==d1 ) && z1==dM  ) || ( z0==dM && z1==(d1+d2) )   ) //it's F2
+             {
+                 if( a1 <= 0 && min0==cpo1 && cpo1 < z1) //case 4
+                 {
+                     return 0.0;
+                 }
+                 else if( ( a1 > 0 ) && a1 <= stupidAbs(a2) && min0==cpo2 && cpo2 <= dM ) //case 3a
+                 {
+                     return 0.0; 
+                 }
+                 else if( a1 > 0  && a1 > stupidAbs(a2) && min0==cpo2 && cpo2 > dM  )
+                 {
+                     return l*Ps*( d2/2 * ( (a1+a2)  / (a1-a2) ) ); 
+                 }
+                 else return l*Ps*( Math.min(min0, z1)  - z0); 
+             }
+             else return l*Ps*( Math.min(min0, z1)  - z0); 
+         }
+         else //open configuration
+         {
+             if(  ( ( ( z0==d1 ) && z1==dM  ) || ( z0==dM && z1==(d1+d2) ) ) && (zAMin == z0)  ) //it's F2
+             {
+                 return 0.0; 
+             }
+             else return l*Ps*(z1 - z0)*(1 - ( (aMin*aMin)/(aZ0*aZ1) )  );
+         }
+     }
      
      fun float updateForce()
      {
-         syringealArea(d1) => a1;
-         syringealArea(d1+d2) => a2;     
+         
+         2*l*(x[0] + (a01/(2*l))) => a1;
+         2*l*(x[1] + (a02/(2*1))) => a2;
+         2*l*w => a3;
+
  
          if( a1 < a2 )
          {
              a1=> aMin;
-             d1 => zM;
+             d1 => zAMin;
          }
          else
          {
              a2 => aMin;
-             d1+d2 => zM;             
+             d1+d2 => zAMin;             
          }   
          
          defIForce( 0, d1 ) + defIForce(d1, dM) => F[0];
@@ -278,7 +362,11 @@ class RingDoveSyrinxLTM extends Chugen
      //recheck w/table
      fun void updateCollisions()
      {  
-         syringealArea(dM) => aM;
+         a01/(2*l) => float x01;
+         a02/(2*l) => float x02;
+
+         l*( x[0] + x01 + x[1] + x02 ) => aM; //the 2.0 cancels out
+         
          if( ( a1 > 0.0 && a2 > 0.0 && aM > 0.0 ) || aMin > 0.0 )
          {
              0.0 => I[0];
@@ -355,9 +443,9 @@ if( !fout.good() )
     "x[0]"  + "," + "x[1]" +"," + "dx[0]"  + "," + "dx[1]" + "," + "a1" + "," + "a2" + "," + "dU"  + ", "+"F[0]" + "," + "F[1]" + "," + "I[0]" + "," + "I[1]" +"\n" => string output; 
     fout.write( output );
 
-3::second => now; 
+6::second => now; 
 now => time start;
-while(now - start < 2000::ms)
+while(now - start < 10::ms)
 {
   //  <<< ltm.dU  + " , " + ltm.x[0] + " , " +  ltm.d2x[0] + " , " + ltm.F[0] + " , " + ltm.I[0] + " , " + ltm.a1 + " , " + ltm.a2 + " , " + ltm.zM >>>;
     //<<< ltm.dU  + " , " + ltm.x[1] + " , " + ltm.x[0] +" , " +  ltm.d2x[1] + " , " + ltm.F[1] + " , " + ltm.I[1] + " , " + ltm.a1 + " , " + ltm.a2 + " , " + ltm.zM >>>;

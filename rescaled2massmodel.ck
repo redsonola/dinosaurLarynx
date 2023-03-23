@@ -89,8 +89,8 @@ class RingDoveSyrinxLTM extends Chugen
         {
             //breaking up the equation so I can easily see order of operations is correct
             2*l*Math.sqrt((2*Ps)/p) => float firstMult; 
-            heaveiside(a2-a1)*dx[0] => float firstAdd; 
-            heaveiside(a1-a2)*dx[1]=> float secondAdd;
+            heaveisideA(a2-a1, a1)*dx[0] => float firstAdd; 
+            heaveisideA(a1-a2, a2)*dx[1]=> float secondAdd;
             
             //timeStep*(dU + (firstMult*(firstAdd + secondAdd)) )=> dU;
             firstMult*(firstAdd + secondAdd) => dU; 
@@ -168,7 +168,7 @@ class RingDoveSyrinxLTM extends Chugen
         }
         else 
         {
-            return Ps * (1 - ( heaveisideA(aMin, aMin)*(aMin/a1)*(aMin/a1) ) )*heaveisideA(a1, a1); 
+            return Ps * (1 - ( heaveisideA(aMin, a1)*(aMin/a1)*(aMin/a1) ) )*heaveisideA(a1, a1); 
         }
     }
     
@@ -232,7 +232,7 @@ while(now - start < 10::ms)
     //  <<< ltm.dU  + " , " + ltm.x[0] + " , " +  ltm.d2x[0] + " , " + ltm.F[0] + " , " + ltm.I[0] + " , " + ltm.a1 + " , " + ltm.a2 + " , " + ltm.zM >>>;
     //<<< ltm.dU  + " , " + ltm.x[1] + " , " + ltm.x[0] +" , " +  ltm.d2x[1] + " , " + ltm.F[1] + " , " + ltm.I[1] + " , " + ltm.a1 + " , " + ltm.a2 + " , " + ltm.zM >>>;
     // <<<ltm.x[0] + " , " +  ltm.x[1] + " , " + ltm.cpo1 + " , " + ltm.cpo2 + " , "+ ltm.cpo3 + " , " + ltm.I[0] + " , " + ltm.I[1] + " , " + ltm.zM >>>;
-    ltm.x[0]  + "," + ltm.x[1] +"," + ltm.dx[0]  + "," + ltm.dx[1] + "," + ltm.a1 + "," + ltm.a2 + "," + ltm.dU  + "," + ltm.U  + "," + ltm.intU  + "," + ltm.subDU  + "," + ltm.F[0] + "," + ltm.F[1]+ ","  + ltm.I[0] + "," + ltm.I[1]  + "," +  ltm.testDU1*1000.0 + "," + ltm.testDU2 +  "\n" => string output; 
+    ltm.x[0]  + "," + ltm.x[1] +"," + ltm.dx[0]  + "," + ltm.dx[1] + "," + ltm.a1 + "," + ltm.a2 + "," + ltm.dU  + "," + ltm.U  + "," + ltm.intU  + "," + ltm.subDU  + "," + ltm.F[0]*1000.0 + "," + ltm.F[1]*1000.0+ ","  + ltm.I[0] + "," + ltm.I[1]  + "," +  ltm.testDU1*1000.0 + "," + ltm.testDU2 +  "\n" => string output; 
   //  + ltm.cpo2 + ","+ ltm.cpo3 + "," + ltm.I[0] + "," + ltm.I[1] + "," + ltm.zM + "\n" => string output; 
     
     <<< ltm.x[0]  + "," + ltm.x[1] +"," + ltm.dx[0]  + "," + ltm.dx[1] + "," + ltm.a1 + "," + ltm.a2 + "," + ltm.dU  + "," + ltm.U  + "," + ltm.F[0] + "," + ltm.F[1] + ","+ ltm.I[0] + "," + ltm.I[1] + "\n" >>>;
