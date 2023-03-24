@@ -1,4 +1,4 @@
 SinOsc o => dac;  
-1200 => o.freq; 
+1000 => o.freq; 
 .4 => o.gain;
-8::second => now; 
+3::second => now; 
