@@ -28,11 +28,10 @@ class RingDoveSyrinxLTM extends Chugen
     //time steps
     second/samp => float SRATE;
     1/SRATE => float T; //to make concurrent with Smyth paper
-    (T*1000.0)/2 => float timeStep; //this is for integrating smoothly, change from Smyth (eg.*1000) bc everything here is in ms not sec, so convert
-   
- 
+    (T*1000.0)/2.0 => float timeStep; //this is for integrating smoothly, change from Smyth (eg.*1000) bc everything here is in ms not sec, so convert
+
     //membrane displacement
-    [0.0, 0.0] @=> float x[]; 
+    [-0.006, 0.0] @=> float x[]; 
     [0.0, 0.0] @=> float dx[]; 
     [0.0, 0.0] @=> float d2x[]; 
     [0.0, 0.0] @=> float F[]; //force
@@ -57,8 +56,8 @@ class RingDoveSyrinxLTM extends Chugen
     a01 + 2.0*l*w => float a0; //a0 is the same for both masses since a01 == a02
 
     //pressure values - limit cycle is half of predicted? --> 0.00212.5 to .002675?
-    //no - 0.0017 to 0.0031 -- tho, 31 starts with noise
-    0.00450 => float Ps; //pressure in the syringeal lumen, 0.008 or 8
+    //no - 0.0017 to 0.0031 -- tho, 31 starts with noise, if dividing by 2 in the timestep
+    0.0025 => float Ps; //pressure in the syringeal lumen, 0.004 is default Ps for this model but only 1/2 of predicted works
     
     //geometry
     d1 + (d2/2) => float dM; //imaginary horizontal midline -- above act on upper mass, below on lower
@@ -125,54 +124,8 @@ class RingDoveSyrinxLTM extends Chugen
        }
     }
 /*
-Not using right now......
-    
-    //find x distance (opening) given z -- from diss.
-    fun float plateXZ(float z)
-    {
-        if(z >= 0 && z <= d1)
-        {
-            return ( (x0[0] + x[0] - w)/d1 )*z + w;
-        }
-        else if( z<= d1 + d2 )
-        {
-                                                    //check this....
-            return ( (x0[1] + x[1] - x0[0] - x[0])/(d2) )*(z-d1) + (x0[0] + x[0]);
-        }
-        else if( z<= (d1+d2+d3 ) )
-        {
-                                        //check this.......
-            return ( (w - x0[1] - x[1])/(d3) )*(z-(d1+d2)) + (x0[1] + x[1]);            
-        }
-        else return 0.0; 
-    }
-    
-    //find x distance (opening) given z -- from diss.
-    fun float plateXZDebug(float z, float x1, float x2)
-    {
-        if(z >= 0 && z <= d1)
-        {
-            return ( (x0[0] + x1 - w)/d1 )*z + w;
-        }
-        else if( z<= d1 + d2 )
-        {
-            return ( (x0[1] + x2 - x0[0] - x1)/d2 )*(z-d1) + (x0[0] + x1);
-        }
-        else if( z<=d1+d2+d3 )
-        {
-            return ( (w - x0[1] - x2)/d3 )*(z-(d1+d2)) + (x0[1] + x2);            
-        }
-        else return 0.0; 
-    }
-    
-   
-    fun float syringealArea(float z)
-    {
-        if( z >=0 && z<=(d1+d2+d3 ) )
-            return a01 + 2.0*l*plateXZ(z); //adding a01, since it equals a02, so don't need to differentiate
-        else return 0.0; 
-    }
-   
+Not using right now...... but may use later as more general purpose
+
 fun float syringealArea(float z)
 {
     if( z >=0 && z<=d1)
@@ -262,7 +215,7 @@ fun float syringealArea(float z)
                  {
                      return 0.0;
                  }
-                 else if( ( a1 > 0 ) && a1 <= Math.fabs(a2) && min0==cpo2 && cpo2 <= dM ) //case 3a
+                 else if( ( a1 > 0 ) && a1 <= Math.fabs(a2)  && min0==cpo2 && cpo2 <= dM ) //case 3a
                  {
                      return 0.0; 
                  }
@@ -394,7 +347,7 @@ if( !fout.good() )
     "x[0]"  + "," + "x[1]" +"," + "dx[0]"  + "," + "dx[1]" + "," + "a1" + "," + "a2" + "," + "dU"  + ", "+"F[0]" + "," + "F[1]" + "," + "I[0]" + "," + "I[1]" +"\n" => string output; 
     fout.write( output );
 
-6::second => now; 
+3::second => now; 
 now => time start;
 while(now - start < 10::ms)
 {
