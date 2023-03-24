@@ -37,8 +37,7 @@ class RingDoveSyrinxLTM extends Chugen
     [0.0, 0.0] @=> float d2x[]; 
     [0.0, 0.0] @=> float F[]; //force
     0.001 => float m; //mass
-    [0.0, 0.0] @=> float x0[]; 
-    
+        
     //damping and stiffness coefficients 
     0.001 => float r; //damping
     0.02 => float k; //stiffness
@@ -50,7 +49,7 @@ class RingDoveSyrinxLTM extends Chugen
     0.15 => float w; //trachea width
     0.3 => float l; //length of the trachea
     0.003 => float a01; //lower rest area
-    0.003 => float a02; //upper rest area
+    0.003 => float a02; //upper rest area, testing a02/a01 = 0.8
     0.04 => float d1; //1st mass height
     0.24 - d1 => float d2; //2nd mass displacement from first
     0.28 - (d1+d2) => float d3; //3rd mass displacement from 2nd
@@ -59,7 +58,7 @@ class RingDoveSyrinxLTM extends Chugen
 
     //pressure values - limit cycle is half of predicted? --> 0.00212.5 to .002675?
     //no - 0.0017 to 0.0031 -- tho, 31 starts with noise
-    0.002 => float Ps; //pressure in the syringeal lumen, 0.008 or 8
+    0.00450 => float Ps; //pressure in the syringeal lumen, 0.008 or 8
     
     //geometry
     d1 + (d2/2) => float dM; //imaginary horizontal midline -- above act on upper mass, below on lower
