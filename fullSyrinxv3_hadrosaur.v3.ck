@@ -332,7 +332,7 @@ class SyrinxMembrane extends Chugen
         w[0]*1.6 => w[1]; //Fletcher1988         
     }
     
-    //changes tension thus, frequency
+    //changes the airc flow
     fun void changePG(float tens)
     {
         tens => goalPG; 
@@ -347,7 +347,7 @@ class SyrinxMembrane extends Chugen
 
 }
 
-
+//Using a lumped loss scaler value for wall loss. TODO: implement more elegant filter for this, but so far, it works, so after everything else works.
 class WallLossAttenuation extends Chugen
 {
     7.0 => float L; //in cm --divided by 2 since it is taken at the end of each delay, instead of at the end of the waveguide
@@ -494,7 +494,7 @@ class BirdTracheaFilter extends Chugen
 }
 
 //this needs to be checked again
-//the h(z) to this is a bit unclear for me
+//the h(z) to this is a bit unclear for me (checked again seems correct)
 //need to test freq response
 class HPFilter extends Chugen
 {
@@ -520,7 +520,7 @@ class HPFilter extends Chugen
 
 //set globals
 0.35 => float a;
-3.5 => float L;
+7.0 => float L;
 0.35 => float h;
 0.0 => float period;
 0.05 => float d; 
@@ -671,9 +671,9 @@ fout.close();
      //https://asa-scitation-org.proxy.libraries.smu.edu/doi/pdf/10.1121/1.1911130
      //Benade -- acoustics in a cylindrical tube reference for w & ka
 
-     mem.c/(4*L) => float freq;
-     freq*2.0*Math.PI => float w;
-     //(w/mem.c)*a => float ka; //from Smyth, prev. 0.5
+     //mem.c/(4*L) => float freq;
+     //freq*2.0*Math.PI => float w;
+     //(w/mem.c)*a => float ka; //from Smyth
 
      
      //0.5 => ka; //estimation of ka at cut-off from Smyth
@@ -681,25 +681,24 @@ fout.close();
      //https://www.everythingrf.com/community/waveguide-cutoff-frequency#:~:text=Editorial%20Team%20%2D%20everything%20RF&text=The%20cut%2Doff%20frequency%20of%20a%20waveguide%20is%20the%20frequency,this%20frequency%20will%20be%20attenuated.
      //ka at the cut-off frequency of the waveguide
      //1.8412c/2pia
-     1.8412*mem.c/(2*Math.PI*a) => float cutOffFreq;
+     //1.8412*mem.c/(2*Math.PI*a) => float cutOffFreq;
      //1.87754*mem.c/(2*Math.PI*a) => float cutOffFreq;
      //0.11*mem.c/(2*Math.PI*a) => float cutOffFreq;
 
-     //cutOffFreq *2*Math.PI => float wCutOff; 
-     //w / mem.c => float k; 
-     //k*a => float ka;  //this is all redundant, will look later 
-     0.5*(mem.c/a)*mem.T => float wT; //transition frequency -- going with the original suggestion from Smyth after all.
+     1.8412  => float ka; //the suggested value of 0.5 by Smyth by ka & cutoff does not seem to work with given values (eg. for smaller a given) & does not produce 
+     //expected results -- eg. the wT frequency equation as given does not match the example 4.13(?), but the standard cutoff for metal waveguides does fine 
+     //need to triple-check calculations, perhaps send an email to her.
+     ka*(mem.c/a)*mem.T => float wT; //transition frequency wT
      //https://www.phys.unsw.edu.au/jw/cutoff.html#cutoff -- cut off of instrument with tone holes
      //https://hal.science/hal-02188757/document
           
      //magnitude of -1/(1 + 2s) part of oT from Smyth, eq. 4.44
      ka => float s; //this is kaj, so just the coefficient to sqrt(-1)
-     #(1, 0) => complex numerator;
+     #(-1, 0) => complex numerator;
      #(1, 2*s) => complex denominator;
      numerator / denominator => complex complexcHr_s;
      Math.sqrt( complexcHr_s.re*complexcHr_s.re + complexcHr_s.im*complexcHr_s.im )  => float oT; //magnitude of Hr(s)
      
-     //s/(1+s*s) => float oT; //imaginary part of oT from Smyth
      ( 1 + Math.cos(wT) - 2*oT*oT*Math.cos(wT) ) / ( 1 + Math.cos(wT) - 2*oT*oT ) => float alpha; //to determine a1 
      -alpha + Math.sqrt( alpha*alpha - 1 ) => float a1;
      (1 + a1 ) / 2 => float b0; 
@@ -713,7 +712,7 @@ fout.close();
      a1 => hpOut.a1; 
      b0 => hpOut.b0; 
      
-     <<<"a:"+a+ "  L:"+L + " ka: " + ka + " cutOffFreq: " + cutOffFreq>>>;
+     <<<"a:"+a>>>;
      <<<"oT:" + oT + " wT:" + wT>>>;
      <<<"a1:"+a1 + "   b0:"+b0>>>;
      
@@ -736,15 +735,17 @@ fout.close();
      //set for a small bird
      //something is wrong with the reflection filter, there is a weird hole around 0.19 -- is it too small for the cutoff?
      //or the cutoff frequency doesn't hold for such small radii 
+     //0.19 => a; 
+     //0.19 => h; 
      0.19 => a; 
      0.19 => h; 
      2.21 => L; 
      0.01 => d;  
      10.0 => hpOut.gain; 
-     10 => mem.modT; 
-     20.0 => mem.modPG; 
-     10 => mem2.modT; 
-     20.0 => mem2.modPG;    
+     1 => mem.modT; 
+     1.0 => mem.modPG; 
+     1 => mem2.modT; 
+     1.0 => mem2.modPG;    
      
      initGlobals(); 
  }
@@ -768,16 +769,16 @@ fout.close();
  //still too much resonance? wall filters?
  function void hadrosaur()
  {
-     5 => a; 
-     5 => h; 
+     4.5 => a; 
+     4.5 => h; 
      113.0 => L; //~153.7 Hz - resonance    
-     1.0 => d;  
+     1000.0 => d;  
      
-     1.0 => hpOut.gain; 
+     10.0 => hpOut.gain; 
      100.0 => mem.modT; 
-     3000.0 => mem.modPG; 
+     100.0 => mem.modPG; 
      100.0 => mem2.modT; 
-     3000.0 => mem2.modPG; 
+     100.0 => mem2.modPG; 
      
      initGlobals(); 
  }
@@ -861,7 +862,7 @@ function void mouseEventLoopControllingAirPressure()
                 if(whichBird < 2)
                     60 => maxPG; //before was 60 -- let's see
                 else
-                    1000 => maxPG;
+                    60*17.5 => maxPG;
                 //msg.scaledCursorY * maxPG => mem.pG;
                 // <<< "totVal b4 scale:", totVal >>>;
                 
@@ -918,8 +919,8 @@ function void mouseEventLoopControllingAirPressure()
                     if(whichBird < 2)
                         t + mult*scale + Tadd => t; 
                     else {
-                        2000.0-mem.initT =>  scale;
-                        t + mult*scale + scaledX * 10000.0 => t; 
+                        5000.0-mem.initT =>  scale;
+                        t + mult*scale + scaledX * 100.0 => t; 
                     }
 
                     //t + Tadd => t; 
