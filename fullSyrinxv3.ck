@@ -33,6 +33,17 @@
 //physically-based modeling reference -- see boundary conditions of a closed tube (closed mouth, etc.), p. 16
 //http://users.spa.aalto.fi/vpv/publications/vesan_vaitos/ch2.pdf
 
+//Dinosaur Lung, etc. links:
+//Schacher, et. al (2011) -- https://anatomypubs.onlinelibrary.wiley.com/doi/pdf/10.1002/ar.21439 -- Evolution of the Dinosauriform Respiratory Apparatus: New Evidence from the Postcranial Axial Skeleton
+//O'Connor PM. 2006. Postcranial pneumaticity: an evaluation of softtissue influences on the postcranial skeleton and the reconstruction of pulmonary anatomy in archosaurs. J Morphol 267:1199?1226.  --- https://people.ohio.edu/oconnorp/PDFs/OConnor_2006_Archosaur%20Pneumaticity.pdf
+//Brocklehurst, Schacher (2020) -- Respiratory --  https://royalsocietypublishing.org/doi/pdf/10.1098/rstb.2019.0140?download=true
+//https://anatomypubs.onlinelibrary.wiley.com/doi/pdf/10.1002/ar.23046 - Breathing Life Into Dinosaurs: Tackling Challenges of Soft-Tissue Restoration and Nasal Airflow in Extinct Species
+//https://onlinelibrary.wiley.com/doi/abs/10.1002/jez.548
+
+//Corythosaurus sizes
+//https://www.proquest.com/citedreferences/MSTAR_2440425772/4C70A2332F914DFCPQ/1?accountid=6667
+//& downloaded --> see
+
 //Syrinx Membrane
 class SyrinxMembrane extends Chugen
 {
@@ -680,6 +691,8 @@ fout.close();
      a1 => hpOut.a1; 
      b0 => hpOut.b0; 
 
+     <<<"a1:"+a1 + "   b0:"+b0>>>;
+
      
      //<<< "wT: " + wT + " oT: " + oT + " a1: "+ a1 + " b0: " + b0 >>>;
  }
@@ -805,7 +818,7 @@ function void mouseEventLoopControllingAirPressure()
 
                 
                 //<<< "max delta:", max >>>;
-                 <<< "pG:", mem.pG >>>;
+                // <<< "pG:", mem.pG >>>;
                 // <<< "totVal:", totVal >>>;
                 
                 logScale( msg.scaledCursorX, 0.0000001, 1.0 ) => float scaledX; 
@@ -854,10 +867,10 @@ function void mouseEventLoopControllingAirPressure()
                     mem.changeTension(t);
                     mem2.changeTension(t); 
 
-                     <<< "tension:", t >>>;
+                    // <<< "tension:", t >>>;
                     hpOut.last() => float trachP1; 
                     Math.max(trachP1, max) => max;
-                    <<< "outAmp: "+ max >>>;
+                   // <<< "outAmp: "+ max >>>;
                     
                     
                 }

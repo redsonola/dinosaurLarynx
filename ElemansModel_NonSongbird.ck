@@ -22,16 +22,21 @@
 //2010 paper on the oscine bird
 //http://www.lsd.df.uba.ar/papers/PhysRevE_comp_model.pdf
 
+
+/*
+[1]	D. N. During and C. P. H. Elemans. Embodied Motor Control of Avian Vocal Production. In Vertebrate Sound Production and Acoustic Communication. Springer International Publishing, 119?157, 2016. https://doi.org/10.1007/978-3-319-27721-9_5
+*/
+
 //Syrinx Membrane
 class RingDoveSyrinxLTM extends Chugen
 {
     //time steps
     second/samp => float SRATE;
     1/SRATE => float T; //to make concurrent with Smyth paper
-    (T*1000.0)/2.0 => float timeStep; //this is for integrating smoothly, change from Smyth (eg.*1000) bc everything here is in ms not sec, so convert
+    (T*1000)/2 => float timeStep; //this is for integrating smoothly, change from Smyth (eg.*1000) bc everything here is in ms not sec, so convert
 
     //membrane displacement
-    [-0.006, 0.0] @=> float x[]; 
+    [0.0, 0.0] @=> float x[]; 
     [0.0, 0.0] @=> float dx[]; 
     [0.0, 0.0] @=> float d2x[]; 
     [0.0, 0.0] @=> float F[]; //force
@@ -48,16 +53,16 @@ class RingDoveSyrinxLTM extends Chugen
     0.15 => float w; //trachea width
     0.3 => float l; //length of the trachea
     0.003 => float a01; //lower rest area
-    0.003 => float a02; //upper rest area, testing a02/a01 = 0.8
+    0.003 => float a02; //upper rest area, testing a02/a01 = 0.8, testing a convergent syrinx
     0.04 => float d1; //1st mass height
     0.24 - d1 => float d2; //2nd mass displacement from first
     0.28 - (d1+d2) => float d3; //3rd mass displacement from 2nd
     
-    a01 + 2.0*l*w => float a0; //a0 is the same for both masses since a01 == a02
+    2.0*l*w => float a0; //a0 is the same for both masses since a01 == a02
 
     //pressure values - limit cycle is half of predicted? --> 0.00212.5 to .002675?
     //no - 0.0017 to 0.0031 -- tho, 31 starts with noise, if dividing by 2 in the timestep
-    0.0025 => float Ps; //pressure in the syringeal lumen, 0.004 is default Ps for this model but only 1/2 of predicted works
+    0.0043 => float Ps; //pressure in the syringeal lumen, 0.004 is default Ps for this model but only 1/2 of predicted works
     
     //geometry
     d1 + (d2/2) => float dM; //imaginary horizontal midline -- above act on upper mass, below on lower
@@ -75,7 +80,6 @@ class RingDoveSyrinxLTM extends Chugen
     0.0 => float cpo1; 
     0.0 => float cpo2; 
     0.0 => float cpo3; 
-    0.0 => float cpoM;
         
     0.0 => float dU;
     
@@ -93,8 +97,8 @@ class RingDoveSyrinxLTM extends Chugen
         {
             //breaking up the equation so I can easily see order of operations is correct
             2*l*Math.sqrt((2*Ps)/p) => float firstMult; 
-            heaveiside(a2-a1)*dx[0] => float firstAdd; 
-            heaveiside(a1-a2)*dx[1]=> float secondAdd;
+            heaveisideA(a2-a1, a1)*dx[0] => float firstAdd; 
+            heaveisideA(a1-a2, a2)*dx[1]=> float secondAdd;
             
             firstMult*(firstAdd + secondAdd) => dU;
         }
@@ -107,12 +111,9 @@ class RingDoveSyrinxLTM extends Chugen
     fun void updateX()
     {
        //update d2x/dt
-       //timeStep * ( d2x[0] + ( (1.0/m) * ( F[0] - r*dx[0] - k*x[0] + I[0] - kc*( x[0] - x[1] )) ) ) => d2x[0]; 
-       //timeStep * ( d2x[1] + ( (1.0/m) * ( F[1] - r*dx[1] - k*x[1] + I[1] - kc*( x[1] - x[0] )) ) ) => d2x[1];  
-       
        timeStep * ( d2x[0] + ( (1.0/m) * ( F[0] - r*dx[0] - k*x[0] + I[0] - kc*( x[0] - x[1] )) ) ) => d2x[0]; 
        timeStep * ( d2x[1] + ( (1.0/m) * ( F[1] - r*dx[1] - k*x[1] + I[1] - kc*( x[1] - x[0] )) ) ) => d2x[1];  
-       
+              
        for( 0=>int i; i<x.cap(); i++ )
        {
            //update dx, integrate
@@ -138,7 +139,7 @@ fun float syringealArea(float z)
 }
 */
 
-//this looks equivalent to the above, but keeping here to avoid magical thinking
+//this should be equivalent to the above, but using here right now to completely avoid magical thinking
 fun float syringealArea(float z)
 {
     if( z==0 || z==(d1+d2+d3) )
@@ -262,8 +263,8 @@ fun float syringealArea(float z)
          a02/(2*l) => float x02;
          l*( x[0] + x01 + x[1] + x02 ) => aM; //the 2.0 cancels out
          
-         a01 + 2*l*x[0] => a1;
-         a02 + 2*l*x[1] => a2;         
+         2*l*(x[0]+x01) => a1;
+         2*l*(x[1]+x02) => a2;         
 
          if( a1 < a2 )
          {
@@ -283,27 +284,43 @@ fun float syringealArea(float z)
      //TODO: recheck this w/table
      fun void updateCollisions()
      {           
-         if( ( a1 > 0.0 && a2 > 0.0 && aM > 0.0 ) || aMin > 0.0 )
+           
+         //this is what makes everything blow up... need to look at this.
+         dM - cpo1 => float L1; 
+         cpo3 - dM => float L2; 
+         
+         if( a1>=0 && aM >=0)
          {
              0.0 => I[0];
-             0.0 => I[1];             
          }
-         else 
+         else if( a1>=0 && aM < 0 )
          {
-             //this is what makes everything blow up... need to look at this.
-             dM - cpo1 => float L1; 
-             cpo3 - dM => float L2; 
-
+             ( -c1/(4*l) )*aM => I[0];
+         } 
+         else
+         {
              ( -c1/(4*l) )*( a1 + ( (aM*d2)/( 2*L1 ) ) ) => I[0];
-             ( -c2/(4*l) )*( a2 + ( (aM*d2)/( 2*L2 ) ) ) => I[1];
+         }
+         
+         if( a2>=0 && aM >=0)
+         {
+             0.0 => I[1];
+         }
+         else if( a2>=0 && aM < 0 )
+         {
+             ( -c2/(4*l) )*aM => I[1];
+         }
+         else
+         {
+             ( -c2/(4*l) )*( a2 + ( (aM*d2)/( 2*L2 ) ) ) => I[1];                 
          }
      }
     
     fun float tick(float in)
     {
-        updateX();
         updateForce();
         updateCollisions();
+        updateX();
         updateU(); 
         
         return dU; 
@@ -347,9 +364,9 @@ if( !fout.good() )
     "x[0]"  + "," + "x[1]" +"," + "dx[0]"  + "," + "dx[1]" + "," + "a1" + "," + "a2" + "," + "dU"  + ", "+"F[0]" + "," + "F[1]" + "," + "I[0]" + "," + "I[1]" +"\n" => string output; 
     fout.write( output );
 
-3::second => now; 
+5::second => now; 
 now => time start;
-while(now - start < 10::ms)
+while(now - start < 1000::ms)
 {
   //  <<< ltm.dU  + " , " + ltm.x[0] + " , " +  ltm.d2x[0] + " , " + ltm.F[0] + " , " + ltm.I[0] + " , " + ltm.a1 + " , " + ltm.a2 + " , " + ltm.zM >>>;
     //<<< ltm.dU  + " , " + ltm.x[1] + " , " + ltm.x[0] +" , " +  ltm.d2x[1] + " , " + ltm.F[1] + " , " + ltm.I[1] + " , " + ltm.a1 + " , " + ltm.a2 + " , " + ltm.zM >>>;
