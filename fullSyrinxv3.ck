@@ -325,11 +325,14 @@ class SyrinxMembrane extends Chugen
     fun void updateTensionAndW()
     {
         goalT - curT => float diff; 
-        (dT + diff)*T*modT => dT ; //note: this is probably not a good pace, but we'll see??
-        curT + dT => curT; 
-        
-        Math.sqrt( (5*curT) / (pM*a*h*d) ) => w[0]; //Smyth diss.
-        w[0]*1.6 => w[1]; //Fletcher1988         
+        if (diff>0)
+        {
+            (dT + diff)*T*modT => dT ; //note: this is probably not a good pace, but we'll see??
+            curT + dT => curT; 
+            
+            Math.sqrt( (5*curT) / (pM*a*h*d) ) => w[0]; //Smyth diss.
+            w[0]*1.6 => w[1]; //Fletcher1988         
+        }
     }
     
     //changes tension thus, frequency
@@ -866,6 +869,8 @@ function void mouseEventLoopControllingAirPressure()
                     
                     mem.changeTension(t);
                     mem2.changeTension(t); 
+                    <<<"dT: " + mem.dT +" goalT: " + mem.goalT + " curT:"+ mem.curT+ " t: " + Math.sqrt( (5*t) / (mem.pM*mem.a*mem.h*mem.d) )  + " freq:", mem.w[0]/(2*pi) + " freq2:", mem.w[1]/(2*pi) >>>; //--> change the tension
+
 
                     // <<< "tension:", t >>>;
                     hpOut.last() => float trachP1; 
