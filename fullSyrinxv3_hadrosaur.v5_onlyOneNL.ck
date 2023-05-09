@@ -379,8 +379,8 @@ class SyrinxMembrane extends Chugen
             0.0=>testAngle;
         }
         Math.sin(testAngle) => float vib;
-        vib*(0.001*goalPG) => vib;
-        pG + vib => pG;     
+        vib*(0.005*goalPG) => vib;
+        //pG + vib => pG;     
     }
 
 }
