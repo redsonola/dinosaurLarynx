@@ -88,7 +88,7 @@ class SyrinxMembrane extends Chugen
     //[150.0*2.0*pi, 250.0*2.0*pi] @=> float w[]; //radian freq of mode n, freq. of membranes: 1, 1.6, 2 & higher order modes are not needed Fletcher, Smyth
     
     //this one worked for a dino-like sound
-    [200*2.0*pi, 1.6*200*pi] @=> float w[]; //radian freq of mode n, freq. of membranes: 1, 1.6, 2 & higher order modes are not needed Fletcher, Smyth
+    [200*2.0*pi*.75, 1.6*200*pi*.75] @=> float w[]; //radian freq of mode n, freq. of membranes: 1, 1.6, 2 & higher order modes are not needed Fletcher, Smyth
     w[0] => float initW;  
    
      //  [500*2.0*pi, 1.6*500*pi] @=> float w[]; //radian freq of mode n, freq. of membranes: 1, 1.6, 2 & higher order modes are not needed Fletcher, Smyth
@@ -368,7 +368,19 @@ class SyrinxMembrane extends Chugen
     {
         goalPG - pG => float diff; 
         (dPG + diff)*T*modPG => dPG ; 
-        pG + dPG => pG;      
+        pG + dPG => pG;  
+        
+        //here I'm trying to mimic the slight variations introduced by my hand when I am controlling 
+        //via mouse and it sounds vocal, so that it sounds vocal all the time
+        //TODO: take out when doing the breath.
+        testAngle+0.01 => testAngle; 
+        if(testAngle > Math.pi*2)
+        {
+            0.0=>testAngle;
+        }
+        Math.sin(testAngle) => float vib;
+        vib*(0.001*goalPG) => vib;
+        pG + vib => pG;     
     }
 
 }
@@ -415,7 +427,7 @@ class WallLossAttenuation extends Chugen
     
     fun float calcPropogationAttenuationCoeff()
     {
-        return (1.9*Math.pow(10, -5)*Math.sqrt(w)) / a; //changed the constant for more loss
+        return (5*Math.pow(10, -5)*Math.sqrt(w)) / a; //changed the constant for more loss, was 2.0
     }
     
     fun float wFromFreq(float frq)
@@ -827,9 +839,7 @@ mouseEventLoopControllingAirPressure(); //MAIN UPDATE LOOP!!!
      
      a => waBronch2Back.a;
      L*2.0 => waBronch2Back.L; //change for when trachea and brochus are different
-     
-     setParamsForReflectionFilter(); 
-     
+          
      waBronch2Back.calcConstants();  
      waBronchBack.calcConstants();  
 
@@ -843,6 +853,8 @@ mouseEventLoopControllingAirPressure(); //MAIN UPDATE LOOP!!!
      period::samp => tracheaBack.delay;
      period::samp => bronch2Back.delay;
      period::samp => bronch1Back.delay;
+     
+     setParamsForReflectionFilter(); 
  }
 
 //mouse event loop controlling air pressure
@@ -897,7 +909,7 @@ function void mouseEventLoopControllingAirPressure()
                 if(whichBird == 0)
                 {
                     expScale(totVal, 1.0, 10.0 ) => float p;
-                    p * pG * 1000.0 => pG;
+                    p * pG * 7000.0 => pG;
                     Math.min(pG, 200000) => pG;
                 }
 
@@ -955,7 +967,7 @@ function void mouseEventLoopControllingAirPressure()
 
                     }
                     else { //hadrosaur
-                        mem.initT*0.75 + scaledY*mem.initT*10.0 => t;
+                        mem.initT*0.5 + msg.scaledCursorY*mem.initT*5.0 => t;
                         //msg.deltaX
                         //t + mult*scale + Tadd => t; 
                         //mem.initT => t; 
