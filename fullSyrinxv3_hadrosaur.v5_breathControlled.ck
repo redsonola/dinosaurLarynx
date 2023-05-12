@@ -631,6 +631,10 @@ class HPFilter extends Chugen
 }
 
 
+//the envelope follower for the breath
+envelopeFollower() @=> OnePole envF_breath;
+
+
 //waveguides/tubes altered to model clarinet for an intermediate testable outcome before bronchus, trachea, junction are modeled
 //used https://quod.lib.umich.edu/cgi/p/pod/dod-idx/efficient-simulation-of-the-reed-bore-and-bow-string.pdf?c=icmc;idno=bbp2372.1986.054;format=pdf
 //& Cook's Real Sound Synthesis as a guide
@@ -773,10 +777,10 @@ mouseEventLoopControllingAirPressure(); //MAIN UPDATE LOOP!!!
  {
      //following, y = c*z^10
      // y = c* z^x
-     Math.pow(max / min, (1/19)) => float z;
-     min/z => float c; 
-     c*Math.pow(z, in) => float res;
-     return res ; 
+     Math.pow(max / min, (1.0/9.0)) => float z;
+     min/z => float c;     
+     c*(Math.pow(z, in)) => float res;
+     return res; 
  }
  
  function void smallBird()
@@ -896,13 +900,42 @@ function void mouseEventLoopControllingAirPressure()
     0 => int whichBird; 
     
     // infinite event loop
+    0 => float max1; 
     while( true )
     {
         // wait on HidIn as event
-        hi => now;
+        //hi => now;
+        
+        1::ms => now; 
+        envF_breath.last() => float ctrlValue;
+        //<<< ctrlValue >>>;
+
+        //<<<max1>>>;
+        //if(whichBird == 0)
+        //{
+            float p;
+            float pG1; 
+            float tot; 
+            if (ctrlValue!=0)
+            {
+                ctrlValue*1000.0 => tot;
+                expScale(tot, 1.0, 10.0 ) => p;
+                p-0.8=>p; 
+                Math.max(p, 0) =>p; 
+                //ctrlValue/10.0 => totVal;
+                
+            }
+            p * 100000000.0 => pG1;
+            Math.min(pG1, 250000) => pG1;
+            mem.changePG(pG1); 
+            mem2.changePG(pG1);
+            Math.max(max1, p) => max1;
+            <<<"p: " + p +" ctrlValue: " + ctrlValue>>>;
+        //}
+
         
         // messages received
-        while( hi.recv( msg ) )
+        if( hi.recv( msg ) )
         {
             // mouse motion
             if( msg.isMouseMotion() )
@@ -925,6 +958,7 @@ function void mouseEventLoopControllingAirPressure()
                 totVal * maxPG => float pG; 
                 //logScale(totVal, 0.0000001, maxPG ) => totVal; 
                 
+                
                 if(whichBird == 0)
                 {
                     float p;
@@ -932,18 +966,18 @@ function void mouseEventLoopControllingAirPressure()
                     {
                         totVal*10.0 => totVal;
                         expScale(totVal, 1.0, 10.0 ) => p;
-                        totVal/10.0 => totVal;
-
                     }
                     p * pG * 7000.0 => pG;
                     Math.min(pG, 200000) => pG;
+                    //<<<p>>>;
                 }
-
+/*
                 mem.changePG(pG); 
                 mem2.changePG(pG); 
+*/
 
                 //<<< "max delta:", max >>>;
-                <<< "pG:", mem.pG >>>; //turn this back on
+                //<<< "pG:", mem.pG >>>; //turn this back on
                 // <<< "totVal:", totVal >>>;
                 
                 logScale( msg.scaledCursorX, 0.0000001, 1.0 ) => float scaledX; 
@@ -1013,7 +1047,7 @@ function void mouseEventLoopControllingAirPressure()
                   mem.curT + mem.dT => mem2.curT;
 
                   
-  <<< "dT: "+mem.dT + "diff: " + mem.diff +   " dT: " + mem.dT +" goalT: " + mem.goalT + " curT:"+ mem.curT+ " t: " + Math.sqrt( (5*t) / (mem.pM*mem.a*mem.h*mem.d) )  + " freq:", mem.w[0]/(2*pi) + " freq2:", mem.w[1]/(2*pi) >>>; //--> change the tension
+ // <<< "dT: "+mem.dT + "diff: " + mem.diff +   " dT: " + mem.dT +" goalT: " + mem.goalT + " curT:"+ mem.curT+ " t: " + Math.sqrt( (5*t) / (mem.pM*mem.a*mem.h*mem.d) )  + " freq:", mem.w[0]/(2*pi) + " freq2:", mem.w[1]/(2*pi) >>>; //--> change the tension
                     hpOut.last() => float trachP1; 
                     Math.max(trachP1, max) => max;
                     //<<< "outAmp: "+ max >>>;
