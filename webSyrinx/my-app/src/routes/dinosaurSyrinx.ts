@@ -2,8 +2,12 @@ import * as Tone from 'tone';
 import { ToneBufferSource } from 'tone';
 import type { Time } from 'tone/build/esm/core/type/Units';
 import { Source, type SourceOptions } from 'tone/build/esm/source/Source';
+import { SyrinxMembrane } from './SyrinxMembraneSynthesis';
 // import { Monophonic, type MonophonicOptions } from 'tone/build/esm/instrument/Monophonic';
 //import { Source, type SourceOptions } from 'tone/tone/source/Source';
+
+//mediapipe face-tracking
+//NOTE: https://codepen.io/mediapipe-preview/pen/OJBVQJm
 
 
 //TODO: get this from audio options or something
@@ -12,7 +16,7 @@ var CHANNEL_COUNT = 2;
 
 
 //default syrinx class
-export class SyrinxMembrane<T extends SourceOptions> extends Source<T>
+export class SyrinxMembraneSource<T extends SourceOptions> extends Source<T>
 {
 	/**
 	 * Protected reference to the source
@@ -32,7 +36,7 @@ export class SyrinxMembrane<T extends SourceOptions> extends Source<T>
 }
 
 //implements Fletcher(1988)/Smyth(2002) model
-export class smFletcherSmyth<T extends SourceOptions>  extends SyrinxMembrane<T>
+export class smFletcherSmyth<T extends SourceOptions>  extends SyrinxMembraneSource<T>
 {
     readonly name = "Fletcher Smyth Syrinx Membrane Model";
 
@@ -46,6 +50,11 @@ export class smFletcherSmyth<T extends SourceOptions>  extends SyrinxMembrane<T>
 	 */
 	protected _fadeOut!: Time;
 
+	/**
+	 * buffer for the syrinx membrane mechanism output -- wraps the class which does the math, etc.
+	 */
+    protected _syrinxBuffer: SyrinxMembraneBuffer = new SyrinxMembraneBuffer(); 
+
     /**
 	 * internal start method
 	 */
@@ -53,7 +62,7 @@ export class smFletcherSmyth<T extends SourceOptions>  extends SyrinxMembrane<T>
 	 * internal start method
 	 */
 	protected _start(time?: Time): void {
-		const buffer = _syrinxBuffers.brown;
+		const buffer = this._syrinxBuffer.getBuffer();
 		this._source = new ToneBufferSource({
 			url: buffer,
 			context: this.context,
@@ -133,13 +142,16 @@ interface SyrinxMembraneCache {
  * Cache the noise buffers
  */
 const _syrinxCache: SyrinxMembraneCache = {
-	brown: null,
+	membraneBuf: null,
 };
 
 //I assume this is where the math happens, sigh.
-const _syrinxBuffers = {
-	get brown(): Tone.ToneAudioBuffer {
-		if (!_syrinxCache.brown) {
+class SyrinxMembraneBuffer
+{
+    protected membrane : SyrinxMembrane = new SyrinxMembrane();
+    public getBuffer() : Tone.ToneAudioBuffer 
+    {
+		if (!_syrinxCache.membraneBuf) {
 			const buffer: Float32Array[] = [];
 			for (let channelNum = 0; channelNum < NUM_CHANNELS; channelNum++) {
 				const channel = new Float32Array(BUFFER_LENGTH);
@@ -152,12 +164,14 @@ const _syrinxBuffers = {
 					channel[i] *= 3.5; // (roughly) compensate for gain
 				}
 			}
-			_syrinxCache.brown = new Tone.ToneAudioBuffer().fromArray(buffer);
+			_syrinxCache.membraneBuf = new Tone.ToneAudioBuffer().fromArray(buffer);
 		}
-		return _syrinxCache.brown;
+		return _syrinxCache.membraneBuf;
 	}
 };
 
+
+//this is for testing in the svelte main code for now
 export function createSynth()
 {
     //initialize the noise and start
