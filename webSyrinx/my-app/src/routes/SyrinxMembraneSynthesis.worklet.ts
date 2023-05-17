@@ -2,15 +2,15 @@
 //Translated from Chuck code I originally wrote (courtney Brown) to Javascript Web Audio
 
 import { addToWorklet } from "tone/build/esm/core/worklet/WorkletGlobalScope";
-
-
+import * as ts from "typescript";
+import { ScriptTarget } from "typescript";
 
 //Syrinx Membrane
 const syrinxMembraneSynthesis =  /* javascript */`class SyrinxMembrane
 {
     //time steps
-    public SRATE = 44100;
-    protected T = 1/this.SRATE; //to make concurrent with Smyth paper
+    protected SRATE : number = 44100;
+    protected T : number = 1/this.SRATE; //to make concurrent with Smyth paper
     
     //1.204 => float p; //air density (value used for 68F & atmospheric pressure 101.325 kPa (abs), 1.204 kg/m3
     //0.00118 => float p; //air density from Smyth diss., 0.00118cm, 0---- NOTE: Needs to match the input -- meters
@@ -242,10 +242,6 @@ const syrinxMembraneSynthesis =  /* javascript */`class SyrinxMembrane
 
         }
         this.totalX += this.x0;
-        
-        //(Math.cos(testAngle++*2*pi*333.33/SRATE) + 1.0)*2.0 => totalX;
-        //totalX * 0.1 => totalX; 
-
     }
     
     protected updateP1() : void
@@ -311,6 +307,10 @@ const syrinxMembraneSynthesis =  /* javascript */`class SyrinxMembrane
 
 }`;
 
-addToWorklet(syrinxMembrane);
+//compile the typescript then spit out the javascript so I don't have to tediously make this code backwards compatible
+let {outputText} = ts.transpileModule(syrinxMembraneSynthesis, { compilerOptions: { module: ts.ModuleKind.None, removeComments: true, target: ScriptTarget.ESNext }});
+addToWorklet(outputText);
+//outputText = "START!!!! \n" + outputText + "END!!!!\n";
+//console.log(outputText);
 
 

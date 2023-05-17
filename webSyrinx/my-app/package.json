@@ -21,6 +21,7 @@
 	},
 	"type": "module",
 	"dependencies": {
+		"standardized-audio-context": "^25.3.46",
 		"tone": "14.7.77"
 	}
 }
