@@ -15,9 +15,10 @@ export const workletName = "syrinx-membrane";
 //Need to do this:
 //https://developer.mozilla.org/en-US/docs/Web/API/AudioWorkletNode
 //https://github.com/Tonejs/Tone.js/issues/712// random-noise-processor.js
-export const syrinxMembraneGenerator = /* typescript */`class RandomNoiseProcessor extends SingleIOProcessor {
+export const syrinxMembraneGenerator = /* typescript */`class SyrinxMembraneGenerator extends SingleIOProcessor {
     constructor(options : any) {
         super(options);
+        this.membrane = new SyrinxMembrane();
     }
 
     static get parameterDescriptors() {
@@ -37,8 +38,8 @@ export const syrinxMembraneGenerator = /* typescript */`class RandomNoiseProcess
     }
 
     generate(input:any, channel:any, parameters:any) {
-        const delayedSample = Math.random() * 2 - 1; //noise to test
-        return delayedSample;
+        const samp = this.membrane.tick(input); //the syrinx membrane
+        return samp;
     }
 }
 
