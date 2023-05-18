@@ -1,7 +1,7 @@
 //Fletcher (1988) / Smyth (2002) Syrinx Computational Model Syrinx Membrane
 //Translated from Chuck code I originally wrote (courtney Brown) to Javascript Web Audio
 
-import { addToWorklet } from "tone/build/esm/core/worklet/WorkletGlobalScope";
+import { addToWorklet } from "./tonejs_fixed/WorkletLocalScope";
 import * as ts from "typescript";
 import { ScriptTarget } from "typescript";
 

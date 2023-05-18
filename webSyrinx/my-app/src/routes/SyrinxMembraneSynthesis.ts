@@ -311,6 +311,6 @@ const syrinxMembraneSynthesis =  /* javascript */`class SyrinxMembrane
 
 }`;
 
-addToWorklet(syrinxMembrane);
+addToWorklet(syrinxMembraneSynthesis);
 
 

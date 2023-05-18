@@ -3,18 +3,18 @@
 import "tone/build/esm/core/worklet/SingleIOProcessor.worklet";
 import "./SyrinxMembraneSynthesis.worklet";
 
-import { registerProcessor } from "tone/build/esm/core/worklet/WorkletGlobalScope";
+import { registerProcessor } from "./tonejs_fixed/WorkletLocalScope";
 import * as ts from "typescript";
 import { ScriptTarget } from "typescript";
 
 export const workletName = "syrinx-membrane";
 
-
-
 //Create an audio worklet 
 //Need to do this:
 //https://developer.mozilla.org/en-US/docs/Web/API/AudioWorkletNode
-//https://github.com/Tonejs/Tone.js/issues/712// random-noise-processor.js
+
+//Using the following as a model
+//https://github.com/Tonejs/Tone.js/blob/08df7ad68cb9ed4c88d697f2230e3864ca15d206/Tone/component/filter/FeedbackCombFilter.worklet.ts
 export const syrinxMembraneGenerator = /* typescript */`class SyrinxMembraneGenerator extends SingleIOProcessor {
     constructor(options : any) {
         super(options);
