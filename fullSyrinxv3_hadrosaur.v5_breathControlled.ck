@@ -930,7 +930,7 @@ function void mouseEventLoopControllingAirPressure()
             mem.changePG(pG1); 
             mem2.changePG(pG1);
             Math.max(max1, p) => max1;
-            <<<"p: " + p +" ctrlValue: " + ctrlValue>>>;
+            //<<<"p: " + p +" ctrlValue: " + ctrlValue>>>;
         //}
 
         
@@ -1028,6 +1028,7 @@ function void mouseEventLoopControllingAirPressure()
                     }
                     else { //hadrosaur
                         mem.initT*0.5 + msg.scaledCursorY*mem.initT*5.0 => t;
+                        <<<"tension: " + t>>>;
                         //msg.deltaX
                         //t + mult*scale + Tadd => t; 
                         //mem.initT => t; 

@@ -10,7 +10,7 @@ export const singleIOProcess = /* javascript */ `
 
 		constructor(options) {
 			super(Object.assign(options, {
-				numberOfInputs: 1,
+				numberOfInputs: 2,
 				numberOfOutputs: 1
 			}));
 			/**
@@ -56,6 +56,7 @@ export const singleIOProcess = /* javascript */ `
 		process(inputs, outputs, parameters) {
 			const input = inputs[0];
 			const output = outputs[0];
+			//console.log(inputs);
 			// get the parameter values
 			const channelCount = Math.max(input && input.length || 0, output.length);
 			for (let sample = 0; sample < this.blockSize; sample++) {

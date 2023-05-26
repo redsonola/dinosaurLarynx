@@ -1,6 +1,6 @@
 <script>
 	import { spring } from 'svelte/motion';
-	import { createSynth, createTrachealSyrinx } from './dinosaurSyrinx';
+	import { createSynth, createTrachealSyrinx, pbmStringTest } from './dinosaurSyrinx';
 
 	let count = 0;
 

@@ -19,26 +19,39 @@ export const syrinxMembraneGenerator = /* typescript */`class SyrinxMembraneGene
     constructor(options : any) {
         super(options);
         this.membrane = new SyrinxMembrane();
+        this.hadrosaurInit();
+    }
+
+    protected hadrosaurInit() : void
+    {
+        //in cm
+        this.membrane.a = 4.5; 
+        this.membrane.h = 4.5; 
+        this.membrane.L = 116; //dummy
+        this.membrane.d = 5.0; 
+
+        //in various
+        this.membrane.modT = 10000.0; 
+        this.membrane.modPG = 80;
+   
+        this.membrane.initTension(); 
+        this.membrane.initZ0;
     }
 
     static get parameterDescriptors() {
         return [{
-            name: "delayTime",
-            defaultValue: 0.1,
+            name: "pG",
+            defaultValue: 0,
             minValue: 0,
-            maxValue: 1,
-            automationRate: "k-rate"
-        }, {
-            name: "feedback",
-            defaultValue: 0.5,
-            minValue: 0,
-            maxValue: 0.9999,
+            maxValue: 250000,
             automationRate: "k-rate"
         }];
     }
 
     generate(input:any, channel:any, parameters:any) {
-        const samp = this.membrane.tick(input); //the syrinx membrane
+        //this.membrane.changeTension(25000000);
+        this.membrane.changePG(parameters.pG);
+        const samp = this.membrane.tick(input); //the syrinx membrane  //Math.random() * 2 - 1; 
         return samp;
     }
 }

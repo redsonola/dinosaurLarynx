@@ -2,6 +2,16 @@ import { noOp } from "tone/build/esm/core/util/Interface";
 import { getWorkletLocalScope } from "./WorkletLocalScope";
 import { ToneAudioNode, type ToneAudioNodeOptions } from "tone/build/esm/core/context/ToneAudioNode";
 
+//This and the other files in tonejs_fixed are modified from Tonejs to fix a bug I found on the platform
+//Note: in the next couple weeks, after my deadline -- I'll clean up this fix & report the issue.
+//Basically, the code added all the new modules every time the constructor was called via getWorkletGlobalScope
+//& I replaced with a local scope call: getWorkletLocalScope() that I wrote
+//all worklets I'm using had to be fixed and updated for the fix to work, as the worklets have dependencies, etc.
+//& no worklet can call the tonejs version of this constructor & also must use addToWorklet, addProcessor from fixed version
+//its not clear why I could instantiate many instances of the same effect without error, but 2 different effects powered by custom
+//audio worklets caused the problem -- something under the hood I haven't check out yet
+//however, this fixes it for now & will dig in this later when I'm not running against a deadline. or maybe I'll just report the issue as is & hand it off.
+//Courtney Brown May 2023
 
 export type ToneAudioWorkletOptions = ToneAudioNodeOptions;
 
@@ -42,7 +52,10 @@ export abstract class ToneAudioWorklet<Options extends ToneAudioWorkletOptions> 
 	/**
 	 * Callback which is invoked when there is an error in the processing
 	 */
-	onprocessorerror: any = noOp;
+	onprocessorerror: any = (event:any) => {
+		console.error("There was an error!");
+		console.log(event);
+	  };
 
     protected findProcessingValue()
     {

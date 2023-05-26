@@ -265,7 +265,7 @@ const syrinxMembraneSynthesis =  /* javascript */`class SyrinxMembrane
         this.updateP1(); 
         
         //user changing parameters
-        this.updateTensionAndW(); 
+        //this.updateTensionAndW(); -->TODO: need to uncomment when ready to implement tension
         this.updatePG();
         
         return this.p1;
