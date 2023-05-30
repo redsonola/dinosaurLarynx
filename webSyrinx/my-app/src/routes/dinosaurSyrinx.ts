@@ -253,6 +253,13 @@ export function createSynth()
 
 export var strrun : boolean = false; 
 
+function logScale(input : number, min : number, max : number) : number
+{
+    let b = Math.log( max / min ) / (max - min);
+    let a = max / Math.exp(b*max);
+    return a * Math.exp ( b*input );     
+}
+
 //now just a test of the syrinx
 export function pbmStringTest()
 {
@@ -264,22 +271,20 @@ export function pbmStringTest()
     const meter = createMicValues();
 
     const tension = membrane.tension;
-    tension.setValueAtTime(1683972, 0.0); 
     
     let num = meter.getValue();
     if (typeof num === "number")
     {
         setInterval(() => {
+        let scaledY = m.y; //logScale( m.y, 0.001, 1.0 ); 
+
         let num = meter.getValue();
-        let num2 = (num as number)*10000.0 ;
-        pGparam.setValueAtTime(num2, 0.0); 
-        let ten = ((m.y) * (60000000-500000.0))+500000;
-        console.log(num2 + " " + ten);
-        tension.setValueAtTime(ten, 0.0);},
+        let maxPG = 2000.0*(1000*scaledY);
+
+        pGparam.setValueAtTime((num as number)*maxPG, 0.0); 
+        //tension.setValueAtTime(((m.y) * (98902430-19640049.0))+19640049, 0.0);},
+        tension.setValueAtTime(((scaledY) * (98913500-64004.0))+64004, 0.0);},
         5);
-
-
-        //setInterval(() => console.log(  ), 50);
     }
     else
     {

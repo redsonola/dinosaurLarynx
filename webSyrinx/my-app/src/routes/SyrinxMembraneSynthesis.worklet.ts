@@ -278,11 +278,13 @@ const syrinxMembraneSynthesis =  /* javascript */`class SyrinxMembrane
     
     protected updateTensionAndW() : void
     {
-        this.diff = this.goalT - this.curT;
-        if(this.diff > 0)
+        let diff = this.goalT - this.curT;
+        if(diff != 0)
         {            
-            //(dT + diff)*T*modT => dT ; 
-            //curT + dT => curT; 
+            //so, try this?
+            this.dT = (this.dT + diff)*this.T*this.modT; 
+            this.curT = this.curT + this.dT ; 
+
         
             this.wFreq[0] = Math.sqrt( (5*this.curT) / (this.pM*this.a*this.h*this.d) ) ; //Smyth diss.
             // w[0]*1.6 => w[1]; //Fletcher1988     

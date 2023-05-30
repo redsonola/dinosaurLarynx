@@ -49,6 +49,8 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
 
         this.max = 300;
 
+        this.count = 0;
+
     }
 
     //the combfilter for the waveguide
@@ -66,7 +68,7 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
         this.membrane.a = 4.5; 
         this.membrane.h = 4.5; 
         this.membrane.L = 116; //dummy
-        this.membrane.d = 5.0; 
+        this.membrane.d = 5; 
 
         //in various
         this.membrane.modT = 10000.0; 
@@ -118,6 +120,13 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
         //**** syrinx membrane ******
         this.membrane.changePG(parameters.pG);
         this.membrane.changeTension(parameters.tension);
+
+        this.count++;
+        if(this.count >50)
+        {
+            console.log(this.membrane.pG + ", " + parameters.tension);
+            this.count = 0;
+        }
         const pOut = this.membrane.tick(this.lastSample); //the syrinx membrane  //Math.random() * 2 - 1; 
 
         //********1st delayLine => tracheaFilter => flip => last sample  *********
