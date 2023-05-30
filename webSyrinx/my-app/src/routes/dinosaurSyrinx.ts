@@ -39,42 +39,54 @@ var CHANNEL_COUNT = 2;
 
 export interface MembraneOptions extends EffectOptions {
 	pG: Positive;
+    tension: Positive; 
 }
 export class SyrinxMembraneFS extends Effect<MembraneOptions> {
 
 	readonly name: string = "SyrinxMembrane";
 
 	/**
-	 * The bit depth of the effect
+	 * pG - air pressure in air sac
 	 * @min 0
 	 * @max 25000000
 	 */
 	readonly pG: Param<"positive">;
+
+    /**
+	 * tension 
+	 * @min 0
+	 * @max 
+	 */
+    readonly tension: Param<"positive">;
+
 
 	/**
 	 * The node which does the bit crushing effect. Runs in an AudioWorklet when possible.
 	 */
 	private _membraneWorklet: FletcherSmythSyrinxMembraneWorklet;
 
-	constructor(pG?: Positive);
+	constructor(pG?: Positive, tension?: Positive);
 	constructor(options?: Partial<MembraneWorkletOptions>);
 	constructor() {
-		super(optionsFromArguments(SyrinxMembraneFS.getDefaults(), arguments, ["pG"]));
-		const options = optionsFromArguments(SyrinxMembraneFS.getDefaults(), arguments, ["pG"]);
+		super(optionsFromArguments(SyrinxMembraneFS.getDefaults(), arguments, ["pG", "tension"]));
+		const options = optionsFromArguments(SyrinxMembraneFS.getDefaults(), arguments, ["pG", "tension"]);
 
 		this._membraneWorklet = new FletcherSmythSyrinxMembraneWorklet({
 			context: this.context,
 			pG: options.pG,
+            tension: options.tension
 		});
 		// connect it up
 		this.connectEffect(this._membraneWorklet);
 
 		this.pG = this._membraneWorklet.pG;
+        this.tension = this._membraneWorklet.tension; 
 	}
 
 	static getDefaults(): MembraneOptions {
 		return Object.assign(Effect.getDefaults(), {
-			pG: 5.0
+			pG: 0.0, 
+            tension: 2000 
 		});
 	}
 
@@ -87,6 +99,7 @@ export class SyrinxMembraneFS extends Effect<MembraneOptions> {
 
 interface MembraneWorkletOptions extends ToneAudioWorkletOptions {
 	pG: number;
+    tension: number;
 }
 
 //create the Syrinx Membrane Effect -- it has to be an effect with a source, as the membrane requires an input 
@@ -102,8 +115,10 @@ export class FletcherSmythSyrinxMembraneWorklet extends ToneAudioWorklet<Membran
 	 * The amount of delay of the comb filter.
 	 */
 	readonly pG: Param<"positive">;
+    readonly tension: Param<"positive">;
 
-	constructor(pG?: Positive);
+
+	constructor(pG?: Positive, tension?: Positive);
 	constructor(options?: RecursivePartial<MembraneWorkletOptions>);
 	constructor() {
         addToWorklet(singleIOProcess);
@@ -122,11 +137,22 @@ export class FletcherSmythSyrinxMembraneWorklet extends ToneAudioWorklet<Membran
             param: this._dummyParam,
             swappable: true,
         });
+
+        this.tension = new Param<"positive">({
+            context: this.context,
+            value: options.pG,
+            units: "positive",
+            minValue: 0,
+            maxValue: 168397230,
+            param: this._dummyParam,
+            swappable: true,
+        });
 	}
 
     static getDefaults(): MembraneWorkletOptions {
 		return Object.assign(ToneAudioWorklet.getDefaults(), {
 			pG: 5.0,
+            tension: 2000
 		});
 	}
 
@@ -138,6 +164,8 @@ export class FletcherSmythSyrinxMembraneWorklet extends ToneAudioWorklet<Membran
 		connectSeries(this.input, node, this.output);
         const pG = node.parameters.get("pG") as AudioParam;
 		this.pG.setParam(pG);
+        const tension = node.parameters.get("tension") as AudioParam;
+		this.tension.setParam(tension);
 	}
 
     dispose(): this {
@@ -145,6 +173,7 @@ export class FletcherSmythSyrinxMembraneWorklet extends ToneAudioWorklet<Membran
 		this.input.dispose();
 		this.output.dispose();
         this.pG.dispose(); 
+        this.tension.dispose(); 
 		return this;
 	}
 } 
@@ -223,73 +252,51 @@ export function createSynth()
 }
 
 export var strrun : boolean = false; 
+
+//now just a test of the syrinx
 export function pbmStringTest()
 {
-    //default for pluck
-    //attackNoise: 1,
-    //dampening: 4000,
-    //resonance: 0.7,
-    //release: 1,
+    const membrane = new SyrinxMembraneFS({pG: 0.0});
+    //const limiter = new Tone.Limiter(); 
+    membrane.chain(Tone.Destination); 
+    
+    const pGparam = membrane.pG; 
+    const meter = createMicValues();
 
-    let lpf = new Tone.OnePoleFilter();
-    let lpf2 = new Tone.OnePoleFilter();
-
-    let pinkNoise = new Tone.Noise({
-        type: "pink"
-    }); 
-
-    let brownNoise = new Tone.Noise({
-        type: "brown"
-    }); 
-
-    // var delay = new FeedbackCombFilter({ delayTime:(0.5/400), resonance:0 } ); 
-    let dT = 0.5/2400.0
-    var comb = new CombFilterEffect({ delayTime: dT } ); 
-    var delay = new Delay({ delayTime:0, maxDelay: 0.001 } ); 
-
-    const param = comb.delayTime; 
-    param.setValueAtTime(dT, 1.0);
-
-    var negate = new Tone.Negate(); 
-    var gain = new Gain({
-        gain : 0.5 ,
-        convert : true
-        }); 
-
-    let membrane = new SyrinxMembraneFS({pG: 5});
-
-    let fdbck = new FeedbackCombFilter({ delayTime: dT, resonance: 0.0 } ); 
-    let ins = new Gain(1.0);
-
-    // pinkNoise.chain(ins, fdbck, delay, gain, Tone.Destination);
-    // console.log(delay.delayTime.getValueAtTime(0.5));
-    // delay.connect(ins);
-    // pinkNoise.start(); 
-
-    membrane.connect(Tone.Destination); 
-
-
-
-	// triggerAttack(note: Frequency, time?: Time): this {
-	// 	const freq = this.toFrequency(note);
-	// 	time = this.toSeconds(time);
-	// 	const delayAmount = 1 / freq;
-	// 	this._lfcf.delayTime.setValueAtTime(delayAmount, time);
-	// 	this._noise.start(time);
-	// 	this._noise.stop(time + delayAmount * this.attackNoise);
-	// 	this._lfcf.resonance.cancelScheduledValues(time);
-	// 	this._lfcf.resonance.setValueAtTime(this.resonance, time);
-	// 	return this;
-	// }
-
-    strrun = !strrun;
-    if (strrun)
+    const tension = membrane.tension;
+    tension.setValueAtTime(1683972, 0.0); 
+    
+    let num = meter.getValue();
+    if (typeof num === "number")
     {
-        pinkNoise.start();
-        brownNoise.start(); 
-    }
+        setInterval(() => {
+        let num = meter.getValue();
+        let num2 = (num as number)*10000.0 ;
+        pGparam.setValueAtTime(num2, 0.0); 
+        let ten = ((m.y) * (60000000-500000.0))+500000;
+        console.log(num2 + " " + ten);
+        tension.setValueAtTime(ten, 0.0);},
+        5);
 
+
+        //setInterval(() => console.log(  ), 50);
+    }
+    else
+    {
+        console.log ("unhandled meter error - array returned instead of number");
+    }
+    
 }
+
+//---------
+//get the mouse values....
+let m = { x: 0, y: 0 };
+document.body.addEventListener('mousemove', 
+function handleMousemove(event) {
+    m.x = event.clientX / document.body.clientWidth;
+    m.y = event.clientY / document.body.clientHeight;
+});
+//---------
 
 //from tonejs API example
 function createMicValues() : Tone.Meter

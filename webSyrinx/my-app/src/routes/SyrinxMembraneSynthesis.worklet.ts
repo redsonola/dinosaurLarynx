@@ -47,7 +47,7 @@ const syrinxMembraneSynthesis =  /* javascript */`class SyrinxMembrane
     //[150.0*2.0*pi, 250.0*2.0*pi] @=> float w[]; //radian freq of mode n, freq. of membranes: 1, 1.6, 2 & higher order modes are not needed Fletcher, Smyth
     
     //this one worked for a dino-like sound
-    protected wFreq : number[] = [200*2.0*Math.PI*.75, 1.6*200*Math.PI*.75]; //radian freq of mode n, freq. of membranes: 1, 1.6, 2 & higher order modes are not needed Fletcher, Smyth
+    public wFreq : number[] = [200*2.0*Math.PI*.75, 1.6*200*Math.PI*.75]; //radian freq of mode n, freq. of membranes: 1, 1.6, 2 & higher order modes are not needed Fletcher, Smyth
     protected initW : number = this.wFreq[0];  
    
      //  [500*2.0*pi, 1.6*500*pi] @=> float w[]; //radian freq of mode n, freq. of membranes: 1, 1.6, 2 & higher order modes are not needed Fletcher, Smyth
@@ -88,7 +88,7 @@ const syrinxMembraneSynthesis =  /* javascript */`class SyrinxMembrane
     //217.6247770440203 => float initT; //this is the tension to produce 150Hz, the example w in the research articles
     //Math.sqrt( (5*curT) / (pM*a*h*d) ) => w[0]
     protected initT:number = (this.wFreq[0]*this.wFreq[0]*this.pM*this.a*this.h*this.d)/5; //this is the tension to produce 150Hz, the example w in the research articles
-    protected curT:number = this.initT; //tension to produce the default, in N/cm^3
+    public curT:number = this.initT; //tension to produce the default, in N/cm^3
     protected goalT : number = 0.0;//the tension to increase or decrease to    
     protected dT :number = 0.0 ; //change in tension per sample  
     protected modT : number = 10.0; //how fast tension can change
@@ -265,9 +265,8 @@ const syrinxMembraneSynthesis =  /* javascript */`class SyrinxMembrane
         this.updateP1(); 
         
         //user changing parameters
-        //this.updateTensionAndW(); -->TODO: need to uncomment when ready to implement tension
-        this.updatePG();
-        
+        this.updateTensionAndW(); //-->TODO: need to uncomment when ready to implement tension
+        this.updatePG();            
         return this.p1;
     }
     

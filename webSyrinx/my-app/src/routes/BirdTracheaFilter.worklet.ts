@@ -4,7 +4,7 @@
 import { addToWorklet } from "./tonejs_fixed/WorkletLocalScope";
 import * as ts from "typescript";
 import { ScriptTarget } from "typescript";
-import * as math from 'mathjs'
+import './Complex.worklet'
 
 
 
@@ -12,7 +12,7 @@ import * as math from 'mathjs'
 const birdTracheaFilter =  /* javascript */`class BirdTracheaFilter
 {
     protected a1 = 1.0;
-    protected b0 = 1.0 ;
+    protected b0 = 1.0;
     protected lastOut =0.0 ; 
     protected lastV = 0.0 ; 
     protected c = 0; //speed of sound
@@ -23,14 +23,19 @@ const birdTracheaFilter =  /* javascript */`class BirdTracheaFilter
     {
         this.c = c; 
         this.T = T; 
+        this.a1 = 0;
+        this.b0 = 0; 
+        this.lastOut = 0; 
+        this.lastV = 0;     
     }
 
-    public tick(input : number) : void 
+    public tick(input : number) : number 
     {
-        let vin = b0*input;
-        let out = vin + lastV - a1*lastOut;
+        let vin = this.b0 * input;
+        let out = vin + this.lastV - this.a1 * this.lastOut;
         this.lastout = out; 
         this.lastV = vin; 
+        
         return out; 
     }     
 
@@ -44,31 +49,23 @@ const birdTracheaFilter =  /* javascript */`class BirdTracheaFilter
         let s = ka; //this is ka, so just the coefficient to sqrt(-1), s to match Smyth paper
 
         //TODO: implement complex numbers >_<
-        let numerator = math.complex(-1, 0);
-        let denominator = math.complex(1, 2*s);
-        let complexcHr_s =  numerator / denominator;
+        let numerator = new Complex(-1, 0);
+        let denominator = new Complex(1, 2*s);
+        let complexcHr_s =  numerator.divide(denominator);
         let oT = Math.sqrt( complexcHr_s.re*complexcHr_s.re + complexcHr_s.im*complexcHr_s.im ); //magnitude of Hr(s)
         
         let alpha = ( 1 + Math.cos(wT) - 2*oT*oT*Math.cos(wT) ) / ( 1 + Math.cos(wT) - 2*oT*oT ); //to determine a1 
-        this.al = -alpha + Math.sqrt( alpha*alpha - 1 );
-        this.b0 = (1 + a1 ) / 2; 
+        this.a1 = -alpha + Math.sqrt( alpha*alpha - 1 );
+        this.b0 = (1 + this.a1 ) / 2;     
         
         //for the highpass output, from Smyth, again -- HPFilter class
         // a1 => hpOut.a1; 
         // b0 => hpOut.b0; 
         
-        // <<<"a:"+a>>>;
-        // <<<"oT:" + oT + " wT:" + wT>>>;
-        console.log("a1:"+a1 + "   b0:"+b0);
-        
-        // <<<"*************">>>;
-   
-        // //<<< "wT: " + wT + " oT: " + oT + " a1: "+ a1 + " b0: " + b0 >>>;
+        //console.log("alpha: " alpha + " oT: " + oT + " wT: " + wT);
+        //console.log("a: "+ a+ " a1: "+this.a1 + "   b0: "+this.b0);
     }
    
-}
-
-
 }`;
 
 //compile the typescript then spit out the javascript so I don't have to tediously make this code backwards compatible

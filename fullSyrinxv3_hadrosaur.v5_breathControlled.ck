@@ -757,13 +757,16 @@ mouseEventLoopControllingAirPressure(); //MAIN UPDATE LOOP!!!
      a1 => hpOut.a1; 
      b0 => hpOut.b0; 
      
+          <<<"*************">>>;
+     
      <<<"a:"+a>>>;
      <<<"oT:" + oT + " wT:" + wT>>>;
      <<<"a1:"+a1 + "   b0:"+b0>>>;
      
-     <<<"*************">>>;
 
-     //<<< "wT: " + wT + " oT: " + oT + " a1: "+ a1 + " b0: " + b0 >>>;
+
+     <<< "wT: " + wT + " oT: " + oT + " a1: "+ a1 + " b0: " + b0 >>>;
+          <<<"*************">>>;
  }
  
  function float logScale(float in, float min, float max)
@@ -969,7 +972,7 @@ function void mouseEventLoopControllingAirPressure()
                     }
                     p * pG * 7000.0 => pG;
                     Math.min(pG, 200000) => pG;
-                    //<<<p>>>;
+                    <<<mem.pG + "   tens: " + mem.curT>>>;
                 }
 /*
                 mem.changePG(pG); 
@@ -1028,7 +1031,7 @@ function void mouseEventLoopControllingAirPressure()
                     }
                     else { //hadrosaur
                         mem.initT*0.5 + msg.scaledCursorY*mem.initT*5.0 => t;
-                        <<<"tension: " + t>>>;
+                        //<<<"tension: " + t>>>;
                         //msg.deltaX
                         //t + mult*scale + Tadd => t; 
                         //mem.initT => t; 
