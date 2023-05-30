@@ -30,7 +30,6 @@ const feedbackCombFilter = /* javascript */`
 		generate(input, channel, parameters) {
 			const delayedSample = this.delayLine.get(channel, parameters.delayTime * this.sampleRate);
 			this.delayLine.push(channel, input + delayedSample * parameters.feedback);
-			//this.delayLine.push(channel, input);
 			return delayedSample;
 		}
 	}

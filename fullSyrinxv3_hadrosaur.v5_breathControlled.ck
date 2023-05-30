@@ -868,7 +868,7 @@ mouseEventLoopControllingAirPressure(); //MAIN UPDATE LOOP!!!
 
      34740 => float c; // in m/s
      c/(2.0*L) => float LFreq; // -- the resonant freq. of the tube (?? need to look at this)
-     ( (0.5*second / samp) / (LFreq) - 1) => period; //* 0.5 in the STK for the clarinet model... clarinet.cpp hmmm
+     ( (0.5*second / samp) / (LFreq) - 1) => period; 
      
      period::samp => delay.delay;
      period::samp => delayMem2.delay;

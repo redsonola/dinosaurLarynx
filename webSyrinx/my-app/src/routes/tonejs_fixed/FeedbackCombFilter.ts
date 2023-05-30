@@ -49,8 +49,8 @@ export class FeedbackCombFilter extends ToneAudioWorklet<FeedbackCombFilterOptio
 	constructor(options?: RecursivePartial<FeedbackCombFilterOptions>);
 	constructor() {
 		addToWorklet(singleIOProcess);
-		super(optionsFromArguments(FeedbackCombFilter.getDefaults(), arguments, ["delayTime", "resonance"]));
-		const options = optionsFromArguments(FeedbackCombFilter.getDefaults(), arguments, ["delayTime", "resonance"]);
+		super(optionsFromArguments(FeedbackCombFilter.getDefaults(), arguments));
+		const options = optionsFromArguments(FeedbackCombFilter.getDefaults(), arguments);
 
 		this.input = new Gain({ context: this.context });
 		this.output = new Gain({ context: this.context });
@@ -73,7 +73,7 @@ export class FeedbackCombFilter extends ToneAudioWorklet<FeedbackCombFilterOptio
 			swappable: true,
 		});
 
-		readOnly(this, ["resonance", "delayTime"]);
+		//readOnly(this, ["resonance", "delayTime"]);
 	}
 
 	protected _audioWorkletName(): string {
@@ -86,15 +86,15 @@ export class FeedbackCombFilter extends ToneAudioWorklet<FeedbackCombFilterOptio
 	static getDefaults(): FeedbackCombFilterOptions {
 		return Object.assign(ToneAudioNode.getDefaults(), {
 			delayTime: 0.1,
-			resonance: 0.5,
+			resonance: 0.0,
 		});
 	}
 
 	onReady(node: AudioWorkletNode) {
 		connectSeries(this.input, node, this.output);
-		const delayTime = node.parameters.get("delayTime") as AudioParam;;
+		const delayTime = node.parameters.get("delayTime") as AudioParam;
 		this.delayTime.setParam(delayTime);
-		const feedback = node.parameters.get("feedback") as AudioParam;;
+		const feedback = node.parameters.get("feedback") as AudioParam;
 		this.resonance.setParam(feedback);
 	}
 

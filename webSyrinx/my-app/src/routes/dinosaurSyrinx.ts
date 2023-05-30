@@ -1,21 +1,25 @@
+//Courtney Brown 2023
+//Implements a dinosaur syrinx
+//This is a work in progress.
+//Eventual goal is website + API based on tonejs.
+//First goal is exhibition June 2023, sooo.
+
 import * as Tone from 'tone';
 import { Gain, optionsFromArguments } from 'tone';
-import { Time } from 'tone';
-import { Source, type SourceOptions } from 'tone/build/esm/source/Source';
+import type { Time } from 'tone';
 import { Effect, type EffectOptions } from 'tone/build/esm/effect/Effect';
 import { ToneAudioWorklet, type ToneAudioWorkletOptions } from "./tonejs_fixed/ToneAudioWorklet";
 import { FeedbackCombFilter } from "./tonejs_fixed/FeedbackCombFilter";
 import { workletName } from "./SyrinxMembraneWorklet.worklet";
-import { connectSeries, ToneAudioNode, type ToneAudioNodeOptions } from "tone/build/esm/core/context/ToneAudioNode";
+import { connectSeries } from "tone/build/esm/core/context/ToneAudioNode";
 import type { RecursivePartial } from 'tone/build/esm/core/util/Interface';
 import { singleIOProcess } from './tonejs_fixed/SingleIOProcessor.worklet';
 import { addToWorklet } from './tonejs_fixed/WorkletGlobalScope';
-		addToWorklet(singleIOProcess);
 import { Delay } from "tone/build/esm/core/context/Delay";
 import { Param } from "tone/build/esm/core/context/Param";
 import type { NormalRange, Positive } from "tone/build/esm/core/type/Units";
 import { readOnly } from "tone/build/esm/core/util/Interface";
-import { FeedbackEffect, type FeedbackEffectOptions } from "tone/build/esm/effect/FeedbackEffect";
+import { CombFilterEffect } from './CombFilter'
 
 //# sourceMappingURL=ToneAudioWorklet.js.map
 
@@ -33,74 +37,9 @@ import { FeedbackEffect, type FeedbackEffectOptions } from "tone/build/esm/effec
 var SAMPLERATE = 44100;
 var CHANNEL_COUNT = 2;
 
-
-/**
- * FeedbackDelay is a DelayNode in which part of output signal is fed back into the delay.
- *
- * @param delayTime The delay applied to the incoming signal.
- * @param feedback The amount of the effected signal which is fed back through the delay.
- * @example
- * const feedbackDelay = new Tone.FeedbackDelay("8n", 0.5).toDestination();
- * const tom = new Tone.MembraneSynth({
- * 	octaves: 4,
- * 	pitchDecay: 0.1
- * }).connect(feedbackDelay);
- * tom.triggerAttackRelease("A2", "32n");
- * @category Effect
- */
-// export class CombFeedback extends FeedbackEffect<FeedbackDelayOptions> {
-
-// 	readonly name: string = "FeedbackDelay";
-
-// 	/**
-// 	 * the delay node
-// 	 */
-// 	private _delayNode: FeedbackCombFilter;
-
-// 	/**
-// 	 * The delayTime of the FeedbackDelay.
-// 	 */
-// 	readonly delayTime: Param<"time">;
-
-// 	constructor(delayTime?: typeof Time, feedback?: NormalRange);
-// 	constructor(options?: Partial<FeedbackDelayOptions>);
-// 	constructor() {
-
-// 		super(optionsFromArguments(CombFeedback.getDefaults(), arguments, ["delayTime", "feedback"]));
-// 		const options = optionsFromArguments(CombFeedback.getDefaults(), arguments, ["delayTime", "feedback"]);
-
-// 		this._delayNode = new FeedbackCombFilter({
-// 			context: this.context,
-// 			delayTime: options.delayTime,
-// 			maxDelay: options.maxDelay,
-// 		});
-// 		this.delayTime = this._delayNode.delayTime;
-
-// 		// connect it up
-// 		this.connectEffect(this._delayNode);
-// 		readOnly(this, "delayTime");
-// 	}
-
-// 	static getDefaults(): FeedbackDelayOptions {
-// 		return Object.assign(FeedbackEffect.getDefaults(), {
-// 			delayTime: 0.25,
-// 			maxDelay: 1,
-// 		});
-// 	}
-
-// 	dispose(): this {
-// 		super.dispose();
-// 		this._delayNode.dispose();
-// 		this.delayTime.dispose();
-// 		return this;
-// 	}
-// }
-
-
 export interface MembraneOptions extends EffectOptions {
 	pG: Positive;
 }
-
 export class SyrinxMembraneFS extends Effect<MembraneOptions> {
 
 	readonly name: string = "SyrinxMembrane";
@@ -168,9 +107,7 @@ export class FletcherSmythSyrinxMembraneWorklet extends ToneAudioWorklet<Membran
 	constructor(options?: RecursivePartial<MembraneWorkletOptions>);
 	constructor() {
         addToWorklet(singleIOProcess);
-        //look at the bitcrusher.....
 		super(optionsFromArguments(FletcherSmythSyrinxMembraneWorklet.getDefaults(), arguments));
-
 		const options = optionsFromArguments(FletcherSmythSyrinxMembraneWorklet.getDefaults(), arguments);
 
 		this.input = new Gain({ context: this.context });
@@ -294,8 +231,6 @@ export function pbmStringTest()
     //resonance: 0.7,
     //release: 1,
 
-
-
     let lpf = new Tone.OnePoleFilter();
     let lpf2 = new Tone.OnePoleFilter();
 
@@ -307,21 +242,32 @@ export function pbmStringTest()
         type: "brown"
     }); 
 
+    // var delay = new FeedbackCombFilter({ delayTime:(0.5/400), resonance:0 } ); 
+    let dT = 0.5/2400.0
+    var comb = new CombFilterEffect({ delayTime: dT } ); 
+    var delay = new Delay({ delayTime:0, maxDelay: 0.001 } ); 
 
-    var delay = new Delay({ delayTime:(0.5/400) } ); 
+    const param = comb.delayTime; 
+    param.setValueAtTime(dT, 1.0);
 
-    //var delay2 = new Delay({ delayTime:(1/400) } ); 
     var negate = new Tone.Negate(); 
     var gain = new Gain({
-        gain : 0.99 ,
+        gain : 0.5 ,
         convert : true
         }); 
 
-    pinkNoise.chain(delay, lpf, negate, gain, Tone.Destination);
-    gain.connect(delay);
-    //gain.connect(lpf2);
+    let membrane = new SyrinxMembraneFS({pG: 5});
 
-    console.log(lpf2.numberOfInputs);
+    let fdbck = new FeedbackCombFilter({ delayTime: dT, resonance: 0.0 } ); 
+    let ins = new Gain(1.0);
+
+    // pinkNoise.chain(ins, fdbck, delay, gain, Tone.Destination);
+    // console.log(delay.delayTime.getValueAtTime(0.5));
+    // delay.connect(ins);
+    // pinkNoise.start(); 
+
+    membrane.connect(Tone.Destination); 
+
 
 
 	// triggerAttack(note: Frequency, time?: Time): this {
@@ -363,9 +309,6 @@ function createMicValues() : Tone.Meter
 
 export function createTrachealSyrinx()
 {
-
-    
-
 /********* not a flute paper -- chuck code
 SyrinxMembrane mem => DelayA delay => lp => Flip flip => DelayA delay2 => WallLossAttenuation wa; //reflection from trachea end back to bronchus beginning
 ; //from membrane to trachea
@@ -391,8 +334,10 @@ audioOut => BiQuad hpOut => dac;
     let LFreq = c/(2*L);
     let period : number = (0.5) / (LFreq) ; //in seconds
     console.log(LFreq);
-    var delay = new Delay({ delayTime:period} ); 
-    var delay3 = new FeedbackCombFilter({ delayTime:period, resonance:0} ); 
+    var delay = new Delay({ delayTime:period} ); //NOTE: delay is normal buffer delay so has inaccuracies -- very bad. Must fix soon.
+    var comb = new CombFilterEffect({ delayTime:period } ); 
+    var comb2 = new CombFilterEffect({ delayTime:period } ); 
+
 
     //reflection lowpass filter - need to write my own lp
     var lp = new Tone.OnePoleFilter();
@@ -413,13 +358,23 @@ audioOut => BiQuad hpOut => dac;
     //the feedback loop is here
     var p1 : Gain = new Gain();
 
-    membrane.chain(delay, lp, flip, p1, Tone.Destination);
+
+    let pinkNoise = new Tone.Noise({
+        type: "pink"
+    });
+
+    //membrane.chain(comb, lp, flip, p1, Tone.Destination);
+    //p1.chain(comb);
+    //pinkNoise.start(); 
+    membrane.chain(comb, lp, flip, p1, Tone.Destination);
     p1.connect(membrane);
-    p1.connect(delay);
+    p1.connect(comb);
 
     const pGparam = membrane.pG; 
     const meter = createMicValues();
+    pGparam.setValueAtTime(5.0, 0.0);
 
+    /*
     let num = meter.getValue();
     if (typeof num === "number")
     {
@@ -432,6 +387,7 @@ audioOut => BiQuad hpOut => dac;
     {
         console.log ("unhandled meter error - array returned instead of number");
     }
+    */
 
     
 

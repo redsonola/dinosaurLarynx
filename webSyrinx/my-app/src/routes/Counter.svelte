@@ -42,7 +42,7 @@
 </div>
 	<!-- Courtney Fuckery at this point -->
 	<br />
-	<button on:click={() => createTrachealSyrinx() } aria-label="play a sound!">
+	<button on:click={() => pbmStringTest() } aria-label="play a sound!">
 	</button>
 
 <style>
