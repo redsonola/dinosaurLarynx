@@ -5,6 +5,7 @@ import "./SyrinxMembraneSynthesis.worklet";
 import "./BirdTracheaFilter.worklet"
 import "./tonejs_fixed/DelayLine.worklet";
 import "./WallLoss.worklet"
+import "./HPout.worklet"
 
 
 import { registerProcessor } from "./tonejs_fixed/WorkletLocalScope";
@@ -36,24 +37,18 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
         this.tracheaFilter = new BirdTracheaFilter(this.membrane.c, this.membrane.T); 
         this.tracheaFilter.setParamsForReflectionFilter(this.membrane.a);
         this.wallLoss = new WallLossAttenuation(this.membrane.L, this.membrane.a);
+        this.hpOut = new HPFilter(this.tracheaFilter.a1, this.tracheaFilter.b0);
+        //console.log(this.hpOut)
 
         //the delay of comb filter for the waveguide
         this.delayTime = this.getPeriod();
 
-        let f1 = this.membrane.wFreq[0]/(2*Math.PI);
-        let f2 = this.membrane.wFreq[1]/(2*Math.PI);
-        
-        //console.log(f1);
-        //console.log(f2);
-        //console.log(this.membrane.curT);
+        this.max = 300; //this is for my custom limiter, need to make better.......
 
-        this.max = 300;
-
-        this.count = 0;
-
+        this.count = 0; //for outputting values at a lower rate
     }
 
-    //the combfilter for the waveguide
+    //period of the comb filter for the waveguide
     protected getPeriod() : number
     {
         let LFreq = this.membrane.c/(2*this.membrane.L);
@@ -121,12 +116,12 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
         this.membrane.changePG(parameters.pG);
         this.membrane.changeTension(parameters.tension);
 
-        this.count++;
-        if(this.count >50)
-        {
-            console.log(this.membrane.pG + ", " + parameters.tension);
-            this.count = 0;
-        }
+        // this.count++;
+        // if(this.count >50)
+        // {
+        //     console.log(this.membrane.pG + ", " + parameters.tension);
+        //     this.count = 0;
+        // }
         const pOut = this.membrane.tick(this.lastSample); //the syrinx membrane  //Math.random() * 2 - 1; 
 
         //********1st delayLine => tracheaFilter => flip => last sample  *********
@@ -140,12 +135,13 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
 
         //******** Add delay lines ==> High Pass Filter => out  *********
         curOut = curOut + this.lastSample;
+       //curOut = this.hpOut.tick(curOut);
         
         //****** simple limiting, sigh - look up a better way *********
         this.max = Math.max(this.max, curOut);
         curOut = curOut/this.max; 
 
-        //curOut = this.hpOut.tick(curOut);
+        //****** output w/high pass *********      
 
         return curOut;
     }

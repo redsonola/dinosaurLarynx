@@ -279,8 +279,8 @@ export function pbmStringTest()
         let scaledY = m.y; //logScale( m.y, 0.001, 1.0 ); 
 
         let num = meter.getValue();
-        let maxPG = 2000.0*(1000*scaledY);
-
+        let maxPG = 2000.0*(1000*scaledY) ;
+        console.log(num);
         pGparam.setValueAtTime((num as number)*maxPG, 0.0); 
         //tension.setValueAtTime(((m.y) * (98902430-19640049.0))+19640049, 0.0);},
         tension.setValueAtTime(((scaledY) * (98913500-64004.0))+64004, 0.0);},
