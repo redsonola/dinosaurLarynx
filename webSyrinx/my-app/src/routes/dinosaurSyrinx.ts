@@ -264,8 +264,10 @@ function logScale(input : number, min : number, max : number) : number
 export function pbmStringTest()
 {
     const membrane = new SyrinxMembraneFS({pG: 0.0});
-    //const limiter = new Tone.Limiter(); 
-    membrane.chain(Tone.Destination); 
+    const limiter = new Tone.Limiter(); 
+    const compressor = new Tone.Compressor();
+    const gain = new Tone.Gain(4); 
+    membrane.chain(compressor, limiter, gain, Tone.Destination); 
     
     const pGparam = membrane.pG; 
     const meter = createMicValues();
@@ -276,14 +278,15 @@ export function pbmStringTest()
     if (typeof num === "number")
     {
         setInterval(() => {
-        let scaledY = m.y; //logScale( m.y, 0.001, 1.0 ); 
+        let scaledY = logScale( m.y, 0.001, 1.0 ); 
 
         let num = meter.getValue();
-        let maxPG = 2000.0*(1000*scaledY) ;
-        console.log(num);
+        //num = logScale( num as number, 0.001, 1.0 );
+        let maxPG = ((2000.0*1000*scaledY)-9000000) + 9000000 ;
+        //console.log(num);
         pGparam.setValueAtTime((num as number)*maxPG, 0.0); 
         //tension.setValueAtTime(((m.y) * (98902430-19640049.0))+19640049, 0.0);},
-        tension.setValueAtTime(((scaledY) * (98913500-64004.0))+64004, 0.0);},
+        tension.setValueAtTime(((scaledY) * (98913500-964004.0))+964004, 0.0);},
         5);
     }
     else

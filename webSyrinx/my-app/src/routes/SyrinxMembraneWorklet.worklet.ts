@@ -5,7 +5,7 @@ import "./SyrinxMembraneSynthesis.worklet";
 import "./BirdTracheaFilter.worklet"
 import "./tonejs_fixed/DelayLine.worklet";
 import "./WallLoss.worklet"
-//import "./HPout.worklet"
+import "./HPout.worklet"
 
 
 import { registerProcessor } from "./tonejs_fixed/WorkletLocalScope";
@@ -37,13 +37,13 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
         this.tracheaFilter = new BirdTracheaFilter(this.membrane.c, this.membrane.T); 
         this.tracheaFilter.setParamsForReflectionFilter(this.membrane.a);
         this.wallLoss = new WallLossAttenuation(this.membrane.L, this.membrane.a);
-        //this.hpOut = new HPFilter(this.tracheaFilter.a1, this.tracheaFilter.b0);
+        this.hpOut = new HPFilter(this.tracheaFilter.a1, this.tracheaFilter.b0);
         //console.log(this.hpOut)
 
         //the delay of comb filter for the waveguide
         this.delayTime = this.getPeriod();
 
-        this.max = 300; //this is for my custom limiter, need to make better.......
+        this.max = 51520; //this is for my custom limiter, it's a hard limiter -- need to make better....... -- this is on to do
 
         this.count = 0; //for outputting values at a lower rate
     }
@@ -78,7 +78,7 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
             name: "pG",
             defaultValue: 0,
             minValue: 0,
-            maxValue: 250000,
+            maxValue: 2500000,
             automationRate: "k-rate"
         },
         {
@@ -135,15 +135,25 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
 
         //******** Add delay lines ==> High Pass Filter => out  *********
         curOut = curOut + this.lastSample;
-       //curOut = this.hpOut.tick(curOut);
+        let fout = this.hpOut.tick(curOut);
         
-        //****** simple limiting, sigh - look up a better way *********
-        this.max = Math.max(this.max, curOut);
-        curOut = curOut/this.max; 
+        //****** simple scaling into more audio-like values, sigh  *********
+        //this.max = Math.max(this.max, fout);
+        fout = fout/this.max;  
+
+        //test to see if I need a limiter
+        this.count++;
+        if(this.count >50)
+        {
+            // console.log(this.membrane.pG + ", " + parameters.tension);
+            console.log("max: "+ this.max);
+
+            this.count = 0;
+        }        
 
         //****** output w/high pass *********      
 
-        return curOut;
+        return fout;
     }
 
     //this is the delayLine generate -- note: I will probably have to have multiple delay lines
