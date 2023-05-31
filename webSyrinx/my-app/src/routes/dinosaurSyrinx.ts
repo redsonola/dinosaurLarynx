@@ -283,10 +283,11 @@ export function pbmStringTest()
         let num = meter.getValue();
         //num = logScale( num as number, 0.001, 1.0 );
         let maxPG = ((2000.0*1000*scaledY)-9000000) + 9000000 ;
+        maxPG /= 10; 
         //console.log(num);
         pGparam.setValueAtTime((num as number)*maxPG, 0.0); 
         //tension.setValueAtTime(((m.y) * (98902430-19640049.0))+19640049, 0.0);},
-        tension.setValueAtTime(((scaledY) * (98913500-964004.0))+964004, 0.0);},
+        tension.setValueAtTime(((scaledY) * (98913500-64004.0))+64004, 0.0);},
         5);
     }
     else

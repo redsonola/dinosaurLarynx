@@ -9,11 +9,11 @@ import './Complex.worklet'
 
 
 //Syrinx Membrane
-const birdTracheaFilter =  /* javascript */`class BirdTracheaFilter
+const birdTracheaFilter =  /* javascript */`class ReflectionFilter
 {
     protected a1 = 1.0;
     protected b0 = 1.0;
-    protected lastOut =0.0 ; 
+    protected lastOut = 0.0 ; 
     protected lastV = 0.0 ; 
     protected c = 0; //speed of sound
     protected T = 0; //sample period

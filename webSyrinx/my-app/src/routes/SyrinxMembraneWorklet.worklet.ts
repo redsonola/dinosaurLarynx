@@ -4,9 +4,9 @@ import "tone/build/esm/core/worklet/SingleIOProcessor.worklet";
 import "./SyrinxMembraneSynthesis.worklet";
 import "./BirdTracheaFilter.worklet"
 import "./tonejs_fixed/DelayLine.worklet";
-import "./WallLoss.worklet"
-import "./HPout.worklet"
-
+import "./WallLoss.worklet";
+import "./HPout.worklet";
+import "./ScatteringJunction.worklet";
 
 import { registerProcessor } from "./tonejs_fixed/WorkletLocalScope";
 import * as ts from "typescript";
@@ -27,25 +27,68 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
     constructor(options : any) {
         super(options);
         this.membrane = new SyrinxMembrane();
-        this.lastSample = 0; 
+        this.membrane2 = new SyrinxMembrane(); 
+
+        this.lastSample = 0;
+        this.lastSample2 = 0; 
+        this.lastTracheaSample = 0; 
 
         //one for each way
-        this.delayLine1 = new DelayLine(this.sampleRate, options.channelCount || 2);
-        this.delayLine2 = new DelayLine(this.sampleRate, options.channelCount || 2);
+        this.bronch1Delay1 = new DelayLine(this.sampleRate, options.channelCount || 2);
+        this.bronch1Delay2 = new DelayLine(this.sampleRate, options.channelCount || 2);
+
+        this.bronch2Delay1 = new DelayLine(this.sampleRate, options.channelCount || 2);
+        this.bronch2Delay2 = new DelayLine(this.sampleRate, options.channelCount || 2);
+
+        this.tracheaDelay1 = new DelayLine(this.sampleRate, options.channelCount || 2);
+        this.tracheaDelay2 = new DelayLine(this.sampleRate, options.channelCount || 2);
         
+        //hadrosaur values
         this.hadrosaurInit();
-        this.tracheaFilter = new BirdTracheaFilter(this.membrane.c, this.membrane.T); 
+
+        //the reflection filters for each tube: bronchi & trachea
+        this.bronch1Filter = new ReflectionFilter(this.membrane.c, this.membrane.T); 
+        this.bronch1Filter.setParamsForReflectionFilter(this.membrane.a);
+
+        this.bronch2Filter = new ReflectionFilter(this.membrane.c, this.membrane.T); 
+        this.bronch2Filter.setParamsForReflectionFilter(this.membrane.a);
+
+        this.tracheaFilter = new ReflectionFilter(this.membrane.c, this.membrane.T); 
         this.tracheaFilter.setParamsForReflectionFilter(this.membrane.a);
+
+        //we'll need separate wall losses as well...
         this.wallLoss = new WallLossAttenuation(this.membrane.L, this.membrane.a);
+
         this.hpOut = new HPFilter(this.tracheaFilter.a1, this.tracheaFilter.b0);
-        //console.log(this.hpOut)
+        this.scatteringJunction = new ScatteringJunction(this.membrane.z0);
 
         //the delay of comb filter for the waveguide
-        this.delayTime = this.getPeriod();
+        //which syrinx
+        this.generateFunction = this.generateTracheobronchial;
+        this.membraneCount = 2; 
+        this.setDelayTime( this.getPeriod() );
 
-        this.max = 51520; //this is for my custom limiter, it's a hard limiter -- need to make better....... -- this is on to do
+        this.max = 51520; //for some simple scaling into more audio-like numbers -- output from this should still be passed on to limiter
+                          //TODO: perhaps implementing something custom for this, we'll see.
+
 
         this.count = 0; //for outputting values at a lower rate
+
+
+    }
+
+    //set delay time
+    protected setDelayTime(period : number)
+    {
+        //ok just testing here
+        if(this.membraneCount < 2)
+        {
+            this.delayTime = period; 
+        }
+        else
+        {
+            this.delayTime = period/2.0; //just divide evenly? though not likely TODO: fix
+        }
     }
 
     //period of the comb filter for the waveguide
@@ -53,7 +96,6 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
     {
         let LFreq = this.membrane.c/(2*this.membrane.L);
         let period = 0.5 / LFreq;
-        console.log(period);
         return period; //in seconds 
     }
 
@@ -71,6 +113,19 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
    
         this.membrane.initTension(); 
         this.membrane.initZ0;
+
+        //repeat, maybe I should arrayify...
+        this.membrane2.a = 4.5; 
+        this.membrane2.h = 4.5; 
+        this.membrane2.L = 116; //dummy
+        this.membrane2.d = 5; 
+
+        //in various
+        this.membrane2.modT = 10000.0; 
+        this.membrane2.modPG = 80;
+   
+        this.membrane2.initTension(); 
+        this.membrane2.initZ0;
     }
 
     static get parameterDescriptors() {
@@ -87,19 +142,27 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
             minValue: 0,
             maxValue: 168397230,
             automationRate: "k-rate"
+        }, 
+        {
+            name: "membraneCount",
+            defaultValue: 2,
+            minValue: 1,
+            maxValue: 2,
+            automationRate: "k-rate"
         }];
+    }
+
+    generate(input:any, channel:any, parameters:any) {
+        return this.generateFunction(input, channel, parameters);  //default is Tracheobronchial for now
     }
 
     //NOTE: Web Audio API does NOT allow cycles except when there is a delay, which introduces at least 1 buffer of audio delay (128 samples) 
     //which is not fine enough granularity for the waveguides. So all processing for the syrinx is here.
     //I will refactor this later.
     //my GOD! what a #$%^&*&^%^&*ing pain.
-    generate(input:any, channel:any, parameters:any) {
+    generateTrachealSyrinx(input:any, channel:any, parameters:any) {
 
-        //implementing this chain
-        //membrane.chain(comb, lp, flip, p1, Tone.Destination);
-        //p1.connect(membrane);
-        //p1.connect(comb);
+        //*****implementing this chuck code.....
 
         //from membrane to trachea and part way back
         //SyrinxMembrane mem => DelayA delay => lp => Flip flip => DelayA delay2 => WallLossAttenuation wa; //reflection from trachea end back to bronchus beginning
@@ -111,6 +174,7 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
         ////p1 => DelayA oz =>  mem; //the reflection also is considered in the pressure output of the syrinx
         //p1 =>  mem; //the reflection also is considered in the pressure output of the syrinx
         //p1 => delay; 
+        //************
 
         //**** syrinx membrane ******
         this.membrane.changePG(parameters.pG);
@@ -125,12 +189,12 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
         const pOut = this.membrane.tick(this.lastSample); //the syrinx membrane  //Math.random() * 2 - 1; 
 
         //********1st delayLine => tracheaFilter => flip => last sample  *********
-        let curOut = this.delayLineGenerate(pOut+this.lastSample, channel, parameters, this.delayLine1);
+        let curOut = this.delayLineGenerate(pOut+this.lastSample, channel, parameters, this.bronch1Delay1);
         this.lastSample = this.tracheaFilter.tick(curOut); //low-pass filter
         this.lastSample = this.lastSample * -1; //flip
 
         //********2nd delayLine, going back *********
-        this.lastSample = this.delayLineGenerate(this.lastSample, channel, parameters, this.delayLine2);
+        this.lastSample = this.delayLineGenerate(this.lastSample, channel, parameters, this.bronch1Delay2);
         this.lastSample = this.wallLoss.tick(this.lastSample); 
 
         //******** Add delay lines ==> High Pass Filter => out  *********
@@ -138,7 +202,6 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
         let fout = this.hpOut.tick(curOut);
         
         //****** simple scaling into more audio-like values, sigh  *********
-        //this.max = Math.max(this.max, fout);
         fout = fout/this.max;  
 
         //test to see if I need a limiter
@@ -146,7 +209,7 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
         if(this.count >50)
         {
             // console.log(this.membrane.pG + ", " + parameters.tension);
-            console.log("max: "+ this.max);
+            //console.log("max: "+ this.max);
 
             this.count = 0;
         }        
@@ -155,6 +218,63 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
 
         return fout;
     }
+
+    //2 membranes, as in passerines
+    generateTracheobronchial(input:any, channel:any, parameters:any) {
+        
+        //**** syrinx membrane ******
+        this.membrane.changePG(parameters.pG);
+        this.membrane.changeTension(parameters.tension);
+
+        this.membrane2.changePG(parameters.pG);
+        this.membrane2.changeTension(parameters.tension);
+
+        // this.count++;
+        // if(this.count >50)
+        // {
+        //     console.log(this.membrane.pG + ", " + parameters.tension);
+        //     this.count = 0;
+        // }
+
+        //******** Sound is generated and travels up each bronchi *********
+        const pOut = this.membrane.tick(this.lastSample); //the syrinx membrane  //Math.random() * 2 - 1; 
+        let curOut = this.delayLineGenerate(pOut+this.lastSample, channel, parameters, this.bronch1Delay1);
+        this.lastSample = this.bronch1Filter.tick(curOut); //low-pass filter
+        this.lastSample = this.lastSample * -1; //flip
+
+        const pOut2 = this.membrane2.tick(this.lastSample2); //the syrinx membrane  //Math.random() * 2 - 1; 
+        let curOut2 = this.delayLineGenerate(pOut2+this.lastSample2, channel, parameters, this.bronch2Delay1);
+        this.lastSample2 = this.bronch2Filter.tick(curOut2); //low-pass filter
+        this.lastSample2 = this.lastSample2 * -1; //flip 
+
+        //******** Sound encounters Junction *********
+        let scatterOut = this.scatteringJunction.scatter(curOut, curOut2, this.lastTracheaSample); 
+
+        //******** Sound travels through trachea *********
+        let trachOut = this.delayLineGenerate(scatterOut.trach + this.lastTracheaSample, channel, parameters, this.tracheaDelay1);
+        this.lastTracheaSample = this.tracheaFilter.tick(trachOut); //low-pass filter
+        this.lastTracheaSample = this.lastTracheaSample * -1; //flip 
+
+        //******** Sound is reflected from bronchi & trachea *********
+        this.lastSample = this.delayLineGenerate(scatterOut.b1, channel, parameters, this.bronch1Delay2);
+        this.lastSample = this.wallLoss.tick(this.lastSample); 
+
+        this.lastSample2 = this.delayLineGenerate(scatterOut.b2, channel, parameters, this.bronch2Delay2);
+        this.lastSample2 = this.wallLoss.tick(this.lastSample2); 
+
+        this.lastTracheaSample = this.delayLineGenerate(this.lastTracheaSample, channel, parameters, this.tracheaDelay2);
+        //this.lastTracheaSample = this.wallLoss.tick(this.lastTracheaSample); 
+
+        //******** Add delay lines ==> High Pass Filter => out  *********
+        trachOut = trachOut + this.lastTracheaSample;
+        let fout = this.hpOut.tick(trachOut);
+        
+        //****** simple scaling into more audio-like values, sigh  *********
+        fout = fout/(this.max*2);         
+
+        return fout;
+    }
+
 
     //this is the delayLine generate -- note: I will probably have to have multiple delay lines
     //this function altered slightly from tonejs FeedbackCombFilter
