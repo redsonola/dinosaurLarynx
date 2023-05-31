@@ -5,7 +5,7 @@ import "./SyrinxMembraneSynthesis.worklet";
 import "./BirdTracheaFilter.worklet"
 import "./tonejs_fixed/DelayLine.worklet";
 import "./WallLoss.worklet"
-import "./HPout.worklet"
+//import "./HPout.worklet"
 
 
 import { registerProcessor } from "./tonejs_fixed/WorkletLocalScope";
@@ -37,7 +37,7 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
         this.tracheaFilter = new BirdTracheaFilter(this.membrane.c, this.membrane.T); 
         this.tracheaFilter.setParamsForReflectionFilter(this.membrane.a);
         this.wallLoss = new WallLossAttenuation(this.membrane.L, this.membrane.a);
-        this.hpOut = new HPFilter(this.tracheaFilter.a1, this.tracheaFilter.b0);
+        //this.hpOut = new HPFilter(this.tracheaFilter.a1, this.tracheaFilter.b0);
         //console.log(this.hpOut)
 
         //the delay of comb filter for the waveguide
