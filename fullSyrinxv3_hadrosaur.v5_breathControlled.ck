@@ -346,7 +346,7 @@ class SyrinxMembrane extends Chugen
     fun void updateTensionAndW()
     {
         goalT - curT => diff; 
-        if(diff > 0)
+        if(diff != 0)
         {            
             //(dT + diff)*T*modT => dT ; 
             //curT + dT => curT; 
@@ -584,7 +584,6 @@ fun OnePole envelopeFollower()
     3 => g.op;
     
     // set pole position
-    0.99 => p.pole;
     
     return p; 
 }

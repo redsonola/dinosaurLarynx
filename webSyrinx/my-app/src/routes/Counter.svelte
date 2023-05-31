@@ -1,6 +1,6 @@
 <script>
 	import { spring } from 'svelte/motion';
-	import { createSynth, createTrachealSyrinx, pbmStringTest } from './dinosaurSyrinx';
+	import { trachealSyrinx } from './dinosaurSyrinx';
 
 	let count = 0;
 
@@ -42,7 +42,7 @@
 </div>
 	<!-- Courtney Fuckery at this point -->
 	<br />
-	<button on:click={() => pbmStringTest() } aria-label="play a sound!">
+	<button on:click={() => trachealSyrinx() } aria-label="play a sound!">
 	</button>
 
 <style>
