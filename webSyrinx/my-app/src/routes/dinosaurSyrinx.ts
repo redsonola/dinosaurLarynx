@@ -315,14 +315,85 @@ export function trachealSyrinx()
         let num = meter.getValue();
         //let pG = scalePGValues(num as number);
        // console.log(pG);
-         let maxPG = ((2000.0*1000*scaledY)-9000000) + 9000000 ;
-         maxPG /= 10; 
-         let pG = (num as number)*maxPG;
-         pG = Math.min(pG, 2000);
-        console.log(pG);
-        pGparam.setValueAtTime(pG, 0.0); 
+
+       //produced good low value
+    //      let maxPG = ((2000.0*1000*scaledY)-900000000) + 900000000 ;
+    //       maxPG = Math.min(2000, maxPG);
+    //       maxPG /= 5; 
+    //       let pG = (num as number)*maxPG;
+    //    pG = Math.min(pG, 2200);
+
+        //    mid-low
+        // let maxPG = ((2000.0*1000*scaledY)-900000000) + 900000000 ;
+        // maxPG = Math.min(5000, maxPG);
+        // maxPG /= 5; 
+        // let pG = (num as number)*maxPG;
+        // pG = Math.min(pG, 2200);
+
+        //mid?
+        // let maxPG = 1500;
+        // let pG = (num as number)*maxPG;
+        // pG = Math.min(pG, 5000);        
+
+        // pGparam.setValueAtTime(pG, 0.0); 
         //tension.setValueAtTime(((m.y) * (98902430-196 40049.0))+19640049, 0.0);},
-        tension.setValueAtTime(((scaledY) * (98989831.3116-17375340.3640))+17375340.3640, 0.0);},
+
+        //good low values: 2583941.1933598467, 300 pg real max, maxPG: 400
+        //good mid-low values: 3615563.60540479, 700-800 pg real max, maxPG: 1000
+        //good mid-high values: 3903412.785737743 (900 pg max)- 7017654.60540479, 1000-1300 pg real max, maxPG: 1500
+        //good high values: 98902430 -- 5000 max.
+
+  
+
+//        let tens = ((scaledY) * (98989831.3116-3753.3640))+37534.364;
+
+        let tens=0; 
+        if( m.y < 0.75 )
+        {
+            tens = ((m.y) * (9890243.3116-2083941))+2083941;
+        }
+        else 
+        {
+            let addOn = ((0.75) * (9890243.3116-2083941))+2083941;
+            tens = ((m.y) * (98989831.3116-addOn))+addOn;
+        }
+        
+        tension.setValueAtTime(tens, 0.0);
+
+
+        //pG is based on the tension
+        let maxMaxPG = 400; 
+        let floorPG = 400;
+        if( tens < 3615563 )
+        {
+            floorPG = 400; 
+            maxMaxPG = 1000; 
+        }
+        else if(tens < 8017654 )
+        {
+            floorPG = 1000; 
+            maxMaxPG = 1500;
+        }  
+        else if(tens >= 8017654 )
+        {
+            floorPG = 1500; 
+            maxMaxPG = 5000;            
+        }
+        let maxPG = ( m.y * (maxMaxPG-floorPG) ) + floorPG; 
+        let pG = (num as number)*maxPG;
+
+
+        if( m.y < 0.8 )
+            pG = Math.min(pG, 2200);  
+        else   
+            pG = Math.min(pG, 5000);     
+
+        pGparam.setValueAtTime(pG, 0.0);       
+
+
+
+        console.log(pG, tens, maxPG);
+        },
         5);
     }
     else

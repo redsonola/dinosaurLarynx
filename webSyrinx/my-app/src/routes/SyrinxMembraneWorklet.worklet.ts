@@ -33,6 +33,9 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
         this.lastSample2 = 0; 
         this.lastTracheaSample = 0; 
 
+        this.delayTimeBronchi = 0; //delay of each of the bronchi sides
+        this.delayTime = 0; //the trachea delay time
+
         //one for each way
         this.bronch1Delay1 = new DelayLine(this.sampleRate, options.channelCount || 2);
         this.bronch1Delay2 = new DelayLine(this.sampleRate, options.channelCount || 2);
@@ -80,15 +83,22 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
     //set delay time
     protected setDelayTime(period : number)
     {
+        this.delayTime = period; 
+
+        //values from Smyth 2002, in mm
+        //large bird - bronchus to trachea - 30/35.6 -- taking the large bird radius (still a small bird)
+        //medium bird - bronchus to trachea - 14/23
+        //small bird - bronchus to trachea - 5/17.1
+
+
         //ok just testing here
-        if(this.membraneCount < 2)
+        if(this.membraneCount >= 2)
         {
-            this.delayTime = period; 
+            //let's say the MTM bronchi to the trachea length is 1/15 of the trachea 
+            //I got this by looking at diagrams
+            this.delayTimeBronchi = period*(30/35.6);  
         }
-        else
-        {
-            this.delayTime = period/2.0; //just divide evenly? though not likely TODO: fix
-        }
+
     }
 
     //period of the comb filter for the waveguide
@@ -189,18 +199,18 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
         const pOut = this.membrane.tick(this.lastSample); //the syrinx membrane  //Math.random() * 2 - 1; 
 
         //********1st delayLine => tracheaFilter => flip => last sample  *********
-        let curOut = this.delayLineGenerate(pOut+this.lastSample, channel, parameters, this.bronch1Delay1);
+        let curOut = this.delayLineGenerate(pOut+this.lastSample, channel, parameters, this.bronch1Delay1, this.delayTime);
         this.lastSample = this.tracheaFilter.tick(curOut); //low-pass filter
         this.lastSample = this.lastSample * -1; //flip
 
         //********2nd delayLine, going back *********
-        this.lastSample = this.delayLineGenerate(this.lastSample, channel, parameters, this.bronch1Delay2);
+        this.lastSample = this.delayLineGenerate(this.lastSample, channel, parameters, this.bronch1Delay2, this.delayTime);
         this.lastSample = this.wallLoss.tick(this.lastSample); 
 
         //******** Add delay lines ==> High Pass Filter => out  *********
         curOut = curOut + this.lastSample;
         let fout = this.hpOut.tick(curOut);
-        
+
         //****** simple scaling into more audio-like values, sigh  *********
         fout = fout/this.max;  
 
@@ -238,12 +248,12 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
 
         //******** Sound is generated and travels up each bronchi *********
         const pOut = this.membrane.tick(this.lastSample); //the syrinx membrane  //Math.random() * 2 - 1; 
-        let curOut = this.delayLineGenerate(pOut+this.lastSample, channel, parameters, this.bronch1Delay1);
+        let curOut = this.delayLineGenerate(pOut+this.lastSample, channel, parameters, this.bronch1Delay1, this.delayTimeBronchi);
         this.lastSample = this.bronch1Filter.tick(curOut); //low-pass filter
         this.lastSample = this.lastSample * -1; //flip
 
         const pOut2 = this.membrane2.tick(this.lastSample2); //the syrinx membrane  //Math.random() * 2 - 1; 
-        let curOut2 = this.delayLineGenerate(pOut2+this.lastSample2, channel, parameters, this.bronch2Delay1);
+        let curOut2 = this.delayLineGenerate(pOut2+this.lastSample2, channel, parameters, this.bronch2Delay1, this.delayTimeBronchi);
         this.lastSample2 = this.bronch2Filter.tick(curOut2); //low-pass filter
         this.lastSample2 = this.lastSample2 * -1; //flip 
 
@@ -251,18 +261,18 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
         let scatterOut = this.scatteringJunction.scatter(curOut, curOut2, this.lastTracheaSample); 
 
         //******** Sound travels through trachea *********
-        let trachOut = this.delayLineGenerate(scatterOut.trach + this.lastTracheaSample, channel, parameters, this.tracheaDelay1);
+        let trachOut = this.delayLineGenerate(scatterOut.trach + this.lastTracheaSample, channel, parameters, this.tracheaDelay1, this.delayTime);
         this.lastTracheaSample = this.tracheaFilter.tick(trachOut); //low-pass filter
         this.lastTracheaSample = this.lastTracheaSample * -1; //flip 
 
         //******** Sound is reflected from bronchi & trachea *********
-        this.lastSample = this.delayLineGenerate(scatterOut.b1, channel, parameters, this.bronch1Delay2);
+        this.lastSample = this.delayLineGenerate(scatterOut.b1, channel, parameters, this.bronch1Delay2, this.delayTimeBronchi);
         this.lastSample = this.wallLoss.tick(this.lastSample); 
 
-        this.lastSample2 = this.delayLineGenerate(scatterOut.b2, channel, parameters, this.bronch2Delay2);
+        this.lastSample2 = this.delayLineGenerate(scatterOut.b2, channel, parameters, this.bronch2Delay2, this.delayTimeBronchi);
         this.lastSample2 = this.wallLoss.tick(this.lastSample2); 
 
-        this.lastTracheaSample = this.delayLineGenerate(this.lastTracheaSample, channel, parameters, this.tracheaDelay2);
+        this.lastTracheaSample = this.delayLineGenerate(this.lastTracheaSample, channel, parameters, this.tracheaDelay2, this.delayTime);
         //this.lastTracheaSample = this.wallLoss.tick(this.lastTracheaSample); 
 
         //******** Add delay lines ==> High Pass Filter => out  *********
@@ -278,8 +288,8 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
 
     //this is the delayLine generate -- note: I will probably have to have multiple delay lines
     //this function altered slightly from tonejs FeedbackCombFilter
-    protected delayLineGenerate(input, channel, parameters, delayLine) : number {
-        const delayedSample = delayLine.get(channel, this.delayTime * this.sampleRate);
+    protected delayLineGenerate(input, channel, parameters, delayLine, delayTime) : number {
+        const delayedSample = delayLine.get(channel, delayTime * this.sampleRate);
         delayLine.push(channel, input);
         return delayedSample;
     }
