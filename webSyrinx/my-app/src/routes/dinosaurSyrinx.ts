@@ -270,26 +270,60 @@ function expScale(input: number, min : number, max : number)
     return res; 
 }
 
-let lastPG = 0; 
-function scalePGValues(ctrlValue : number) : number
+let lastMaxPG = 400; 
+function scalePGValues(micIn : number, tens: number, ctrlValue : number) : number
 {
-    let p = 0; ;
-    let pG1 = 0; 
-    let tot = 0; 
-    if (ctrlValue!=0)
-    {
-        tot = ctrlValue*1000.0;
-        p = expScale(ctrlValue, 1.0, 10.0 );
-        p=p-0.8; 
-        p = Math.max(p, 0); 
-        //ctrlValue/10.0 => totVal;
-    }
-    pG1 = p * 100000000.0;
-    pG1 = Math.min(pG1, 250000);
+        //pG is based on the tension
 
-    pG1 = (lastPG + pG1) * ((1/SAMPLERATE)/2)*2000 ;
-    lastPG = pG1;
-    return pG1; 
+        let maxMaxPG = 400; 
+        let floorPG = 400;
+        if( tens < 3615563 )
+        {
+            floorPG = 400; 
+            maxMaxPG = 1000; 
+        }
+        else if(tens < 8017654 )
+        {
+            floorPG = 1000; 
+            maxMaxPG = 1500;
+        } 
+        else if(tens >= 8017654 )
+        {
+            floorPG = 1500; 
+            maxMaxPG = 5000;            
+        }
+        let maxPG = ( ctrlValue * (maxMaxPG-floorPG) ) + floorPG; 
+
+        if(  tens > 7017654 && tens < 8217654  )    
+            maxPG = (maxPG + lastMaxPG) / 4 ; //smooth out values
+        lastMaxPG = maxPG;
+
+        let pG = micIn*maxPG;
+
+        if( ctrlValue < 0.8 )
+            pG = Math.min(pG, 2200);  
+        else   
+            pG = Math.min(pG, 5000);  
+ 
+
+
+        console.log(pG, tens, maxPG);
+        return pG;
+}
+
+function scaleTension(ctrlValue : number) : number
+{
+    let tens = 0;
+    if( m.y < 0.75 )
+    {
+        tens = ((ctrlValue) * (9890243.3116-2083941))+2083941;
+    }
+    else 
+    {
+        let addOn = ((0.75) * (9890243.3116-2083941))+2083941;
+        tens = ((ctrlValue) * (98989831.3116-addOn))+addOn;
+    }
+    return tens;
 }
 
 //now just a test of the syrinx
@@ -347,52 +381,13 @@ export function trachealSyrinx()
 
 //        let tens = ((scaledY) * (98989831.3116-3753.3640))+37534.364;
 
-        let tens=0; 
-        if( m.y < 0.75 )
-        {
-            tens = ((m.y) * (9890243.3116-2083941))+2083941;
-        }
-        else 
-        {
-            let addOn = ((0.75) * (9890243.3116-2083941))+2083941;
-            tens = ((m.y) * (98989831.3116-addOn))+addOn;
-        }
-        
-        tension.setValueAtTime(tens, 0.0);
+            let tens=scaleTension(m.y); 
+            tension.setValueAtTime(tens, 0.0);
 
+            //pG is based on the tension
+            let pG = scalePGValues(num as number, tens, m.y)
+            pGparam.setValueAtTime(pG, 0.0);       
 
-        //pG is based on the tension
-        let maxMaxPG = 400; 
-        let floorPG = 400;
-        if( tens < 3615563 )
-        {
-            floorPG = 400; 
-            maxMaxPG = 1000; 
-        }
-        else if(tens < 8017654 )
-        {
-            floorPG = 1000; 
-            maxMaxPG = 1500;
-        }  
-        else if(tens >= 8017654 )
-        {
-            floorPG = 1500; 
-            maxMaxPG = 5000;            
-        }
-        let maxPG = ( m.y * (maxMaxPG-floorPG) ) + floorPG; 
-        let pG = (num as number)*maxPG;
-
-
-        if( m.y < 0.8 )
-            pG = Math.min(pG, 2200);  
-        else   
-            pG = Math.min(pG, 5000);     
-
-        pGparam.setValueAtTime(pG, 0.0);       
-
-
-
-        console.log(pG, tens, maxPG);
         },
         5);
     }
