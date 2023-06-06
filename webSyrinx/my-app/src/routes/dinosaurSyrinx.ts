@@ -404,6 +404,7 @@ document.body.addEventListener('mousemove',
 function handleMousemove(event) {
     m.x = event.clientX / document.body.clientWidth;
     m.y = event.clientY / document.body.clientHeight;
+    m.y = 1.0 - m.y; //flip so lower is lower pitched and vice versa
 });
 //---------
 
