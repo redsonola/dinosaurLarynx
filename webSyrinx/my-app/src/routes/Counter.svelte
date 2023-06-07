@@ -45,7 +45,7 @@
 </div>
 	<!-- Courtney Fuckery at this point -->
 	<br />
-	<button on:click={() => trachealSyrinx() } aria-label="play a sound!">
+	<button on:click={() => trachealSyrinx() } aria-label="play a sound!" class="vocalbutton">
 	</button>
 
 <style>
@@ -112,5 +112,25 @@
 	.hidden {
 		top: -100%;
 		user-select: none;
+	}
+
+	.vocalbutton
+	{
+		border-radius: 50%;
+		font-size: 20px;
+		transition-duration: 0.5s;
+		width:50px; 
+		height: 25px;
+		border:none;
+		color: rgb(244, 221, 187);
+
+	}
+
+	.vocalbutton:hover
+	{
+		background-color: rgb(243, 197, 181); /* Green */
+  		color: rgb(244, 221, 187);
+		border: none;
+
 	}
 </style>
