@@ -11,18 +11,22 @@
 
 <section>
 	<h1>
-		<span class="welcome">
+
+		<!--<span class="welcome">
 			<picture>
 				<source srcset={welcome} type="image/webp" />
 				<img src={welcome_fallback} alt="Welcome" />
 			</picture>
 		</span>
+		 -->
 
-		to your new<br />SvelteKit app
+		Dinosaur Choir: Corythosaurus Syrinx
 	</h1>
 
 	<h2>
-		try editing <strong>src/routes/+page.svelte</strong>
+		Click the button below to start the sound and blow into the microphone! <br />  <br />
+
+		You can change the tension on the vocal cords by moving your mouse! (HINT: This changes the pitch!)
 	</h2>
 
 	<Counter />
