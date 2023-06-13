@@ -305,16 +305,23 @@ function scalePGValues(micIn : number, tens: number, ctrlValue : number) : numbe
         else   
             pG = Math.min(pG, 5000);  
  
+        //have mouse values modify the tension as well -- try
 
+        //put 0 at the center
+        let scaledX = m.x - 0.5; 
 
-        console.log(pG, tens, maxPG);
+        //add or minus a certain amt.
+        pG += scaledX*(500*m.y) ;
+        pG = Math.max(pG, 0);
+
+        //console.log(pG, tens, maxPG);
         return pG;
 }
 
 function scaleTension(ctrlValue : number) : number
 {
     let tens = 0;
-    if( m.y < 0.75 )
+    if( m.y < 0.75 )    
     {
         tens = ((ctrlValue) * (9890243.3116-2083941))+2083941;
     }
@@ -323,77 +330,57 @@ function scaleTension(ctrlValue : number) : number
         let addOn = ((0.75) * (9890243.3116-2083941))+2083941;
         tens = ((ctrlValue) * (98989831.3116-addOn))+addOn;
     }
+
+    //add something from the x value
+
+    //put 0 at the center
+    let scaledX = m.x - 0.5; 
+
+    //add or minus a certain amt.
+    tens += scaledX*(10000000*m.y) ;
+    tens = Math.max(0, tens);
+
     return tens;
 }
 
 //now just a test of the syrinx
+let alreadyPressed = false; 
 export function trachealSyrinx()
 {
-    const membrane = new SyrinxMembraneFS({pG: 0.0});
-    const limiter = new Tone.Limiter(); 
-    const compressor = new Tone.Compressor();
-    const gain = new Tone.Gain(7); 
-    membrane.chain(compressor, limiter, gain, Tone.Destination); 
-    
-    const pGparam = membrane.pG; 
-    const meter = createMicValues();
-
-    const tension = membrane.tension;
-    
-    let num = meter.getValue();
-    if (typeof num === "number")
+    if (!alreadyPressed)
     {
-        setInterval(() => {
-        let scaledY = logScale( m.y, 0.001, 1.0 ); 
+        const membrane = new SyrinxMembraneFS({pG: 0.0});
+        const limiter = new Tone.Limiter(); 
+        const compressor = new Tone.Compressor();
+        const gain = new Tone.Gain(7); 
+        membrane.chain(compressor, limiter, gain, Tone.Destination); 
+    
+        const pGparam = membrane.pG; 
+        const meter = createMicValues();
 
+        const tension = membrane.tension;
+    
         let num = meter.getValue();
-        //let pG = scalePGValues(num as number);
-       // console.log(pG);
+        if (typeof num === "number")
+        {
+            setInterval(() => {
+                let num = meter.getValue();
 
-       //produced good low value
-    //      let maxPG = ((2000.0*1000*scaledY)-900000000) + 900000000 ;
-    //       maxPG = Math.min(2000, maxPG);
-    //       maxPG /= 5; 
-    //       let pG = (num as number)*maxPG;
-    //    pG = Math.min(pG, 2200);
+                let tens=scaleTension(m.y);
+                tension.setValueAtTime(tens, 0.0);
 
-        //    mid-low
-        // let maxPG = ((2000.0*1000*scaledY)-900000000) + 900000000 ;
-        // maxPG = Math.min(5000, maxPG);
-        // maxPG /= 5; 
-        // let pG = (num as number)*maxPG;
-        // pG = Math.min(pG, 2200);
-
-        //mid?
-        // let maxPG = 1500;
-        // let pG = (num as number)*maxPG;
-        // pG = Math.min(pG, 5000);        
-
-        // pGparam.setValueAtTime(pG, 0.0); 
-        //tension.setValueAtTime(((m.y) * (98902430-196 40049.0))+19640049, 0.0);},
-
-        //good low values: 2583941.1933598467, 300 pg real max, maxPG: 400
-        //good mid-low values: 3615563.60540479, 700-800 pg real max, maxPG: 1000
-        //good mid-high values: 3903412.785737743 (900 pg max)- 7017654.60540479, 1000-1300 pg real max, maxPG: 1500
-        //good high values: 98902430 -- 5000 max.
-
-  
-
-//        let tens = ((scaledY) * (98989831.3116-3753.3640))+37534.364;
-
-            let tens=scaleTension(m.y); 
-            tension.setValueAtTime(tens, 0.0);
-
-            //pG is based on the tension
-            let pG = scalePGValues(num as number, tens, m.y)
-            pGparam.setValueAtTime(pG, 0.0);       
-
-        },
-        5);
-    }
-    else
-    {
-        console.log ("unhandled meter error - array returned instead of number");
+                //pG is based on the tension
+                let pG = scalePGValues(num as number, tens, m.y)
+                pGparam.setValueAtTime(pG, 0.0);       
+            },
+            5);
+        }
+        else
+        {
+            console.log ("unhandled meter error - array returned instead of number");
+        }
+        alreadyPressed = true;
+        console.log("pressed");
     }
 }
 
