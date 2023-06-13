@@ -8,5 +8,5 @@ export default defineConfig({
         https: true,
         proxy: {} 
     },
-	plugins: [sveltekit(), mkcert()]
+	plugins: [sveltekit(), mkcert({savePath: './crts'})]
 });
