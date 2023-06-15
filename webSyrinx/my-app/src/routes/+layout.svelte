@@ -1,17 +1,17 @@
 <script>
-	import Header from './Header.svelte';
+	//import Header from './Header.svelte';
 	import './styles.css';
 </script>
 
 <div class="app">
-	<Header />
+	<!-- <Header /> -->
 
 	<main>
 		<slot />
 	</main>
 
 	<footer>
-		<p><i>Dinosaur Choir</i> is created by Courtney Brown</p>
+		<p><i>Dinosaur Choir</i> is created by Courtney Brown. See the About page for more details.</p>
 	</footer>
 </div>
 

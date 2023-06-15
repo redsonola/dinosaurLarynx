@@ -16,25 +16,21 @@
 
 
 <section>
-	<h1>
+	<!-- <h1>
 
 		<span class="dino">
 			<picture>
-				<!-- <source srcset={welcome} type="image/webp" /> -->
 				<img src={rawr} alt="Rawr!" width=75% height=75% />
 			</picture>
 		</span>
 		 
 
 		Dinosaur Choir: Corythosaurus Syrinx
-	</h1>
+	</h1> -->
 
-	<h2>
-		Click the button below to start the sound and blow into the microphone! <br />  <br />
-	</h2>
-	<!-- <Counter /> -->
-	<br /> <br /> <br /> <br />
-	<h2>You can change the tension on the vocal cords by moving your mouse! (HINT: This changes the pitch!)</h2>
+	<p>
+		Click anywhere in the window  to start the sound and blow into the microphone! <br />  
+	You can change the tension on the vocal cords by moving your mouse! (HINT: This changes the pitch and timbre!)</p>
 
 </section>
 
