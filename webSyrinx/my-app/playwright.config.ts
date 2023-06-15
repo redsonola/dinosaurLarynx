@@ -38,7 +38,7 @@ export default defineConfig({
         
         use: {  
           ...devices['Desktop Chromium'],
-          viewport: null,
+          headless: false,
       
           launchOptions: {
             args: ["--start-fullscreen"]

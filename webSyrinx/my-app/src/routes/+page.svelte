@@ -3,6 +3,7 @@
 	import welcome from '$lib/images/svelte-welcome.webp';
 	import welcome_fallback from '$lib/images/svelte-welcome.png';
 	import rawr from '$lib/images/Rawr_Study_In_Sonic_Skulls__Courtney_Brown_Sharif_Razzaque__1.png';
+	import { trachealSyrinx } from './dinosaurSyrinx';
 
 </script>
 
@@ -10,6 +11,9 @@
 	<title>Home</title>
 	<meta name="description" content="Corythosaurus Syrinx" />
 </svelte:head>
+
+<svelte:window on:click={trachealSyrinx}/>
+
 
 <section>
 	<h1>
@@ -28,7 +32,7 @@
 	<h2>
 		Click the button below to start the sound and blow into the microphone! <br />  <br />
 	</h2>
-	<Counter />
+	<!-- <Counter /> -->
 	<br /> <br /> <br /> <br />
 	<h2>You can change the tension on the vocal cords by moving your mouse! (HINT: This changes the pitch!)</h2>
 
