@@ -1,0 +1,14 @@
+{
+  "record": {
+    "hosts": [
+      "localhost",
+      "127.0.0.1",
+      "192.168.8.108"
+    ],
+    "hash": {
+      "key": "498eea14b3bcad858c9b6287534750a6296fe006212709719c8c5e59a5434a21",
+      "cert": "74693ebfdb3d086219f76827dceb7367430eda2e12057b6b8bca035b75c20a5d"
+    }
+  },
+  "configFilePath": "/Users/courtney/Programs/physically_based_modeling_synthesis/bird_vocalizations_feb2023/webSyrinx/my-app/crts/config.json"
+}

@@ -1,0 +1,10 @@
+
+> my-app@0.0.1 dev
+> vite dev --https
+
+
+
+  VITE v4.3.7  ready in 440 ms
+
+  ➜  Local:   https://localhost:5173/
+  ➜  Network: use --host to expose
