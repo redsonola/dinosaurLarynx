@@ -29,7 +29,7 @@
 	</h1> -->
 
 	<p>
-		Click anywhere in the window  to start the sound and blow into the microphone! <br />  
+	Click anywhere in the window  to start the sound and blow into the microphone! <br />  
 	You can change the tension on the vocal cords by moving your mouse! (HINT: This changes the pitch and timbre!)</p>
 
 </section>

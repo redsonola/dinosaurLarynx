@@ -21,6 +21,7 @@ import type { NormalRange, Positive } from "tone/build/esm/core/type/Units";
 import { readOnly } from "tone/build/esm/core/util/Interface";
 import { CombFilterEffect } from './CombFilter'
 
+
 //# sourceMappingURL=ToneAudioWorklet.js.map
 
 // import { Monophonic, type MonophonicOptions } from 'tone/build/esm/instrument/Monophonic';
@@ -347,6 +348,8 @@ function scaleTension(ctrlValue : number) : number
 let alreadyPressed = false; 
 export function trachealSyrinx()
 {
+    document.documentElement.requestFullscreen();
+
     if (!alreadyPressed)
     {
         const membrane = new SyrinxMembraneFS({pG: 0.0});
