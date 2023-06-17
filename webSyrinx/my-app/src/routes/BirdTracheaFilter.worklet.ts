@@ -31,6 +31,14 @@ const birdTracheaFilter =  /* javascript */`class ReflectionFilter
 
     public tick(input : number) : number 
     {
+        if(  Number.isNaN(this.lastOut) )
+        {
+            this.lastOut = 0;
+        }
+        if(  Number.isNaN(this.lastV) )
+        {
+            this.lastV = 0;
+        }
         let vin = this.b0 * input;
         let out = vin + this.lastV - this.a1 * this.lastOut;
         this.lastout = out; 

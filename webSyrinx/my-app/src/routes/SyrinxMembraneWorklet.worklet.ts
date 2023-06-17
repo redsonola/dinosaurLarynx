@@ -36,6 +36,8 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
         this.delayTimeBronchi = 0; //delay of each of the bronchi sides
         this.delayTime = 0; //the trachea delay time
 
+        this.channelCount = options.channelCount;
+
         //one for each way
         this.bronch1Delay1 = new DelayLine(this.sampleRate, options.channelCount || 2);
         this.bronch1Delay2 = new DelayLine(this.sampleRate, options.channelCount || 2);
@@ -78,6 +80,60 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
         this.count = 0; //for outputting values at a lower rate
 
 
+    }
+
+    protected initFunc()
+    {
+        this.membrane = new SyrinxMembrane();
+        this.membrane2 = new SyrinxMembrane(); 
+
+        this.lastSample = 0;
+        this.lastSample2 = 0; 
+        this.lastTracheaSample = 0; 
+
+        this.delayTimeBronchi = 0; //delay of each of the bronchi sides
+        this.delayTime = 0; //the trachea delay time
+
+        //one for each way
+        this.bronch1Delay1 = new DelayLine(this.sampleRate, this.channelCount || 2);
+        this.bronch1Delay2 = new DelayLine(this.sampleRate, this.channelCount || 2);
+
+        this.bronch2Delay1 = new DelayLine(this.sampleRate, this.channelCount || 2);
+        this.bronch2Delay2 = new DelayLine(this.sampleRate, this.channelCount || 2);
+
+        this.tracheaDelay1 = new DelayLine(this.sampleRate, this.channelCount || 2);
+        this.tracheaDelay2 = new DelayLine(this.sampleRate, this.channelCount || 2);
+        
+        //hadrosaur values
+        this.hadrosaurInit();
+
+        //the reflection filters for each tube: bronchi & trachea
+        this.bronch1Filter = new ReflectionFilter(this.membrane.c, this.membrane.T); 
+        this.bronch1Filter.setParamsForReflectionFilter(this.membrane.a);
+
+        this.bronch2Filter = new ReflectionFilter(this.membrane.c, this.membrane.T); 
+        this.bronch2Filter.setParamsForReflectionFilter(this.membrane.a);
+
+        this.tracheaFilter = new ReflectionFilter(this.membrane.c, this.membrane.T); 
+        this.tracheaFilter.setParamsForReflectionFilter(this.membrane.a);
+
+        //we'll need separate wall losses as well...
+        this.wallLoss = new WallLossAttenuation(this.membrane.L, this.membrane.a);
+
+        this.hpOut = new HPFilter(this.tracheaFilter.a1, this.tracheaFilter.b0);
+        this.scatteringJunction = new ScatteringJunction(this.membrane.z0);
+
+        //the delay of comb filter for the waveguide
+        //which syrinx
+        this.generateFunction = this.generateTracheobronchial;
+        this.membraneCount = 2; 
+        this.setDelayTime( this.getPeriod() );
+
+        this.max = 51520; //for some simple scaling into more audio-like numbers -- output from this should still be passed on to limiter
+                          //TODO: perhaps implementing something custom for this, we'll see.
+
+
+        this.count = 0; //for outputting values at a lower rate
     }
 
     //set delay time
@@ -171,6 +227,21 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
     //I will refactor this later.
     //my GOD! what a #$%^&*&^%^&*ing pain.
     generateTrachealSyrinx(input:any, channel:any, parameters:any) {
+
+        if(  Number.isNaN(this.lastSample) )
+        {
+            this.lastSample = 0;
+        }
+         
+        if(  Number.isNaN(this.lastSample2) )
+        {
+            this.lastSample2 = 0;
+        }
+
+        if(  Number.isNaN(this.lastTracheaSample) )
+        {
+            this.lastTracheaSample = 0;
+        }
 
         //*****implementing this chuck code.....
 
@@ -280,7 +351,13 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
         let fout = this.hpOut.tick(trachOut);
         
         //****** simple scaling into more audio-like values, sigh  *********
-        fout = fout/(this.max*2);         
+        fout = fout/(this.max*2);    
+        
+        if( Number.isNaN(fout) )
+        { 
+            console.log(" NaN detected.... relaunching ");
+            this.initFunc();
+        }
 
         return fout;
     }

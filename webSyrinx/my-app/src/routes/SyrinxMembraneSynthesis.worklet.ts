@@ -251,6 +251,11 @@ const syrinxMembraneSynthesis =  /* javascript */`class SyrinxMembrane
     
     public tick(inSample : number) : number
     {
+        if(Number.isNaN(inSample))
+        {
+            inSample = 0 ;
+        }
+
         this.p1 = inSample ;
         this.inP1 = this.p1; 
                          
@@ -266,7 +271,8 @@ const syrinxMembraneSynthesis =  /* javascript */`class SyrinxMembrane
         
         //user changing parameters
         this.updateTensionAndW(); //-->TODO: need to uncomment when ready to implement tension
-        this.updatePG();            
+        this.updatePG();
+
         return this.p1;
     }
     

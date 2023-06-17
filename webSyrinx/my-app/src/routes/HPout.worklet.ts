@@ -27,6 +27,15 @@ const hPFilterOut =  /* javascript */`class HPFilter
     
     public tick(input : number) : number
     {
+        if(  Number.isNaN(this.lastOut) )
+        {
+            this.lastOut = 0;
+        }
+        if(  Number.isNaN(this.lastV) )
+        {
+            this.lastV = 0;
+        }
+
         let vin = input - this.b0*input;
         let output = vin + (this.a1-this.b0)*this.lastV - this.a1*this.lastOut;
         this.lastOut = output; 

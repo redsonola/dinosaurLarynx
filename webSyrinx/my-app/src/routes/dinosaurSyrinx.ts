@@ -355,8 +355,12 @@ export function trachealSyrinx()
         const membrane = new SyrinxMembraneFS({pG: 0.0});
         const limiter = new Tone.Limiter(); 
         const compressor = new Tone.Compressor();
-        const gain = new Tone.Gain(7); 
-        membrane.chain(compressor, limiter, gain, Tone.Destination); 
+        const gain = new Tone.Gain(10); 
+        membrane.chain(compressor, limiter, gain, Tone.Destination);  
+
+        const meter2 = new Tone.Meter();
+        membrane.chain(meter2);
+
     
         const pGparam = membrane.pG; 
         const meter = createMicValues();
@@ -374,7 +378,10 @@ export function trachealSyrinx()
 
                 //pG is based on the tension
                 let pG = scalePGValues(num as number, tens, m.y)
-                pGparam.setValueAtTime(pG, 0.0);       
+                pGparam.setValueAtTime(pG, 0.0);  
+                
+                //const context = Tone.getContext(); 
+                //console.log(meter2.getValue());
             },
             5);
         }
@@ -395,6 +402,11 @@ function handleMousemove(event) {
     m.x = event.clientX / document.body.clientWidth;
     m.y = event.clientY / document.body.clientHeight;
     m.y = 1.0 - m.y; //flip so lower is lower pitched and vice versa
+
+    if (Number.isNaN(m.x) || Number.isNaN(m.y) ) 
+    {
+        console.log("mouse is NAN!!");
+    }
 });
 //---------
 
