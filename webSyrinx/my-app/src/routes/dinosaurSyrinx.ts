@@ -408,6 +408,23 @@ function handleMousemove(event) {
         console.log("mouse is NAN!!");
     }
 });
+
+document.body.addEventListener('touchstart', 
+function handleTouchStart(event) {
+    let list: TouchList  = event.touches; 
+
+    //ugh, ok, easiest, use first
+    let touch = list[0]; 
+
+    m.x = touch.clientX / document.body.clientWidth;
+    m.y = touch.clientY / document.body.clientHeight;
+    m.y = 1.0 - m.y; //flip so lower is lower pitched and vice versa
+
+    if (Number.isNaN(m.x) || Number.isNaN(m.y) ) 
+    {
+        console.log("mouse is NAN!!");
+    }
+});
 //---------
 
 //from tonejs API example

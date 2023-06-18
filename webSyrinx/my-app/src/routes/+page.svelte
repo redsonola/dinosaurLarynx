@@ -12,7 +12,7 @@
 	<meta name="description" content="Corythosaurus Syrinx" />
 </svelte:head>
 
-<svelte:window on:click={trachealSyrinx}/>
+<svelte:window on:click={trachealSyrinx} on:touchstart={trachealSyrinx}/>
 
 
 <section>
