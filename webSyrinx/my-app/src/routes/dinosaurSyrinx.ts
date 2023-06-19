@@ -351,11 +351,11 @@ export function trachealSyrinx()
     //document.documentElement.requestFullscreen();
 
 
-    document.documentElement.requestFullscreen().catch((err) => {
-      console.log(
-            `Error attempting to enable fullscreen mode: ${err.message} (${err.name})`
-        );
-    });
+    // document.documentElement.requestFullscreen().catch((err) => {
+    //   console.log(
+    //         `Error attempting to enable fullscreen mode: ${err.message} (${err.name})`
+    //     );
+    // });
     
 
     if (!alreadyPressed)
