@@ -436,6 +436,17 @@ function handleTouchMove(event) {
         console.log("touch is NAN!!");
     }
 }, false);
+
+document.body.addEventListener('touchstart', 
+function handleTouchStart(event) {
+    event.preventDefault(); 
+}, false);
+
+document.body.addEventListener('touchend', 
+function handleTouchEnd(event) {
+    event.preventDefault(); 
+}, false);
+
 //---------
 
 //from tonejs API example
