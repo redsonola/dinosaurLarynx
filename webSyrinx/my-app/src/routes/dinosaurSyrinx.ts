@@ -409,8 +409,8 @@ function handleMousemove(event) {
     }
 });
 
-document.body.addEventListener('touchstart', 
-function handleTouchStart(event) {
+document.body.addEventListener('touchmove', 
+function handleTouchMove(event) {
     let list: TouchList  = event.touches; 
 
     //ugh, ok, easiest, use first
@@ -422,7 +422,7 @@ function handleTouchStart(event) {
 
     if (Number.isNaN(m.x) || Number.isNaN(m.y) ) 
     {
-        console.log("mouse is NAN!!");
+        console.log("touch is NAN!!");
     }
 });
 //---------
