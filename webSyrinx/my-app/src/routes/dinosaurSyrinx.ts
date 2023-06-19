@@ -348,7 +348,14 @@ function scaleTension(ctrlValue : number) : number
 let alreadyPressed = false; 
 export function trachealSyrinx()
 {
-    document.documentElement.requestFullscreen();
+    //document.documentElement.requestFullscreen();
+
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch((err) => {
+          alert(
+            `Error attempting to enable fullscreen mode: ${err.message} (${err.name})`
+          );
+        });
 
     if (!alreadyPressed)
     {
