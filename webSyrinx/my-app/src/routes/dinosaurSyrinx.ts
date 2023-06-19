@@ -349,7 +349,6 @@ let alreadyPressed = false;
 export function trachealSyrinx()
 {
     //document.documentElement.requestFullscreen();
-    console.log("syrinx code reached"); 
 
 
     document.documentElement.requestFullscreen().catch((err) => {
@@ -361,6 +360,8 @@ export function trachealSyrinx()
 
     if (!alreadyPressed)
     {
+        console.log("syrinx code reached"); 
+
         const membrane = new SyrinxMembraneFS({pG: 0.0});
         const limiter = new Tone.Limiter(); 
         const compressor = new Tone.Compressor();
@@ -425,7 +426,6 @@ function handleTouchMove(event) {
 
     //ugh, ok, easiest, use first
     let touch = list[0]; 
-    console.log(touch);
 
     m.x = touch.clientX / document.body.clientWidth;
     m.y = touch.clientY / document.body.clientHeight;
