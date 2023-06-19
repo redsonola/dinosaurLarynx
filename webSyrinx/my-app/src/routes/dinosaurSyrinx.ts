@@ -349,13 +349,15 @@ let alreadyPressed = false;
 export function trachealSyrinx()
 {
     //document.documentElement.requestFullscreen();
+    console.log("syrinx code reached"); 
 
-    if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().catch((err) => {
-          alert(
+
+    document.documentElement.requestFullscreen().catch((err) => {
+      console.log(
             `Error attempting to enable fullscreen mode: ${err.message} (${err.name})`
-          );
-        });
+        );
+    });
+    
 
     if (!alreadyPressed)
     {
