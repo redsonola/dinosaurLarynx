@@ -412,9 +412,11 @@ function handleMousemove(event) {
 document.body.addEventListener('touchmove', 
 function handleTouchMove(event) {
     let list: TouchList  = event.touches; 
+    event.preventDefault(); 
 
     //ugh, ok, easiest, use first
     let touch = list[0]; 
+    console.log(touch);
 
     m.x = touch.clientX / document.body.clientWidth;
     m.y = touch.clientY / document.body.clientHeight;
@@ -424,7 +426,7 @@ function handleTouchMove(event) {
     {
         console.log("touch is NAN!!");
     }
-});
+}, false);
 //---------
 
 //from tonejs API example

@@ -15,6 +15,7 @@
 <svelte:window on:click={trachealSyrinx} on:touchstart={trachealSyrinx}/>
 
 
+
 <section>
 	<!-- <h1>
 
