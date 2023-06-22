@@ -26,6 +26,7 @@
 
 		Dinosaur Choir: Corythosaurus Syrinx
 	</h1> -->
+	<img width="1024" alt="Corythosaurus Hendrickx2" src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e7/Corythosaurus_Hendrickx2.jpg/1024px-Corythosaurus_Hendrickx2.jpg" />
 
 
 </section>
