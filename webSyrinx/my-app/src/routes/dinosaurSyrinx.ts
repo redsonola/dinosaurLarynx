@@ -6,21 +6,15 @@
 
 import * as Tone from 'tone';
 import { Gain, optionsFromArguments } from 'tone';
-import type { Time } from 'tone';
 import { Effect, type EffectOptions } from 'tone/build/esm/effect/Effect';
 import { ToneAudioWorklet, type ToneAudioWorkletOptions } from "./tonejs_fixed/ToneAudioWorklet";
-import { FeedbackCombFilter } from "./tonejs_fixed/FeedbackCombFilter";
 import { workletName } from "./SyrinxMembraneWorklet.worklet";
 import { connectSeries } from "tone/build/esm/core/context/ToneAudioNode";
 import type { RecursivePartial } from 'tone/build/esm/core/util/Interface';
 import { singleIOProcess } from './tonejs_fixed/SingleIOProcessor.worklet';
 import { addToWorklet } from './tonejs_fixed/WorkletGlobalScope';
-import { Delay } from "tone/build/esm/core/context/Delay";
 import { Param } from "tone/build/esm/core/context/Param";
 import type { NormalRange, Positive } from "tone/build/esm/core/type/Units";
-import { readOnly } from "tone/build/esm/core/util/Interface";
-import { CombFilterEffect } from './CombFilter'
-
 
 //# sourceMappingURL=ToneAudioWorklet.js.map
 
