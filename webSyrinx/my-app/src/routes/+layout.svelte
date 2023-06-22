@@ -13,7 +13,7 @@
 	</main>
 
 	<footer>
-		<p><i>Dinosaur Choir</i> is created by Courtney Brown. See the <a href="https://dino.courtney-brown.net/about/">About</a> page for more details.</p>
+		<p><i>Dinosaur Choir</i> is created by Courtney Brown. See the About page for more details.</p>
 	</footer>
 </div>
 
