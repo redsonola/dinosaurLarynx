@@ -395,7 +395,7 @@ class RingDoveSyrinxLTM extends Chugen
     }
 }
 
-RingDoveSyrinxLTM ltm => Dyno limiter => dac; 
+RingDoveSyrinxLTM ltm => Dyno limiter => blackhole; //dac; 
 limiter.limit(); 
 
 
@@ -420,7 +420,7 @@ limiter.limit();
 FileIO fout;
 
 // open for write
-fout.open( "/Users/courtney/Programs/physically_based_modeling_synthesis/out3.txt", FileIO.WRITE );
+fout.open( "/Users/courtney/Programs/physically_based_modeling_synthesis/out4.txt", FileIO.WRITE );
 
 // test
 if( !fout.good() )

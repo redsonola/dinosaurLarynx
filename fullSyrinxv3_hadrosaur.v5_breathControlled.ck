@@ -187,13 +187,13 @@ class SyrinxMembrane extends Chugen
         //a*h*(p0 + p1) => F[i]; //Smyth
         //2*a*h*(p0 + p1)  => F[i]; //this works to start the model w. a zero x value -- Fletcher
         
-        if( x > 0.0 )
+        if( x > 0.0 ) //force if open
         {
            a*h*(p0 + p1) - (2.0*p*U*U*h)/(7.0*Math.pow(a*x, 1.5)) => F; //-- Smyth 
            //memArea* ( ( pressureDiff ) - ( UFactor/overArea  ) ) => F; //fletcher
 
          }
-         else 0.5*a*h*(p0 + p1) => F; //not sure, but divided by 2 produced the results
+         else 0.5*a*h*(p0 + p1) => F; //force if closed
          
          //testing
      }
