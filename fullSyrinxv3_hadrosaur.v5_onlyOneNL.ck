@@ -161,6 +161,7 @@ class SyrinxMembrane extends Chugen
     {
         (initW*initW*pM*a*h*d)/5 => initT;
         initT => goalT; 
+        <<<"initT:" + initT>>>;
     }     
          
     fun void updateForce()
@@ -894,6 +895,7 @@ function void mouseEventLoopControllingAirPressure()
     0.0 => float max;
     
     0 => int whichBird; 
+    
     
     // infinite event loop
     while( true )

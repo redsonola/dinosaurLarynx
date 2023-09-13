@@ -35,6 +35,8 @@ var CHANNEL_COUNT = 2;
 export interface MembraneOptions extends EffectOptions {
 	pG: Positive;
     tension: Positive; 
+    membraneCount: Positive;
+    rightTension: Positive;
 }
 export class SyrinxMembraneFS extends Effect<MembraneOptions> {
 
@@ -54,34 +56,54 @@ export class SyrinxMembraneFS extends Effect<MembraneOptions> {
 	 */
     readonly tension: Param<"positive">;
 
+        /**
+	 * tension 
+	 * @min 0
+	 * @max 
+	 */
+    readonly rightTension: Param<"positive">;
+
+
+    /**
+	 * membraneCount 
+	 * @min 1
+	 * @max 2
+	 */
+    readonly membraneCount: Param<"positive">;
 
 	/**
-	 * The node which does the bit crushing effect. Runs in an AudioWorklet when possible.
+	 * The node which creates the syrinx membrane. Runs in an AudioWorklet when possible.
 	 */
 	private _membraneWorklet: FletcherSmythSyrinxMembraneWorklet;
 
 	constructor(pG?: Positive, tension?: Positive);
 	constructor(options?: Partial<MembraneWorkletOptions>);
 	constructor() {
-		super(optionsFromArguments(SyrinxMembraneFS.getDefaults(), arguments, ["pG", "tension"]));
-		const options = optionsFromArguments(SyrinxMembraneFS.getDefaults(), arguments, ["pG", "tension"]);
+		super(optionsFromArguments(SyrinxMembraneFS.getDefaults(), arguments, ["pG", "tension", "membraneCount", "rightTension"]));
+		const options = optionsFromArguments(SyrinxMembraneFS.getDefaults(), arguments, ["pG", "tension", "membraneCount", "rightTension"]);
 
 		this._membraneWorklet = new FletcherSmythSyrinxMembraneWorklet({
 			context: this.context,
 			pG: options.pG,
-            tension: options.tension
+            tension: options.tension,
+            membraneCount: options.membraneCount,
+            rightTension: options.rightTension
 		});
 		// connect it up
 		this.connectEffect(this._membraneWorklet);
 
 		this.pG = this._membraneWorklet.pG;
         this.tension = this._membraneWorklet.tension; 
+        this.membraneCount = this._membraneWorklet.membraneCount;
+        this.rightTension = this._membraneWorklet.rightTension;
 	}
 
 	static getDefaults(): MembraneOptions {
 		return Object.assign(Effect.getDefaults(), {
 			pG: 0.0, 
-            tension: 2000 
+            tension: 2000 ,
+            membraneCount: 2, 
+            rightTension: 2000
 		});
 	}
 
@@ -95,6 +117,8 @@ export class SyrinxMembraneFS extends Effect<MembraneOptions> {
 interface MembraneWorkletOptions extends ToneAudioWorkletOptions {
 	pG: number;
     tension: number;
+    membraneCount: number;
+    rightTension: number;
 }
 
 //create the Syrinx Membrane Effect -- it has to be an effect with a source, as the membrane requires an input 
@@ -110,10 +134,15 @@ export class FletcherSmythSyrinxMembraneWorklet extends ToneAudioWorklet<Membran
 	 * The amount of delay of the comb filter.
 	 */
 	readonly pG: Param<"positive">;
-    readonly tension: Param<"positive">;
+    readonly tension: Param<"positive">; //this is also the left tension if membraneCount is 2
 
+    //To be implemented
+    readonly rightTension: Param<"positive">;
 
-	constructor(pG?: Positive, tension?: Positive);
+    //change syrinx membrane number - 1 or 2
+    readonly membraneCount: Param<"positive">;
+
+	constructor(pG?: Positive, tension?: Positive, membraneCount?: Positive, rightTension?: Positive);
 	constructor(options?: RecursivePartial<MembraneWorkletOptions>);
 	constructor() {
         addToWorklet(singleIOProcess);
@@ -135,19 +164,42 @@ export class FletcherSmythSyrinxMembraneWorklet extends ToneAudioWorklet<Membran
 
         this.tension = new Param<"positive">({
             context: this.context,
-            value: options.pG,
+            value: options.tension,
             units: "positive",
             minValue: 0,
             maxValue: 168397230,
             param: this._dummyParam,
             swappable: true,
         });
+        
+        this.rightTension = new Param<"positive">({
+            context: this.context,
+            value: options.rightTension,
+            units: "positive",
+            minValue: 0,
+            maxValue: 168397230,
+            param: this._dummyParam,
+            swappable: true,
+        });
+
+        this.membraneCount = new Param<"positive">({
+            context: this.context,
+            value: options.membraneCount,
+            units: "positive",
+            minValue: 1,
+            maxValue: 2,
+            param: this._dummyParam,
+            swappable: true,
+        });
+
 	}
 
     static getDefaults(): MembraneWorkletOptions {
 		return Object.assign(ToneAudioWorklet.getDefaults(), {
 			pG: 5.0,
-            tension: 2000
+            tension: 2000,
+            membraneCount: 2,
+            rightTension: 2000
 		});
 	}
 
@@ -161,6 +213,10 @@ export class FletcherSmythSyrinxMembraneWorklet extends ToneAudioWorklet<Membran
 		this.pG.setParam(pG);
         const tension = node.parameters.get("tension") as AudioParam;
 		this.tension.setParam(tension);
+        const memCount = node.parameters.get("membraneCount") as AudioParam;
+		this.membraneCount.setParam(memCount);
+        const righttension = node.parameters.get("rightTension") as AudioParam;
+		this.rightTension.setParam(righttension);
 	}
 
     dispose(): this {
@@ -169,6 +225,8 @@ export class FletcherSmythSyrinxMembraneWorklet extends ToneAudioWorklet<Membran
 		this.output.dispose();
         this.pG.dispose(); 
         this.tension.dispose(); 
+        this.membraneCount.dispose();
+        this.rightTension.dispose();
 		return this;
 	}
 } 
@@ -266,7 +324,7 @@ function expScale(input: number, min : number, max : number)
 }
 
 let lastMaxPG = 400; 
-function scalePGValues(micIn : number, tens: number, ctrlValue : number) : number
+function scalePGValuesTwoMembranes(micIn : number, tens: number, ctrlValue : number) : number
 {
         //pG is based on the tension
 
@@ -313,7 +371,7 @@ function scalePGValues(micIn : number, tens: number, ctrlValue : number) : numbe
         return pG;
 }
 
-function scaleTension(ctrlValue : number) : number
+function scaleTensionTwoMembranes(ctrlValue : number) : number
 {
     let tens = 0;
     if( m.y < 0.75 )    
@@ -339,7 +397,9 @@ function scaleTension(ctrlValue : number) : number
 }
 
 //now just a test of the syrinx
-let alreadyPressed = false; 
+let alreadyPressed = false;
+var membrane : SyrinxMembraneFS;
+var currentMembraneCount = 2; //default
 export function trachealSyrinx()
 {
     //document.documentElement.requestFullscreen();
@@ -351,20 +411,19 @@ export function trachealSyrinx()
     //     );
     // });
     
-
     if (!alreadyPressed)
     {
-        console.log("syrinx code reached"); 
 
-        const membrane = new SyrinxMembraneFS({pG: 0.0});
         const limiter = new Tone.Limiter(); 
         const compressor = new Tone.Compressor();
         const gain = new Tone.Gain(10); 
+        membrane = new SyrinxMembraneFS({pG: 0.0}); //needs to be global.. 
+
+        
         membrane.chain(compressor, limiter, gain, Tone.Destination);  
 
         const meter2 = new Tone.Meter();
         membrane.chain(meter2);
-
     
         const pGparam = membrane.pG; 
         const meter = createMicValues();
@@ -377,13 +436,15 @@ export function trachealSyrinx()
             setInterval(() => {
                 let num = meter.getValue();
 
-                let tens=scaleTension(m.y);
+                let tens=scaleTensionTwoMembranes(m.y);
                 tension.setValueAtTime(tens, 0.0);
 
                 //pG is based on the tension
-                let pG = scalePGValues(num as number, tens, m.y)
+                let pG = scalePGValuesTwoMembranes(num as number, tens, m.y);
                 pGparam.setValueAtTime(pG, 0.0);  
-                
+
+                //console.log(num); 
+                 
                 //const context = Tone.getContext(); 
                 //console.log(meter2.getValue());
             },
@@ -396,6 +457,19 @@ export function trachealSyrinx()
         alreadyPressed = true;
         console.log("pressed");
     }
+}
+
+export function setMembraneCount(mcount : number)
+{
+    //initialize syrinx if not initialized.....
+    if( !alreadyPressed )
+    {
+        trachealSyrinx(); 
+    }
+    const membraneNumber = membrane.membraneCount;
+    membraneNumber.setValueAtTime(mcount, 0.0); //try with one membrane
+    currentMembraneCount = mcount;
+    //console.log("currentMembraneCount: " + currentMembraneCount );
 }
 
 //---------

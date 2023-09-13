@@ -3,7 +3,7 @@
 	import welcome from '$lib/images/svelte-welcome.webp';
 	import welcome_fallback from '$lib/images/svelte-welcome.png';
 	import rawr from '$lib/images/Rawr_Study_In_Sonic_Skulls__Courtney_Brown_Sharif_Razzaque__1.png';
-	import { trachealSyrinx } from './dinosaurSyrinx';
+	import { trachealSyrinx, setMembraneCount } from './dinosaurSyrinx';
 
 </script>
 
@@ -27,7 +27,8 @@
 		Dinosaur Choir: Corythosaurus Syrinx
 	</h1> -->
 	<img width="1024" alt="Corythosaurus Hendrickx2" src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e7/Corythosaurus_Hendrickx2.jpg/1024px-Corythosaurus_Hendrickx2.jpg" />
-
+	<button on:click={() => setMembraneCount(1)}>Tracheal Syrinx (One Membrane, like an ostrich)</button>
+	<br/><button on:click={() => setMembraneCount(2)}>Tracheobronchial Syrinx (Two Membranes, like a songbird)</button>
 
 </section>
 

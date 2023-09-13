@@ -1,5 +1,3 @@
-//import { getContext, type InputNode, type OutputNode } from "tone";
-
 import "tone/build/esm/core/worklet/SingleIOProcessor.worklet";
 import "./SyrinxMembraneSynthesis.worklet";
 import "./BirdTracheaFilter.worklet"
@@ -23,11 +21,14 @@ export const workletName = "syrinx-membrane";
 export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGenerator extends SingleIOProcessor {
     
     protected lastSample : number = 0; //last sample from the output
+    protected membraneCount : number = 2; 
 
     constructor(options : any) {
         super(options);
         this.membrane = new SyrinxMembrane();
         this.membrane2 = new SyrinxMembrane(); 
+        this.membraneCount = 2; 
+
 
         this.lastSample = 0;
         this.lastSample2 = 0; 
@@ -70,7 +71,6 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
         //the delay of comb filter for the waveguide
         //which syrinx
         this.generateFunction = this.generateTracheobronchial;
-        this.membraneCount = 2; 
         this.setDelayTime( this.getPeriod() );
 
         this.max = 51520; //for some simple scaling into more audio-like numbers -- output from this should still be passed on to limiter
@@ -80,6 +80,31 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
         this.count = 0; //for outputting values at a lower rate
 
 
+    }
+
+    //setMembraneCount
+    protected setMembraneCount(mcount : number) : void
+    {
+        if(this.membraneCount != mcount)
+        {   
+            console.log("changing membrane count to: " + mcount); 
+            console.log("this.membraneCount: " + this.membraneCount); 
+
+            this.membraneCount = mcount;
+            console.log("this.membraneCount: " + this.membraneCount); 
+
+            if( this.membraneCount <= 1 )
+            {
+                this.generateFunction = this.generateTrachealSyrinx;
+                this.setDelayTime( this.getPeriod() );
+            }
+            else
+            {
+                this.generateFunction = this.generateTracheobronchial;
+                this.setDelayTime( this.getPeriod() );
+            }
+            this.initFunc(); //reinitialize
+        }
     }
 
     protected initFunc()
@@ -125,8 +150,10 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
 
         //the delay of comb filter for the waveguide
         //which syrinx
-        this.generateFunction = this.generateTracheobronchial;
-        this.membraneCount = 2; 
+        if(this.membraneCount === 2)
+            this.generateFunction = this.generateTracheobronchial;
+        else 
+            this.generateFunction = this.generateTrachealSyrinx;
         this.setDelayTime( this.getPeriod() );
 
         this.max = 51520; //for some simple scaling into more audio-like numbers -- output from this should still be passed on to limiter
@@ -215,11 +242,23 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
             minValue: 1,
             maxValue: 2,
             automationRate: "k-rate"
+        }, 
+        {
+            name: "rightTension",
+            defaultValue: 2000,
+            minValue: 0,
+            maxValue: 168397230,
+            automationRate: "k-rate"
         }];
     }
 
+    //generate the sound using selected algorithm for the syrinx membrane
+    //overloading the AudioWorklet function here.
     generate(input:any, channel:any, parameters:any) {
-        return this.generateFunction(input, channel, parameters);  //default is Tracheobronchial for now
+        /***** change membrane count if needed *****/
+        this.setMembraneCount(parameters.membraneCount);
+
+        return this.generateFunction(input, channel, parameters);  //default is Tracheobronchial for now, membraneCount = 2
     }
 
     //NOTE: Web Audio API does NOT allow cycles except when there is a delay, which introduces at least 1 buffer of audio delay (128 samples) 
@@ -261,12 +300,6 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
         this.membrane.changePG(parameters.pG);
         this.membrane.changeTension(parameters.tension);
 
-        // this.count++;
-        // if(this.count >50)
-        // {
-        //     console.log(this.membrane.pG + ", " + parameters.tension);
-        //     this.count = 0;
-        // }
         const pOut = this.membrane.tick(this.lastSample); //the syrinx membrane  //Math.random() * 2 - 1; 
 
         //********1st delayLine => tracheaFilter => flip => last sample  *********
@@ -286,14 +319,20 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
         fout = fout/this.max;  
 
         //test to see if I need a limiter
-        this.count++;
-        if(this.count >50)
-        {
-            // console.log(this.membrane.pG + ", " + parameters.tension);
-            //console.log("max: "+ this.max);
+        // this.count++;
+        // if(this.count >50)
+        // {
+        //     console.log(this.membrane.pG + ", " + parameters.tension);
+        //     console.log("fout: "+ fout);
 
-            this.count = 0;
-        }        
+        //     this.count = 0;
+        // }    
+        
+        if( Number.isNaN( fout ) )
+        { 
+            console.log(" NaN detected.... relaunching ");
+            this.initFunc();
+        }
 
         //****** output w/high pass *********      
 
@@ -377,4 +416,3 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
 //compile the typescript then spit out the javascript so I don't have to tediously make this code backwards compatible
 let {outputText} = ts.transpileModule(syrinxMembraneGenerator, { compilerOptions: { module: ts.ModuleKind.None, removeComments: true, target: ScriptTarget.ESNext }});
 registerProcessor(workletName, outputText);
-
