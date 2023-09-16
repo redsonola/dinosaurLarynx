@@ -371,6 +371,28 @@ function scalePGValuesTwoMembranes(micIn : number, tens: number, ctrlValue : num
         return pG;
 }
 
+function scalePGValuesOneMembrane(micIn : number, tens: number, ctrlValue : number) : number
+{
+    var maxPG = 2000;
+    
+    //adjust for environmental noise
+    micIn = micIn - 0.15; 
+    micIn = Math.max(0, micIn);
+
+    var pG = micIn * maxPG; 
+    var p =1;
+    if (micIn!=0)
+    {
+        p = logScale(micIn, 1.0, 10.0 );
+    }
+    pG = p * pG * 7000.0;
+    pG = Math.min(pG, 200000);
+
+    console.log(micIn, tens, pG, ctrlValue); 
+    
+    return pG;
+}
+
 function scaleTensionTwoMembranes(ctrlValue : number) : number
 {
     let tens = 0;
@@ -394,6 +416,22 @@ function scaleTensionTwoMembranes(ctrlValue : number) : number
     tens = Math.max(0, tens);
 
     return tens;
+}
+
+function scaleTensionOneMembrane(ctrlValue : number) : number
+{
+    let minTens = 200;
+    let maxTens = 12000000;
+    let tens = ctrlValue * ( maxTens - minTens ) + minTens;
+
+        //put 0 at the center
+        let scaledX = m.x - 0.5; 
+
+        //add or minus a certain amt.
+        tens += scaledX*(10000000*m.y) ;
+        tens = Math.max(0, tens);
+
+    return tens; 
 }
 
 //now just a test of the syrinx
@@ -437,16 +475,20 @@ export function trachealSyrinx()
                 let num = meter.getValue();
 
                 let tens=scaleTensionTwoMembranes(m.y);
+                if(currentMembraneCount==1)
+                {
+                    tens=scaleTensionOneMembrane(m.y);
+                }
                 tension.setValueAtTime(tens, 0.0);
 
                 //pG is based on the tension
                 let pG = scalePGValuesTwoMembranes(num as number, tens, m.y);
+                if( currentMembraneCount == 1 )
+                {
+                    pG = pG*8; 
+                    //pG = scalePGValuesOneMembrane(num as number, tens, m.y);   
+                }
                 pGparam.setValueAtTime(pG, 0.0);  
-
-                //console.log(num); 
-                 
-                //const context = Tone.getContext(); 
-                //console.log(meter2.getValue());
             },
             5);
         }
