@@ -33,12 +33,7 @@
 	-->
 </header>
 
-	<directions><p>
-		Click anywhere in the window  to start the sound and blow into the microphone! <br /><br />  
-		You can change the tension on the vocal cords by moving your mouse! <br /><br/>
 
-		Changing the tension affects the pitch and timbre. The lower you move your mouse (you can scroll down) the lower the tension, and generally, the lower the pitch. The higher your mouse moves, the higher the pitch. In addition, the more or less you accelerate your breath, this also has an effect on pitch, timbre, and volume.</p>
-	</directions>
 
 <style>
 	header {
@@ -129,12 +124,5 @@
 		color: var(--color-theme-1);
 	}
 
-	directions {
-		position: relative;
-		display: flex;
-		flex-direction: column;
-		justify-content: center;
-		align-items: center;
-		padding: 12px;
-	}
+
 </style>

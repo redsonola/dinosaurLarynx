@@ -24,6 +24,7 @@
   },
   "type": "module",
   "dependencies": {
+    "@mediapipe/tasks-vision": "^0.10.6",
     "@sveltejs/adapter-static": "^2.0.2",
     "mathjs": "^11.8.0",
     "standardized-audio-context": "^25.3.46",
