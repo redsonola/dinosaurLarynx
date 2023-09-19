@@ -28,6 +28,6 @@
     "@sveltejs/adapter-static": "^2.0.2",
     "mathjs": "^11.8.0",
     "standardized-audio-context": "^25.3.46",
-    "tone": "14.7.77"
+    "tone": "^14.7.77"
   }
-}
+} 
