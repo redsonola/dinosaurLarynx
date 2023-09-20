@@ -3,7 +3,7 @@
 	import welcome from '$lib/images/svelte-welcome.webp';
 	//import welcome_fallback from '$lib/images/svelte-welcome.png';
 	import rawr from '$lib/images/Rawr_Study_In_Sonic_Skulls__Courtney_Brown_Sharif_Razzaque__1.png';
-	import { trachealSyrinx, setMembraneCount } from './dinosaurSyrinx';
+	import { trachealSyrinx, setMembraneCount, membranesIndependent } from './dinosaurSyrinx';
 
 </script>
 
@@ -44,6 +44,8 @@
 
 	<button on:click={() => setMembraneCount(1)}>Tracheal Syrinx (One Membrane, like an ostrich)</button> 
 	<br/><button on:click={() => setMembraneCount(2)}>Tracheobronchial Syrinx (Two Membranes, like a songbird)</button>
+	<br/><button on:click={membranesIndependent}>Press for Independent Membranes</button>
+
 	</div>
 
 <style>
@@ -68,10 +70,7 @@ directions {
 		background-size:     contain;                      /* <------ */
             /* optional, center the image */
 		/* margin: calc(5em + 5%); */
-		height: calc(100vh - 35em );
-
-
-
+		height: calc( 100vh - 35em );
 	}
 	section {
 		display: flex;
