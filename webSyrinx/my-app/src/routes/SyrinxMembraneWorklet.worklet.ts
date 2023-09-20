@@ -31,7 +31,7 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
         this.independentMembranes = 0; 
 
 
-        this.lastSample = 0;
+        this.lastSample = 0; //last sample from the membrane + vocal tract output
         this.lastSample2 = 0; 
         this.lastTracheaSample = 0; 
 
