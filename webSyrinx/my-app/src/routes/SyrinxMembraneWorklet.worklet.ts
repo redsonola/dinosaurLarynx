@@ -1,3 +1,8 @@
+//Programmer: Courtney Brown
+//Date: May - Sep 2023 to present
+//Adaptation of my chuck implementation of a Corythosaurus syrinx membrane -- well, any bird, but default parameters are dinosaur
+//Using Fletcher(1988)'s model & Tamara Smyth et al. bird syrinx papers (2002-4) as a guide
+
 import "tone/build/esm/core/worklet/SingleIOProcessor.worklet";
 import "./SyrinxMembraneSynthesis.worklet";
 import "./BirdTracheaFilter.worklet"
@@ -378,8 +383,10 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
         // this.count++;
         // if(this.count >50)
         // {
-        //     console.log(this.membrane.pG + ", " + parameters.tension);
+        //    // console.log(this.membrane.pG + ", " + parameters.tension);
         //     this.count = 0;
+        //     let res = parameters.rightTension - parameters.tension;
+        //     console.log("tension different: " + res);
         // }
 
         //******** Sound is generated and travels up each bronchi *********

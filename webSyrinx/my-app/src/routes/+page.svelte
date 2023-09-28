@@ -4,7 +4,7 @@
 	//import welcome_fallback from '$lib/images/svelte-welcome.png';
 	import rawr from '$lib/images/Rawr_Study_In_Sonic_Skulls__Courtney_Brown_Sharif_Razzaque__1.png';
 	import { trachealSyrinx, setMembraneCount, membranesIndependent } from './dinosaurSyrinx';
-
+	import MouthTracking from './mouthTracking.svelte';
 </script>
 
 <svelte:head>
@@ -44,11 +44,14 @@
 
 	<button on:click={() => setMembraneCount(1)}>Tracheal Syrinx (One Membrane, like an ostrich)</button> 
 	<br/><button on:click={() => setMembraneCount(2)}>Tracheobronchial Syrinx (Two Membranes, like a songbird)</button>
-	<br/><button on:click={membranesIndependent}>Press for Independent Membranes</button>
+	<!-- <br/><button on:click={membranesIndependent}>Press for Independent Membranes</button> -->
+	<MouthTracking />
 
 	</div>
 
+
 <style>
+
 
 directions {
 		position: relative;

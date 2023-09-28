@@ -33,95 +33,95 @@ var SAMPLERATE = 44100;
 var CHANNEL_COUNT = 2;
 
 export interface MembraneOptions extends EffectOptions {
-	pG: Positive;
-    tension: Positive; 
+    pG: Positive;
+    tension: Positive;
     membraneCount: Positive;
     rightTension: Positive;
     independentMembranes: Positive;
 }
 export class SyrinxMembraneFS extends Effect<MembraneOptions> {
 
-	readonly name: string = "SyrinxMembrane";
-
-	/**
-	 * pG - air pressure in air sac
-	 * @min 0
-	 * @max 25000000
-	 */
-	readonly pG: Param<"positive">;
+    readonly name: string = "SyrinxMembrane";
 
     /**
-	 * tension 
-	 * @min 0
-	 * @max 
-	 */
+     * pG - air pressure in air sac
+     * @min 0
+     * @max 25000000
+     */
+    readonly pG: Param<"positive">;
+
+    /**
+     * tension 
+     * @min 0
+     * @max 
+     */
     readonly tension: Param<"positive">;
 
-        /**
-	 * tension 
-	 * @min 0
-	 * @max 
-	 */
+    /**
+ * tension 
+ * @min 0
+ * @max 
+ */
     readonly rightTension: Param<"positive">;
 
-    readonly independentMembranes:Param<"positive">
+    readonly independentMembranes: Param<"positive">
 
 
     /**
-	 * membraneCount 
-	 * @min 1
-	 * @max 2
-	 */
+     * membraneCount 
+     * @min 1
+     * @max 2
+     */
     readonly membraneCount: Param<"positive">;
 
-	/**
-	 * The node which creates the syrinx membrane. Runs in an AudioWorklet when possible.
-	 */
-	private _membraneWorklet: FletcherSmythSyrinxMembraneWorklet;
+    /**
+     * The node which creates the syrinx membrane. Runs in an AudioWorklet when possible.
+     */
+    private _membraneWorklet: FletcherSmythSyrinxMembraneWorklet;
 
-	constructor(pG?: Positive, tension?: Positive);
-	constructor(options?: Partial<MembraneWorkletOptions>);
-	constructor() {
-		super(optionsFromArguments(SyrinxMembraneFS.getDefaults(), arguments, ["pG", "tension", "membraneCount", "rightTension", "independentMembranes"]));
-		const options = optionsFromArguments(SyrinxMembraneFS.getDefaults(), arguments, ["pG", "tension", "membraneCount", "rightTension", "independentMembranes"]);
+    constructor(pG?: Positive, tension?: Positive);
+    constructor(options?: Partial<MembraneWorkletOptions>);
+    constructor() {
+        super(optionsFromArguments(SyrinxMembraneFS.getDefaults(), arguments, ["pG", "tension", "membraneCount", "rightTension", "independentMembranes"]));
+        const options = optionsFromArguments(SyrinxMembraneFS.getDefaults(), arguments, ["pG", "tension", "membraneCount", "rightTension", "independentMembranes"]);
 
-		this._membraneWorklet = new FletcherSmythSyrinxMembraneWorklet({
-			context: this.context,
-			pG: options.pG,
+        this._membraneWorklet = new FletcherSmythSyrinxMembraneWorklet({
+            context: this.context,
+            pG: options.pG,
             tension: options.tension,
             membraneCount: options.membraneCount,
-            rightTension: options.rightTension, 
+            rightTension: options.rightTension,
             independentMembranes: options.independentMembranes
-		});
-		// connect it up
-		this.connectEffect(this._membraneWorklet);
+        });
+        // connect it up
+        this.connectEffect(this._membraneWorklet);
 
-		this.pG = this._membraneWorklet.pG;
-        this.tension = this._membraneWorklet.tension; 
+        this.pG = this._membraneWorklet.pG;
+        this.tension = this._membraneWorklet.tension;
         this.membraneCount = this._membraneWorklet.membraneCount;
         this.rightTension = this._membraneWorklet.rightTension;
         this.independentMembranes = this._membraneWorklet.independentMembranes;
-	}
+    }
 
-	static getDefaults(): MembraneOptions {
-		return Object.assign(Effect.getDefaults(), {
-			pG: 0.0, 
-            tension: 2000 ,
-            membraneCount: 2, 
-            rightTension: 2000, 
+    static getDefaults(): MembraneOptions {
+        return Object.assign(Effect.getDefaults(), {
+            pG: 0.0,
+            tension: 2000,
+            membraneCount: 2,
+            rightTension: 2000,
             independentMembranes: 0
-		});
-	}
+        });
+    }
 
-	dispose(): this {
-		super.dispose();
-		this._membraneWorklet.dispose();
-		return this;
-	}
+    dispose(): this {
+        super.dispose();
+        this._membraneWorklet.dispose();
+        return this;
+    }
 }
 
 interface MembraneWorkletOptions extends ToneAudioWorkletOptions {
-	pG: number;
+    pG: number;
     tension: number;
     membraneCount: number;
     rightTension: number;
@@ -130,17 +130,17 @@ interface MembraneWorkletOptions extends ToneAudioWorkletOptions {
 
 //create the Syrinx Membrane Effect -- it has to be an effect with a source, as the membrane requires an input 
 //as well
-export class FletcherSmythSyrinxMembraneWorklet extends ToneAudioWorklet<MembraneWorkletOptions> 
+export class FletcherSmythSyrinxMembraneWorklet extends ToneAudioWorklet<MembraneWorkletOptions>
 {
     readonly name: string = "FletcherSmythSyrinxMembrane";
-    
+
     readonly input: Gain;
-	readonly output: Gain;
+    readonly output: Gain;
 
     /**
-	 * The amount of delay of the comb filter.
-	 */
-	readonly pG: Param<"positive">;
+     * The amount of delay of the comb filter.
+     */
+    readonly pG: Param<"positive">;
     readonly tension: Param<"positive">; //this is also the left tension if membraneCount is 2
 
     //implemented
@@ -150,15 +150,15 @@ export class FletcherSmythSyrinxMembraneWorklet extends ToneAudioWorklet<Membran
     //change syrinx membrane number - 1 or 2
     readonly membraneCount: Param<"positive">;
 
-	constructor(pG?: Positive, tension?: Positive, membraneCount?: Positive, rightTension?: Positive, independentMembranes?: Positive);
-	constructor(options?: RecursivePartial<MembraneWorkletOptions>);
-	constructor() {
+    constructor(pG?: Positive, tension?: Positive, membraneCount?: Positive, rightTension?: Positive, independentMembranes?: Positive);
+    constructor(options?: RecursivePartial<MembraneWorkletOptions>);
+    constructor() {
         addToWorklet(singleIOProcess);
-		super(optionsFromArguments(FletcherSmythSyrinxMembraneWorklet.getDefaults(), arguments));
-		const options = optionsFromArguments(FletcherSmythSyrinxMembraneWorklet.getDefaults(), arguments);
+        super(optionsFromArguments(FletcherSmythSyrinxMembraneWorklet.getDefaults(), arguments));
+        const options = optionsFromArguments(FletcherSmythSyrinxMembraneWorklet.getDefaults(), arguments);
 
-		this.input = new Gain({ context: this.context });
-		this.output = new Gain({ context: this.context });
+        this.input = new Gain({ context: this.context });
+        this.output = new Gain({ context: this.context });
 
         this.pG = new Param<"positive">({
             context: this.context,
@@ -179,7 +179,7 @@ export class FletcherSmythSyrinxMembraneWorklet extends ToneAudioWorklet<Membran
             param: this._dummyParam,
             swappable: true,
         });
-        
+
         this.rightTension = new Param<"positive">({
             context: this.context,
             value: options.rightTension,
@@ -200,7 +200,7 @@ export class FletcherSmythSyrinxMembraneWorklet extends ToneAudioWorklet<Membran
             swappable: true,
         });
 
-        
+
 
         this.membraneCount = new Param<"positive">({
             context: this.context,
@@ -212,48 +212,48 @@ export class FletcherSmythSyrinxMembraneWorklet extends ToneAudioWorklet<Membran
             swappable: true,
         });
 
-	}
+    }
 
     static getDefaults(): MembraneWorkletOptions {
-		return Object.assign(ToneAudioWorklet.getDefaults(), {
-			pG: 5.0,
+        return Object.assign(ToneAudioWorklet.getDefaults(), {
+            pG: 5.0,
             tension: 2000,
             membraneCount: 2,
-            rightTension: 2000, 
+            rightTension: 2000,
             independentMembranes: 0
-		});
-	}
+        });
+    }
 
     protected _audioWorkletName(): string {
-		return workletName;
-	}   
+        return workletName;
+    }
 
     onReady(node: AudioWorkletNode) {
-		connectSeries(this.input, node, this.output);
+        connectSeries(this.input, node, this.output);
         const pG = node.parameters.get("pG") as AudioParam;
-		this.pG.setParam(pG);
+        this.pG.setParam(pG);
         const tension = node.parameters.get("tension") as AudioParam;
-		this.tension.setParam(tension);
+        this.tension.setParam(tension);
         const memCount = node.parameters.get("membraneCount") as AudioParam;
-		this.membraneCount.setParam(memCount);
+        this.membraneCount.setParam(memCount);
         const righttension = node.parameters.get("rightTension") as AudioParam;
-		this.rightTension.setParam(righttension);
+        this.rightTension.setParam(righttension);
         const independentMembranes = node.parameters.get("independentMembranes") as AudioParam;
         this.independentMembranes.setParam(independentMembranes);
-	}
+    }
 
     dispose(): this {
-		super.dispose();
-		this.input.dispose();
-		this.output.dispose();
-        this.pG.dispose(); 
-        this.tension.dispose(); 
+        super.dispose();
+        this.input.dispose();
+        this.output.dispose();
+        this.pG.dispose();
+        this.tension.dispose();
         this.membraneCount.dispose();
         this.rightTension.dispose();
         this.independentMembranes.dispose();
-		return this;
-	}
-} 
+        return this;
+    }
+}
 
 //-------------------------------------------------------------------------------------
 //find wall loss
@@ -262,59 +262,52 @@ class WallLossAttenuation //tuned to dino
 {
     protected L = 116.0; //in cm --divided by 2 since it is taken at the end of each delay, instead of at the end of the waveguide
     private c = 34740; // in m/s
-    protected freq = this.c/(2*this.L);
-    protected w  = this.wFromFreq(this.freq);   
+    protected freq = this.c / (2 * this.L);
+    protected w = this.wFromFreq(this.freq);
     //150.0*2.0*pi => float w;  
-    
+
     protected a = 0.35; //  1/2 diameter of trachea, in m - NOTE this is from SyrinxMembrane -- 
-                     //TODO:  to factor out the constants that are used across scopes: a, L, c, etc
+    //TODO:  to factor out the constants that are used across scopes: a, L, c, etc
     protected propogationAttenuationCoeff = this.calcPropogationAttenuationCoeff(); //theta in Fletcher1988 p466
     protected wallLossCoeff = this.calcWallLossCoeff(); //beta in Fletcher                 
-    
+
     //update given new length & width
-    public update(L: number, a: number) : void
-    {
-        this.L = L; 
-        this.a = a; 
-        this.freq = this.c/(2*L) ;
+    public update(L: number, a: number): void {
+        this.L = L;
+        this.a = a;
+        this.freq = this.c / (2 * L);
         this.w = this.wFromFreq(this.freq);
         this.propogationAttenuationCoeff = this.calcPropogationAttenuationCoeff();
         this.wallLossCoeff = this.calcWallLossCoeff();
-    } 
-    
-    protected calcWallLossCoeff() : number
-    {
+    }
+
+    protected calcWallLossCoeff(): number {
         //return 1.0 - (1.2*propogationAttenuationCoeff*L);
-        return 1.0 - (2.0*this.propogationAttenuationCoeff*this.L);
+        return 1.0 - (2.0 * this.propogationAttenuationCoeff * this.L);
     }
-    
-    protected calcPropogationAttenuationCoeff() : number
-    {
-        return (2*Math.pow(10, -5)*Math.sqrt(this.w)) / this.a; //changed the constant for more loss, was 2.0
+
+    protected calcPropogationAttenuationCoeff(): number {
+        return (2 * Math.pow(10, -5) * Math.sqrt(this.w)) / this.a; //changed the constant for more loss, was 2.0
     }
-    
-    public wFromFreq(frq : number) : number
-    {
-        return frq*Math.PI*2; 
+
+    public wFromFreq(frq: number): number {
+        return frq * Math.PI * 2;
     }
-    
-    protected setFreq( f : number ) : void 
-    {
-        this.wFromFreq(f); 
+
+    protected setFreq(f: number): void {
+        this.wFromFreq(f);
     }
-    
+
     //the two different bronchi as they connect in1 & in2
-    public getWallLossCoeff() : number
-    {
+    public getWallLossCoeff(): number {
         return this.wallLossCoeff;
-    } 
+    }
 }
 
 
 
 //this is for testing in the svelte main code for now
-export function createSynth()
-{
+export function createSynth() {
     //initialize the noise and start
     var noise = new SyrinxMembraneFS();
 
@@ -325,146 +318,133 @@ export function createSynth()
     noise.connect(autoFilter);
 
     //start the autofilter LFO
-    autoFilter.start()  
+    autoFilter.start()
 }
 
-export var strrun : boolean = false; 
+export var strrun: boolean = false;
 
-function logScale(input : number, min : number, max : number) : number
-{
-    let b = Math.log( max / min ) / (max - min);
-    let a = max / Math.exp(b*max);
-    return a * Math.exp ( b*input );     
+function logScale(input: number, min: number, max: number): number {
+    let b = Math.log(max / min) / (max - min);
+    let a = max / Math.exp(b * max);
+    return a * Math.exp(b * input);
 }
 
-function expScale(input: number, min : number, max : number)
-{
+function expScale(input: number, min: number, max: number) {
     //following, y = c*z^10
     // y = c* z^x
-    let z = Math.pow(max / min, (1.0/9.0));
-    let c = min/z;     
-    let res = c*(Math.pow(z, input));;
-    return res; 
+    let z = Math.pow(max / min, (1.0 / 9.0));
+    let c = min / z;
+    let res = c * (Math.pow(z, input));;
+    return res;
 }
 
-let lastMaxPG = 400; 
-function scalePGValuesTwoMembranes(micIn : number, tens: number, ctrlValue : number) : number
-{
-        //pG is based on the tension
+let lastMaxPG = 400;
+function scalePGValuesTwoMembranes(micIn: number, tens: number, ctrlValue: number): number {
+    //pG is based on the tension
 
-        let maxMaxPG = 400; 
-        let floorPG = 400;
-        if( tens < 3615563 )
-        {
-            floorPG = 400; 
-            maxMaxPG = 1000; 
-        }
-        else if(tens < 8017654 )
-        {
-            floorPG = 1000; 
-            maxMaxPG = 1500;
-        } 
-        else if(tens >= 8017654 )
-        {
-            floorPG = 1500; 
-            maxMaxPG = 5000;            
-        }
-        let maxPG = ( ctrlValue * (maxMaxPG-floorPG) ) + floorPG; 
+    let maxMaxPG = 400;
+    let floorPG = 400;
+    if (tens < 3615563) {
+        floorPG = 400;
+        maxMaxPG = 1000;
+    }
+    else if (tens < 8017654) {
+        floorPG = 1000;
+        maxMaxPG = 1500;
+    }
+    else if (tens >= 8017654) {
+        floorPG = 1500;
+        maxMaxPG = 5000;
+    }
+    let maxPG = (ctrlValue * (maxMaxPG - floorPG)) + floorPG;
 
-        if(  tens > 7017654 && tens < 8217654  )    
-            maxPG = (maxPG + lastMaxPG) / 4 ; //smooth out values
-        lastMaxPG = maxPG;
+    if (tens > 7017654 && tens < 8217654)
+        maxPG = (maxPG + lastMaxPG) / 4; //smooth out values
+    lastMaxPG = maxPG;
 
-        let pG = micIn*maxPG;
+    let pG = micIn * maxPG;
 
-        if( ctrlValue < 0.8 )
-            pG = Math.min(pG, 2200);  
-        else   
-            pG = Math.min(pG, 5000);  
- 
-        //have mouse values modify the tension as well -- try
+    if (ctrlValue < 0.8)
+        pG = Math.min(pG, 2200);
+    else
+        pG = Math.min(pG, 5000);
 
-        //put 0 at the center
-        let scaledX = m.x - 0.5; 
+    //have mouse values modify the tension as well -- try
 
-        //add or minus a certain amt.
-        pG += scaledX*(500*m.y) ;
-        pG = Math.max(pG, 0);
+    //put 0 at the center
+    let scaledX = m.x - 0.5;
 
-        //console.log(pG, tens, maxPG);
-        return pG;
+    //add or minus a certain amt.
+    pG += scaledX * (500 * m.y);
+    pG = Math.max(pG, 0);
+
+    //console.log(pG, tens, maxPG);
+    return pG;
 }
 
-function scalePGValuesOneMembrane(micIn : number, tens: number, ctrlValue : number) : number
-{
+function scalePGValuesOneMembrane(micIn: number, tens: number, ctrlValue: number): number {
     var maxPG = 2000;
-    
+
     //adjust for environmental noise
-    micIn = micIn - 0.15; 
+    micIn = micIn - 0.15;
     micIn = Math.max(0, micIn);
 
-    var pG = micIn * maxPG; 
-    var p =1;
-    if (micIn!=0)
-    {
-        p = logScale(micIn, 1.0, 10.0 );
+    var pG = micIn * maxPG;
+    var p = 1;
+    if (micIn != 0) {
+        p = logScale(micIn, 1.0, 10.0);
     }
     pG = p * pG * 7000.0;
     pG = Math.min(pG, 200000);
 
-    console.log(micIn, tens, pG, ctrlValue); 
-    
+    console.log(micIn, tens, pG, ctrlValue);
+
     return pG;
 }
 
-function scaleTensionTwoMembranes(ctrlValue : number) : number
-{
+function scaleTensionTwoMembranes(ctrlValue: number): number {
     let tens = 0;
-    if( m.y < 0.75 )    
-    {
-        tens = ((ctrlValue) * (9890243.3116-2083941))+2083941;
+    if (m.y < 0.75) {
+        tens = ((ctrlValue) * (9890243.3116 - 2083941)) + 2083941;
     }
-    else 
-    {
-        let addOn = ((0.75) * (9890243.3116-2083941))+2083941;
-        tens = ((ctrlValue) * (98989831.3116-addOn))+addOn;
+    else {
+        let addOn = ((0.75) * (9890243.3116 - 2083941)) + 2083941;
+        tens = ((ctrlValue) * (98989831.3116 - addOn)) + addOn;
     }
 
     //add something from the x value
 
     //put 0 at the center
-    let scaledX = m.x - 0.5; 
+    let scaledX = m.x - 0.5;
 
     //add or minus a certain amt.
-    tens += scaledX*(10000000*m.y) ;
+    tens += scaledX * (10000000 * m.y);
     tens = Math.max(0, tens);
 
     return tens;
 }
 
-function scaleTensionOneMembrane(ctrlValue : number) : number
-{
+function scaleTensionOneMembrane(ctrlValue: number): number {
     let minTens = 200;
-    let maxTens = 12000000;
-    let tens = ctrlValue * ( maxTens - minTens ) + minTens;
+    let maxTens = 22000000;
+    let tens = ctrlValue * (maxTens - minTens) + minTens;
 
-        //put 0 at the center
-        let scaledX = m.x - 0.5; 
+    //put 0 at the center
+    let scaledX = m.x - 0.5;
 
-        //add or minus a certain amt.
-        tens += scaledX*(10000000*m.y) ;
-        tens = Math.max(0, tens);
+    //add or minus a certain amt.
+    tens += scaledX * (10000000 * m.y);
+    tens = Math.max(0, tens);
 
-    return tens; 
+    return tens;
 }
 
 //now just a test of the syrinx
 let alreadyPressed = false;
-var membrane : SyrinxMembraneFS;
+var membrane: SyrinxMembraneFS;
 var currentMembraneCount = 2; //default
 var independentMembranes = false; //default
-export function trachealSyrinx()
-{
+export function trachealSyrinx() {
     //document.documentElement.requestFullscreen();
 
 
@@ -473,101 +453,80 @@ export function trachealSyrinx()
     //         `Error attempting to enable fullscreen mode: ${err.message} (${err.name})`
     //     );
     // });
-    
-    if (!alreadyPressed)
-    {
 
-        const limiter = new Tone.Limiter(); 
+    if (!alreadyPressed) {
+
+        const limiter = new Tone.Limiter();
         const compressor = new Tone.Compressor();
-        const gain = new Tone.Gain(10); 
-        membrane = new SyrinxMembraneFS({pG: 0.0}); //needs to be global.. 
+        const gain = new Tone.Gain(10);
+        membrane = new SyrinxMembraneFS({ pG: 0.0 }); //needs to be global.. 
 
-        
-        membrane.chain(compressor, limiter, gain, Tone.Destination);  
+
+        membrane.chain(compressor, limiter, gain, Tone.Destination);
 
         const meter2 = new Tone.Meter();
         membrane.chain(meter2);
-    
-        const pGparam = membrane.pG; 
+
+        const pGparam = membrane.pG;
         const meter = createMicValues();
 
         const tension = membrane.tension;
         const rightTension = membrane.rightTension;
-    
+
         let num = meter.getValue();
-        if (typeof num === "number")
-        {
+        if (typeof num === "number") {
             setInterval(() => {
                 let num = meter.getValue();
 
-                let tens=scaleTensionTwoMembranes(m.y);
-                if(currentMembraneCount==1)
-                {
-                    tens=scaleTensionOneMembrane(m.y);
+                let tens = scaleTensionTwoMembranes(m.y);
+                let rightTens = 0;
+                if (currentMembraneCount == 1) {
+                    tens = scaleTensionOneMembrane(m.y);
                 }
-                tension.setValueAtTime(tens, 0.0);
-                //set independent membranes, if relevant
-                if( !independentMembranes )
-                {
-                    rightTension.setValueAtTime(tens, 0.0);
-                    tension.setValueAtTime(tens, 0.0);
-                    console.log("one membrane ish");
-                }
-                else
-                {
-                    let rightTens=scaleTensionTwoMembranes(m.x);
-                    rightTension.setValueAtTime(rightTens, 0.0);
-                    console.log("independent membranes");
 
-                }
+                rightTension.setValueAtTime(tens, 0.0);
+                tension.setValueAtTime(tens, 0.0);
 
                 //pG is based on the tension
                 let pG = scalePGValuesTwoMembranes(num as number, tens, m.y); //TODO: find PG given 2 separate membrane values
-                if( currentMembraneCount == 1 )
-                {
-                    pG = pG*8; 
+                if (currentMembraneCount == 1) {
+                    pG = pG * 8;
                     //pG = scalePGValuesOneMembrane(num as number, tens, m.y);   
                 }
-                pGparam.setValueAtTime(pG, 0.0);  
-            },
-            5);
-        }
-        else
-        {
-            console.log ("unhandled meter error - array returned instead of number");
-        }
-        alreadyPressed = true;
-        console.log("pressed");
+                pGparam.setValueAtTime(pG, 0.0);
+        },
+        5);
     }
+    else {
+        console.log("unhandled meter error - array returned instead of number");
+    }
+    alreadyPressed = true;
+    console.log("pressed");
+}
 }
 
-export function membranesIndependent(event : any )
-{
-    if( !alreadyPressed )
-    {
-        trachealSyrinx(); 
+//retired until I figure shit out.
+export function membranesIndependent(event: any) {
+    if (!alreadyPressed) {
+        trachealSyrinx();
     }
 
     independentMembranes = !independentMembranes;
 
-    if (independentMembranes)
-    {
+    if (independentMembranes) {
         membrane.independentMembranes.setValueAtTime(1, 0.0);
         event.currentTarget.innerHTML = "Press for Membranes with Shared Tension";
     }
-    else
-    {
+    else {
         membrane.independentMembranes.setValueAtTime(0, 0.0);
-        event.currentTarget.innerHTML  = "Press for Independent Membranes";
+        event.currentTarget.innerHTML = "Press for Independent Membranes";
     }
 }
 
-export function setMembraneCount(mcount : number)
-{
+export function setMembraneCount(mcount: number) {
     //initialize syrinx if not initialized.....
-    if( !alreadyPressed )
-    {
-        trachealSyrinx(); 
+    if (!alreadyPressed) {
+        trachealSyrinx();
     }
     const membraneNumber = membrane.membraneCount;
     membraneNumber.setValueAtTime(mcount, 0.0); //try with one membrane
@@ -578,51 +537,48 @@ export function setMembraneCount(mcount : number)
 //---------
 //get the mouse values....
 let m = { x: 0, y: 0 };
-document.body.addEventListener('mousemove', 
-function handleMousemove(event) {
-    m.x = event.clientX / document.body.clientWidth;
-    m.y = event.clientY / document.body.clientHeight;
-    m.y = 1.0 - m.y; //flip so lower is lower pitched and vice versa
+document.body.addEventListener('mousemove',
+    function handleMousemove(event) {
+        m.x = event.clientX / document.body.clientWidth;
+        m.y = event.clientY / document.body.clientHeight;
+        m.y = 1.0 - m.y; //flip so lower is lower pitched and vice versa
 
-    if (Number.isNaN(m.x) || Number.isNaN(m.y) ) 
-    {
-        console.log("mouse is NAN!!");
-    }
-});
+        if (Number.isNaN(m.x) || Number.isNaN(m.y)) {
+            console.log("mouse is NAN!!");
+        }
+    });
 
-document.body.addEventListener('touchmove', 
-function handleTouchMove(event) {
-    let list: TouchList  = event.touches; 
-    event.preventDefault(); 
+document.body.addEventListener('touchmove',
+    function handleTouchMove(event) {
+        let list: TouchList = event.touches;
+        event.preventDefault();
 
-    //ugh, ok, easiest, use first
-    let touch = list[0]; 
+        //ugh, ok, easiest, use first
+        let touch = list[0];
 
-    m.x = touch.clientX / document.body.clientWidth;
-    m.y = touch.clientY / document.body.clientHeight;
-    m.y = 1.0 - m.y; //flip so lower is lower pitched and vice versa
+        m.x = touch.clientX / document.body.clientWidth;
+        m.y = touch.clientY / document.body.clientHeight;
+        m.y = 1.0 - m.y; //flip so lower is lower pitched and vice versa
 
-    if (Number.isNaN(m.x) || Number.isNaN(m.y) ) 
-    {
-        console.log("touch is NAN!!");
-    }
-}, false);
+        if (Number.isNaN(m.x) || Number.isNaN(m.y)) {
+            console.log("touch is NAN!!");
+        }
+    }, false);
 
-document.body.addEventListener('touchstart', 
-function handleTouchStart(event) {
-    event.preventDefault(); 
-}, false);
+document.body.addEventListener('touchstart',
+    function handleTouchStart(event) {
+        event.preventDefault();
+    }, false);
 
-document.body.addEventListener('touchend', 
-function handleTouchEnd(event) {
-    event.preventDefault(); 
-}, false);
+document.body.addEventListener('touchend',
+    function handleTouchEnd(event) {
+        event.preventDefault();
+    }, false);
 
 //---------
 
 //from tonejs API example
-function createMicValues() : Tone.Meter
-{
+function createMicValues(): Tone.Meter {
     //test
     const mic = new Tone.UserMedia();
     const meter = new Tone.Meter();
@@ -634,12 +590,12 @@ function createMicValues() : Tone.Meter
     // the current level of the mic
     //setInterval(() => console.log(meter.getValue()), 50);
 
-    return meter; 
+    return meter;
 }
 
 
 
-    //https://developer.mozilla.org/en-US/docs/Web/API/AudioWorkletNode/parameters
+//https://developer.mozilla.org/en-US/docs/Web/API/AudioWorkletNode/parameters
 
 
 //random note here:

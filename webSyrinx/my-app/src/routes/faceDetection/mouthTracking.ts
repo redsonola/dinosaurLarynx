@@ -32,7 +32,7 @@ const vision : any  = await FilesetResolver.forVisionTasks(
     let runningMode: "IMAGE" | "VIDEO" = "IMAGE";
     let enableWebcamButton: HTMLButtonElement;
     let webcamRunning: Boolean = false;
-    const videoWidth = 480;
+    export const videoWidth = 480;
 
 // Before we can use HandLandmarker class we must wait for it to finish
 // loading. Machine Learning models can be large and take a moment to
@@ -46,7 +46,7 @@ async function createFaceLandmarker() {
       modelAssetPath: `https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task`,
       delegate: "GPU"
     },
-    outputFaceBlendshapes: true,
+    outputFaceBlendshapes: false,
     runningMode,
     numFaces: 1
   });
@@ -120,6 +120,11 @@ async function predictWebcam() {
   canvasElement.style.height = videoWidth * radio + "px";
   canvasElement.width = video.videoWidth;
   canvasElement.height = video.videoHeight;
+
+  //center
+  canvasElement.style.left = (videoWidth/2) + "px";
+  video.style.left = (videoWidth/2) + "px";
+
   // Now let's start detecting the stream.
   if (runningMode === "IMAGE") {
     runningMode = "VIDEO";
@@ -131,11 +136,11 @@ async function predictWebcam() {
     results = faceLandmarker.detectForVideo(video, startTimeMs);
   }
   if (results.faceLandmarks) {
+    printMouthLandmarks(results.faceLandmarks);
     for (const landmarks of results.faceLandmarks) {
       drawingUtils.drawConnectors(
         landmarks,
-        FACE_LANDMARKS_LIPS_INSIDE,
-        //FaceLandmarker.FACE_LANDMARKS_LIPS,
+        FACE_LANDMARKS_LIPS_OUTSIDE,
         { color: "#E0E0E0" }
       );
     }
@@ -174,15 +179,30 @@ function drawBlendShapes(el: HTMLElement, blendShapes: any[]) {
 
 //****** Courtney Brown Code 2023 */
 
+//DOING: find the landmarks that correspond to the center of the lips and corners of the mouth and then compare those.
+
+
 /** Landmarks for lips */
+// export const FACE_LANDMARKS_LIPS_OUTSIDE: any[] = [
+//   {start: 61, end: 146},  {start: 146, end: 91},  {start: 91, end: 181},
+//   {start: 181, end: 84},  {start: 84, end: 17},   {start: 17, end: 314},
+//   {start: 314, end: 405}, {start: 405, end: 321}, {start: 321, end: 375},
+//   {start: 375, end: 291}, {start: 61, end: 185},  {start: 185, end: 40},
+//   {start: 40, end: 39},   {start: 39, end: 37},   {start: 37, end: 0},
+//   {start: 0, end: 267},   {start: 267, end: 269}, {start: 269, end: 270},
+//   {start: 270, end: 409}, {start: 409, end: 291}
+// ];
+
+//measures mouth wideness more or less
+// export const FACE_LANDMARKS_MOUTH_WIDENESS: any[] = [
+//   {start: 61, end: 308}
+
+// ];
+
+//TODO: test until find a good marker for mouth openness
 export const FACE_LANDMARKS_LIPS_OUTSIDE: any[] = [
-  {start: 61, end: 146},  {start: 146, end: 91},  {start: 91, end: 181},
-  {start: 181, end: 84},  {start: 84, end: 17},   {start: 17, end: 314},
-  {start: 314, end: 405}, {start: 405, end: 321}, {start: 321, end: 375},
-  {start: 375, end: 291}, {start: 61, end: 185},  {start: 185, end: 40},
-  {start: 40, end: 39},   {start: 39, end: 37},   {start: 37, end: 0},
-  {start: 0, end: 267},   {start: 267, end: 269}, {start: 269, end: 270},
-  {start: 270, end: 409}, {start: 409, end: 291}
+  {start: 61, end: 308}
+
 ];
 
 export const FACE_LANDMARKS_LIPS_INSIDE: any[] = [
@@ -195,15 +215,31 @@ export const FACE_LANDMARKS_LIPS_INSIDE: any[] = [
 {start: 312, end: 311}, {start: 311, end: 310}, {start: 310, end: 415},
 {start: 415, end: 308} ];
 
+
+//TODO: refactor this out jesus christ
+function distance(pt1: NormalizedLandmark, pt2:NormalizedLandmark)
+{
+  return Math.sqrt((pt1.x - pt2.x)*(pt1.x - pt2.x) + (pt1.y - pt2.y)*(pt1.y - pt2.y));
+}
+
+
 //print mouth landmarks values to console
-function printMouthLandmarks( landmarks?: NormalizedLandmark[], connections?: any[]) : void {
+function printMouthLandmarks( landmarks?: NormalizedLandmark[][], connections?: any[]) : void {
   if (!landmarks) {
     return;
   }
-  const mouthLandmarks = landmarks.filter((landmark, index) => {
-    return FACE_LANDMARKS_LIPS_OUTSIDE.some((item) => {
-      return item.start === index || item.end === index;
-    });
-  });
+  let mouthLandmarks = []; 
+  let marks : NormalizedLandmark[] = landmarks[0];
+  if( marks )
+  {
+    for(let i=0; i<FACE_LANDMARKS_LIPS_OUTSIDE.length; i++)
+    {
+      let res : NormalizedLandmark = marks[ FACE_LANDMARKS_LIPS_OUTSIDE[i].start ];
+      let res2 : NormalizedLandmark = marks[FACE_LANDMARKS_LIPS_OUTSIDE[i].end ];
+
+      mouthLandmarks.push(res);
+      mouthLandmarks.push(res2);
+    }
+  } 
   console.log(mouthLandmarks);
 }
