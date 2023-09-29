@@ -16,6 +16,7 @@
 // ++ into typescript
 
 import { DrawingUtils, FaceLandmarker, FilesetResolver, type NormalizedLandmark } from "@mediapipe/tasks-vision";
+import { m } from "../dinosaurSyrinx"
 
 const vision : any  = await FilesetResolver.forVisionTasks(
     // path/to/wasm/root
@@ -140,7 +141,7 @@ async function predictWebcam() {
     for (const landmarks of results.faceLandmarks) {
       drawingUtils.drawConnectors(
         landmarks,
-        FACE_LANDMARKS_LIPS_OUTSIDE,
+        FACE_LANDMARKS_LIPS_OPENNESS_MEASURES,
         { color: "#E0E0E0" }
       );
     }
@@ -158,7 +159,7 @@ function drawBlendShapes(el: HTMLElement, blendShapes: any[]) {
     return;
   }
 
-  console.log(blendShapes[0]);
+  //console.log(blendShapes[0]);
   
   let htmlMaker = "";
   blendShapes[0].categories.map((shape: { displayName: any; categoryName: any; score: string | number; }) => {
@@ -194,16 +195,25 @@ function drawBlendShapes(el: HTMLElement, blendShapes: any[]) {
 // ];
 
 //measures mouth wideness more or less
-// export const FACE_LANDMARKS_MOUTH_WIDENESS: any[] = [
-//   {start: 61, end: 308}
-
-// ];
-
-//TODO: test until find a good marker for mouth openness
-export const FACE_LANDMARKS_LIPS_OUTSIDE: any[] = [
+export const FACE_LANDMARKS_MOUTH_WIDENESS: any[] = [
   {start: 61, end: 308}
 
 ];
+
+export const FACE_LANDMARKS_LIPS_OPENNESS: any[] = [
+  {start: 14, end: 13}];
+
+export const FACE_LANDMARKS_LIPS_OPENNESS_MEASURES: any[] = [
+  {start: 61, end: 308},
+  {start: 14, end: 13}
+];
+
+
+//TODO: test until find a good marker for mouth openness
+// export const FACE_LANDMARKS_LIPS_OPENNESS_OUTSIDE: any[] = [
+//   {start: 17, end: 0 } ];
+
+
 
 export const FACE_LANDMARKS_LIPS_INSIDE: any[] = [
   {start: 78, end: 95},
@@ -222,6 +232,11 @@ function distance(pt1: NormalizedLandmark, pt2:NormalizedLandmark)
   return Math.sqrt((pt1.x - pt2.x)*(pt1.x - pt2.x) + (pt1.y - pt2.y)*(pt1.y - pt2.y));
 }
 
+function scale(inSig:number, min:number, max:number)
+{
+  return (inSig - min)/(max - min);
+}
+
 
 //print mouth landmarks values to console
 function printMouthLandmarks( landmarks?: NormalizedLandmark[][], connections?: any[]) : void {
@@ -232,14 +247,25 @@ function printMouthLandmarks( landmarks?: NormalizedLandmark[][], connections?: 
   let marks : NormalizedLandmark[] = landmarks[0];
   if( marks )
   {
-    for(let i=0; i<FACE_LANDMARKS_LIPS_OUTSIDE.length; i++)
+    for(let i=0; i<FACE_LANDMARKS_LIPS_OPENNESS_MEASURES.length; i++)
     {
-      let res : NormalizedLandmark = marks[ FACE_LANDMARKS_LIPS_OUTSIDE[i].start ];
-      let res2 : NormalizedLandmark = marks[FACE_LANDMARKS_LIPS_OUTSIDE[i].end ];
+      let res : NormalizedLandmark = marks[ FACE_LANDMARKS_LIPS_OPENNESS_MEASURES[i].start ];
+      let res2 : NormalizedLandmark = marks[FACE_LANDMARKS_LIPS_OPENNESS_MEASURES[i].end ];
 
       mouthLandmarks.push(res);
       mouthLandmarks.push(res2);
     }
+
+    let wideness = distance(mouthLandmarks[0], mouthLandmarks[1]);
+    let openness = distance(mouthLandmarks[2], mouthLandmarks[3]);
+
+    m.x = scale(wideness, 0.05, 0.16);
+    m.y = scale(openness, 0.0003, 0.115);
+
+    console.log("wideness: " + m.x + " openness: " + m.y);
+
   } 
-  console.log(mouthLandmarks);
+
+
+
 }

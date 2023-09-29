@@ -444,6 +444,7 @@ let alreadyPressed = false;
 var membrane: SyrinxMembraneFS;
 var currentMembraneCount = 2; //default
 var independentMembranes = false; //default
+export var useMouse = true; //default
 export function trachealSyrinx() {
     //document.documentElement.requestFullscreen();
 
@@ -536,15 +537,18 @@ export function setMembraneCount(mcount: number) {
 
 //---------
 //get the mouse values....
-let m = { x: 0, y: 0 };
+export var m = { x: 0, y: 0 };
 document.body.addEventListener('mousemove',
     function handleMousemove(event) {
-        m.x = event.clientX / document.body.clientWidth;
-        m.y = event.clientY / document.body.clientHeight;
-        m.y = 1.0 - m.y; //flip so lower is lower pitched and vice versa
+        if( useMouse )
+        {
+            m.x = event.clientX / document.body.clientWidth;
+            m.y = event.clientY / document.body.clientHeight;
+            m.y = 1.0 - m.y; //flip so lower is lower pitched and vice versa
 
-        if (Number.isNaN(m.x) || Number.isNaN(m.y)) {
-            console.log("mouse is NAN!!");
+            if (Number.isNaN(m.x) || Number.isNaN(m.y)) {
+                console.log("mouse is NAN!!");
+             }
         }
     });
 
@@ -556,12 +560,15 @@ document.body.addEventListener('touchmove',
         //ugh, ok, easiest, use first
         let touch = list[0];
 
-        m.x = touch.clientX / document.body.clientWidth;
-        m.y = touch.clientY / document.body.clientHeight;
-        m.y = 1.0 - m.y; //flip so lower is lower pitched and vice versa
+        if( useMouse )
+        {
+            m.x = touch.clientX / document.body.clientWidth;
+            m.y = touch.clientY / document.body.clientHeight;
+            m.y = 1.0 - m.y; //flip so lower is lower pitched and vice versa
 
-        if (Number.isNaN(m.x) || Number.isNaN(m.y)) {
-            console.log("touch is NAN!!");
+             if (Number.isNaN(m.x) || Number.isNaN(m.y)) {
+                console.log("touch is NAN!!");
+            }
         }
     }, false);
 
