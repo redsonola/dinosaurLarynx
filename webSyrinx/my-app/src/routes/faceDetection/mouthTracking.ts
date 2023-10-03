@@ -18,11 +18,11 @@
 import { DrawingUtils, FaceLandmarker, FilesetResolver, type NormalizedLandmark } from "@mediapipe/tasks-vision";
 import { m } from "../dinosaurSyrinx"
 
-const vision : any  = await FilesetResolver.forVisionTasks(
-    // path/to/wasm/root
-    "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm"
+// const vision : any  = await FilesetResolver.forVisionTasks(
+//     // path/to/wasm/root
+//     "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm"
 
-  );
+//   );
   
 // const { FaceLandmarker, FilesetResolver, DrawingUtils } = vision;
    const demosSection = document.getElementById("demos");
@@ -92,13 +92,13 @@ function enableCam(event : any) {
 
   if (webcamRunning === true) {
     webcamRunning = false;
-    enableWebcamButton.innerText = "ENABLE PREDICTIONS";
+    enableWebcamButton.innerText = "Enable Mouth Tracking Syrinx Control";
   } else {
     webcamRunning = true;
-    enableWebcamButton.innerText = "DISABLE PREDICTIONS";
+    enableWebcamButton.innerText = "Disable  Mouth Tracking Syrinx Control";
   }
 
-  // getUsermedia parameters.
+  // getUsermedia parameters
   const constraints = {
     video: true
   };

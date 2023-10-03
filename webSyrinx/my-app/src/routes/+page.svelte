@@ -16,12 +16,16 @@
 <div>
 <section>
 		<directions><p>
-		Click anywhere in the window to start the sound and blow into the microphone! <br /><br />  
-		You can change the tension on the vocal cords by moving your mouse! </p>
+		Click anywhere in the window to start the sound and blow into your microphone! <br /><br />  
+		You can change the tension on the vocal cords by moving your mouse!<br /><br />  
+		Or, use your mouth shape via the webcam to change the tension on the vocal cords!<br /><br />  
 
 		<p>Changing the tension affects the pitch and timbre. The lower you move your mouse (you can scroll down) the lower the tension, and generally, the lower the pitch. The higher your mouse moves, the higher the pitch. Moving the mouse left will also slightly lower the tension, while moving it right will slightly raise it.
 	In addition, as you accelerate and decelerate your breath whilst blowing into the microphone, you are also driving pitch, timbre, and volume of the sound.</p>
-		<p>The default mode of the computational model employs a two membranes (a tracheobronchial, meaning two membranes, one each in the bronchi) syrinx like a songbird (passerine). However, you can switch between this mode and a tracheal mode with only one membrane (one vibrating membrane in the trachea), like an ostrich, duck, or dove.</p>
+		
+	<p>		Alternatively, enable your webcam and use your mouthshape to control the tension on the vocal cords! The wider and more open your mouth is, the higher the tension. And vice versa.</p>
+
+	<p>The default mode of the computational model employs a two membranes (a tracheobronchial, meaning two membranes, one each in the bronchi) syrinx like a songbird (passerine). However, you can switch between this mode and a tracheal mode with only one membrane (one vibrating membrane in the trachea), like an ostrich, duck, or dove.</p>
 	</directions>
 	<!-- <h1>
 
