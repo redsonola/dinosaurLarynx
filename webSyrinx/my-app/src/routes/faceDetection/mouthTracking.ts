@@ -259,13 +259,9 @@ function printMouthLandmarks( landmarks?: NormalizedLandmark[][], connections?: 
     let wideness = distance(mouthLandmarks[0], mouthLandmarks[1]);
     let openness = distance(mouthLandmarks[2], mouthLandmarks[3]);
 
-    m.x = scale(wideness, 0.05, 0.16);
-    m.y = scale(openness, 0.0003, 0.115);
+    m.x = scale(openness, 0.0003, 0.05);
+    m.y = scale(wideness, 0.05, 0.12);
 
-    console.log("wideness: " + m.x + " openness: " + m.y);
-
+    console.log("wideness: " + m.y + " openness: " + m.x);
   } 
-
-
-
 }
