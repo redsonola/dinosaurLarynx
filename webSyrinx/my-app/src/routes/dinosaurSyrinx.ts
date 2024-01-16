@@ -485,15 +485,19 @@ export function trachealSyrinx() {
                     tens = scaleTensionOneMembrane(m.y);
                 }
 
+
+                //tens = 3315563; //testing value   
                 rightTension.setValueAtTime(tens, 0.0);
                 tension.setValueAtTime(tens, 0.0);
 
                 //pG is based on the tension
                 let pG = scalePGValuesTwoMembranes(num as number, tens, m.y); //TODO: find PG given 2 separate membrane values
+               // pG = 1200; //testing value
                 if (currentMembraneCount == 1) {
                     pG = pG * 8;
                     //pG = scalePGValuesOneMembrane(num as number, tens, m.y);   
                 }
+
                 pGparam.setValueAtTime(pG, 0.0);
         },
         5);

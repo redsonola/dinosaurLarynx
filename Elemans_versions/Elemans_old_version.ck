@@ -57,7 +57,9 @@ class RingDoveSyrinxLTM extends Chugen
     a01 + 2.0*l*w => float a0; //a0 is the same for both masses since a01 == a02
     
     //pressure values
-    0.008 => float Ps; //pressure in the syringeal lumen, 0.008 or 8
+ //   0.008 => float Ps; //pressure in the syringeal lumen, 0.008 or 8
+     0.04 => float Ps; //pressure in the syringeal lumen, 0.008 or 8
+
     
     //geometry
     d1 + (d2/2) => float dM; //imaginary horizontal midline -- above act on upper mass, below on lower
@@ -429,8 +431,8 @@ if( !fout.good() )
     me.exit();
 }
 
-"x[0]"  + "," + "x[1]" +"," + "dx[0]"  + "," + "dx[1]" + "," + "a1" + "," + "a2" + "," + "dU"  + ", "+"F[0]" + "," + "F[1]" + "," + "I[0]" + "," + "I[1]" +"\n" => string output; 
-fout.write( output );
+//"x[0]"  + "," + "x[1]" +"," + "dx[0]"  + "," + "dx[1]" + "," + "a1" + "," + "a2" + "," + "dU"  + ", "+"F[0]" + "," + "F[1]" + "," + "I[0]" + "," + "I[1]" +"\n" => string output; 
+//fout.write( output );
 
 3::second => now; 
 now => time start;
@@ -445,7 +447,7 @@ while(now - start < 1000::ms)
     //      <<< ltm.dU  + "," + ltm.x[0]  + "," + ltm.x[1] +"," + ltm.F[0] + "," + ltm.F[1] + "," + ltm.a1 + "," + ltm.a2 + "," + ltm.cpo1 + "," + ltm.cpo2 + ","+ ltm.cpo3 + "," + ltm.I[0] + "," + ltm.I[1] + "," + ltm.zM + "\n" >>>;
     
     
-    
+    /*
     ltm.x[0]  + "," + ltm.x[1] +"," + ltm.dx[0]  + "," + ltm.dx[1] + "," + ltm.a1 + "," + ltm.a2 + "," + ltm.dU  + "," + ltm.F[0] + "," + ltm.F[1]+ ","  + ltm.I[0] + "," + ltm.I[1]  + "," +  "\n" => string output; 
     //  + ltm.cpo2 + ","+ ltm.cpo3 + "," + ltm.I[0] + "," + ltm.I[1] + "," + ltm.zM + "\n" => string output; 
     
@@ -454,6 +456,7 @@ while(now - start < 1000::ms)
     
     
     fout.write( output ); 
+    */
     
     1::samp => now;   
 }  

@@ -22,41 +22,73 @@
 //2010 paper on the oscine bird
 //http://www.lsd.df.uba.ar/papers/PhysRevE_comp_model.pdf
 
+//The evolution of the syrinx: An acoustic theory -- 2019 paper with up to date computational modeling 
+//https://journals.plos.org/plosbiology/article/file?id=10.1371/journal.pbio.2006507&type=printable
+
+//Sensitivity of Source?Filter Interaction to Specific Vocal Tract Shapes
+//https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9390861/
+
+//In situ vocal fold properties and pitch prediction by dynamic actuation of the songbird syrinx
+//https://www.nature.com/articles/s41598-017-11258-1.pdf
+
+//https://arc.aiaa.org/doi/abs/10.2514/6.2018-0578
+
+//universal methods of sound production in birds
+//https://www.nature.com/articles/ncomms9978.pdf
+
+//Zacharelli 2008, "the syrinx i sbrought into a phonatory position by two paired syringeal muscles; 
+//the m. sternotrachealis (ST) - he ST moves the entire syrinx downward
+//and m. tracheolateralis (TL) - TL directly affects position in the LTM  "
+//Lateral Vibratory Mass (LVM) instead of Lateral Tympaniform Membrane (LTM) as it is not thin in ring doves.
+
+//cont. Zaccahrell ch. 4 notes
+//When looking at the forces acting on the LVM (Fig. 4.1b), it becomes clear that any pressure differences between the air sac surrounding the syrinx (the interclavicular air sac) and syringeal lumen causes a net force to act on the LVM. This so-called transmural pressure Pt affects the tension in the membrane (Bertram and Pedley, 1982; Bertram, 2004). 
+//Picas -- pressure in the interclavicular air sac (icas) -- above syrinx lvm
+//Ptcas -- pressure in the caudal thoracic air sac (ctas) -- below syrinx lvm
+//Pt =Picas - Pctas
+
+//Considering the mechanics, the LVM tension is affected by both 
+//1) the transmural stress caused by a pressure differential between the bronchus and ICAS and 
+//2) the stress exerted by muscles.
+//both the transmural pressure and TL stress affect tension in the LVM.
+
+//If we look at the forces acting on the syrinx membranes (Fig. 4.1b), the most important physiological control parameters are 
+//1) the bronchial-tracheal pressure gradient, 
+//2) the transmural pressure difference and 
+//3) the stress exerted by syringeal muscles.
+
 //Syrinx Membrane
 class RingDoveSyrinxLTM extends Chugen
 {
     //time steps
     second/samp => float SRATE;
-    1/SRATE => float T; //to make concurrent with Smyth paper
-    (T*1000.0)/(2.0) => float timeStep; //this is for integrating, change from Smyth (eg.*1000) bc everything here is in ms not sec, so convert
+    1/(SRATE*100) => float T; //to make concurrent with Smyth paper
+    (T*1000)/(2.0) => float timeStep; //this is for integrating, change from Smyth (eg.*1000) bc everything here is in ms not sec, so convert
     
     //membrane displacement
     [0.0, 0.0] @=> float x[]; 
     [0.0, 0.0] @=> float dx[]; 
     [0.0, 0.0] @=> float d2x[]; 
     [0.0, 0.0] @=> float F[]; //force
-    [0.0015, 0.0003] @=>  float m[]; //mass
-    [0.0, 0.0] @=> float x0[]; 
+    [0.0015, 0.0003] @=>  float m[]; //mass - m1 1st mass  0.0015 g, m2 2nd mass  0.0003 g
     
     //damping and stiffness coefficients 
-    0.002 => float r; //damping
-    [0.08, 0.008] @=>  float k[]; //stiffness
-    0.025 => float kc; //coupling constant
+    0.002 => float r; //damping - r damping constant (r1 = r2)  0.002 g/ms
+    [0.08, 0.008] @=>  float k[]; //stiffness - k1 1st mass stiffness  0.08 g/ms2, k2 2nd mass stiffness  0.008 g/ms2
+    0.025 => float kc; //coupling constant - kc coupling constant   0.025 g/ms2
     
     [0.0, 0.0] @=> float I[]; //collisions
     
     //biological parameters of ring dove syrinx, in cm
-    0.15 => float w; //trachea width
-    0.3 => float l; //length of the trachea
-    0.0021 => float a01; //lower rest area
-    0.00175 => float a02; //upper rest area
-   // a01 + 2.0*l*w => float a0; 
+    0.3 => float l; //length of the trachea - l length of the syringeal lumen 0.3 cm
+    0.0021 => float a01; //lower rest area -- a01 lower rest area 0.0021 cm2
+    0.00175 => float a02; //upper rest area -- a02 upper rest area 0.00175 cm2
     
-    0.1 => float d1; //1st mass height
-    0.02 => float d2; //2nd mass displacement from first
+    0.1 => float d1; //1st mass height  d1 1st mass thickness-  0.1 cm
+    0.02 => float d2; //2nd mass displacement from first - d2 2nd mass thickness 0.02 cm
         
     //pressure values
-    0.008 => float Ps; //pressure in the syringeal lumen, 0.008 or 8
+    0.008 => float Ps; //pressure in the syringeal lumen, 0.008 or 8 --> however, works around 0.006 instead
         
     0.0 => float dU;
     0.0 => float prevDU;
@@ -72,14 +104,15 @@ class RingDoveSyrinxLTM extends Chugen
     
     //confirmed! Herzel, H., Berry, D., Titze, I., & Steinecke, I. (1995). Nonlinear dynamics of the voice: Signal analysis and biomechanical modeling. Chaos (Woodbury, N.Y.), 5(1), 30?34. 
     //https://doi.org/10.1063/1.166078
+    //https://watermark-silverchair-com.proxy.libraries.smu.edu/1874_1_online.pdf?token=AQECAHi208BE49Ooan9kkhW_Ercy7Dm3ZL_9Cf3qfKAc485ysgAABYgwggWEBgkqhkiG9w0BBwagggV1MIIFcQIBADCCBWoGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMc9UTfDVbGR1rxUVgAgEQgIIFO8dctxPkTXGWjnWWHrqHyigshEu2FcPVF3KPX2SFIGbMMDclQ707grTI26zjgb0KeJkTeVgptnlrOsYd7oj2-_cQCCgPhqVs_zKYTPbYABXPiQilvCAg1v2w6acGjzlQ2quvCmdVokC9NLnviosXEv4xm4tEaESwBebykxLxBSBgmJHdFlDnVMDbGbxvIamOe0Mc5tGVad6djd0dA7rRwvzq5TtW90jxKFELVR-8DTXgvufr2xlBOgidtZq0sZRuuiPP1WZbAPHGwfK2GnH__9lzWzvPUwoYxhAHuDPDfBP85LPhMGve5GGUaLm6Eg8A5dAMgV9cjXVLDkXdPnPQuVSNuMF_IauaW8mMDCj6JljxaRY8SBsnZyF_x9DlMG8gaQMPs5KxRl-TGqT4Y4ECOz6R_2tF0VR63MxiFa5Gn8YrwXPjTQGIPmMBIeaebdpGOpYGUmjtoeLysUoS4WoB3_RjtrRY8LmT4tTMZ9JnWtns_GOjFtGphy5Ti1X51gDok25_OKPQ-ykTtg95xx94Hf13VvFb21rMrVSSf7SNi6qj8KW6pVe237OXebwpATNikM9H51gfIjl0hB-WrtjGe5rcwSN-d8nPduPHF0WlZi9x3SZoIvO9wXPuoVOkTYtybiF_CbEcPlzUwOj636831fGXchJBQLyOg7uE2-v7ZJd2ZMUK7dcb0qSYZZTJno5ofgYsT0_EprSdTo8qIS59Iw4_JcwZqdWiI76iKlchgd7ewDd3qIzsLvEVp7I41usZWv_U5qCJimWjgYXbx2ymJcCDGBFH8LxWLXw8r-1S3Yrn4f1QBBgg_kXjYXR2fE4iGVpizTrqKymJwWOU4QnO2kvtue5G6H2iWmdCzjxQX6LboGY6izgYXKvyJzRvWZIiGuDDzSN6cmQE00eWXwDY-9tLQKcjmgPhxEgHK7g9eHXlPM2MDMI8iSjIfalTjMPEhFzcm9aQXtpX7nMOKB5IfYtPDc2mddOpV3wWeuzmIHDDaCWgVQ2nD2AyHr_p1QWDqr20k6fClZsscsmkwFXBsvW0Q7eOntQRHUuV98vuV-XYSPVgjNBOSu1UyFI933AS14GfttysnVD40rASWmzoGioHZTfL4oaasgbed-ZIQ03UFMIWhTqNWOnppE66QYMH1X1ZnHLc7YnRHBgIDk86wgaebFnKrjcKVrx2f90EGXM1dj89dLXiqTx_pJ-aClaJzsXuHHmpegcjMnI0iJhNfjMSYMjUOwCgCjMSbqx7sU_wRhT4SgMimj1atMsWMZ-r5wvSpC680vkDO6--T30-NGT09CamOFwPxhaHIZwaA-HYGrKcJw0c71J6jyK6cAdRRkKhHljhpTm6JEtDrDqOtEwS3R7ldV7jbLMRkR1c9iEntF_O-QS9v9D3FA7SXi2fYhhcidyrGvNvMDPetq8e8BNJFA3rtAwt6wwA_hp5z1YpOjNEpZySN3GnVX60yAJTR_bXURbA8vzEWp1vvDZc2uU-YK3FdwiqAUsDYAFjFBiCQE-7FXBP5RFm-KOBDkTokcKaHr2hIDwB2NzXu9d_BM-Lk5MkBjx_h9kxQKojGFtiLG_kJtqyCAZNi3maBBSbch0BeZ4L2OcrUWVHfOW69KTcq2QbgvQ9OF8JZWZAHMLilwfkWwtisu1PVBvxS1rE92ueE9eFa3XIKPoGIbH-fobKFFdmWL19_fHujstTlbKMIbkbhq2S_1bjW2T65of-B9aU7VfxnnGFQVESah-bU0KfbmYbIWVPk2FjUgx38mR1B4t2guamDag3KlU
     3.0 * k[0] => float c1; 
-    3.0 * k[1] => float c2;      
+    3.0 * k[1] => float c2;  
     
     0.0 => float aMin; 
     0.0 => float a1; 
     0.0 => float a2; 
-    
-    
+  
+      
     fun void updateU()
     {
         prevDU => prevPrevDU; 
@@ -88,7 +121,8 @@ class RingDoveSyrinxLTM extends Chugen
         if(aMin > 0)
         {
             //breaking up the equation so I can easily see order of operations is correct
-            2*l*Math.sqrt((2*Ps)/p) => float firstMult; 
+            (2*Ps)/p => float insideSq;
+            2*l*Math.sqrt(insideSq) => float firstMult; 
             heaveiside(a2-a1)*dx[0] => float firstAdd; 
             heaveiside(a1-a2)*dx[1]=> float secondAdd;
             
@@ -106,10 +140,11 @@ class RingDoveSyrinxLTM extends Chugen
         
         U => prevU;
         Math.sqrt((2*Ps)/p) => float sq; 
-        sq*aMin*heaveiside(Math.max(0, aMin)) => U;
-        U - prevU => subDU; //let's see?
+        sq*aMin*heaveiside(aMin) => U;
+        U - prevU => subDU; //NOTE: this verifies that the differentiation was correct for dU -- it's a noisier version of same signal
     }
     
+    //update x -- uses equations of oscillating motion (Zaccharelli/Steinke&Herzel,1995), plus integration via trapazoidal rule to find x (Smyth, 2004)
     fun void updateX()
     {
         timeStep * ( d2x[0] + ( (1.0/m[0]) * ( F[0] - r*dx[0] - k[0]*x[0] + I[0] - kc*( x[0] - x[1] )) ) ) => d2x[0]; 
@@ -124,10 +159,9 @@ class RingDoveSyrinxLTM extends Chugen
             //update dx, integrate
             dx[i] => float dxPrev;
             dx[i] + d2x[i] => dx[i];
-            
-            //update x, integrate again
+             
             x[i] + timeStep*(dxPrev + dx[i]) => x[i]; 
-            //    x[i] + dx[i] => x[i]; 
+
         }
     }
     
@@ -164,14 +198,8 @@ class RingDoveSyrinxLTM extends Chugen
     
     fun float pressure()
     {
-        if( aMin <= 0 )
-        {
-            return Ps; 
-        }
-        else 
-        {
-            return Ps * (1 - ( heaveiside(aMin)*(aMin/a1)*(aMin/a1) ) )*heaveiside(a1); 
-        }
+//        return Ps * (1 - ( heaveiside(aMin)*(aMin/a1)*(aMin/a1) ) )*heaveiside(a1); 
+        return Ps * (1 - ( heaveiside(aMin)*(aMin/a1)*(aMin/a1) ) )*heaveisideA(a1, a01); 
     }
     
     fun float updateForce()
@@ -180,6 +208,7 @@ class RingDoveSyrinxLTM extends Chugen
         a02 + 2*l*x[1]=> a2; 
         
         Math.min(a1, a2) => aMin;
+        Math.max(aMin, 0) => aMin;
 
         pressure()*l*d1 => F[0];
         0 => F[1]; 
@@ -188,26 +217,33 @@ class RingDoveSyrinxLTM extends Chugen
     //recheck w/table
     fun void updateCollisions()
     {  
+       -heaveisideA(-a1, a01)*c1*(a1/( 2*l)) => I[0];
+       -heaveisideA(-a2, a02)*c2*(a2/( 2*l)) => I[1];        
+        
 //       -heaveisideA(-a1, a1)*c1*(a1/( 2*l)) => I[0];
-//       -heaveisideA(-a2, a2)*c2*(a2/( 2*l)) => I[1];
-       -heaveiside(-a1)*c1*(a1/( 2*l)) => I[0];
-       -heaveiside(-a2)*c2*(a2/( 2*l)) => I[1];
+//       -heaveisideA(-a2, a2)*c2*(a2/( 2*l)) => I[1];/
+//       -heaveiside(-a1)*c1*(a1/( 2.0*l)) => I[0];
+//       -heaveiside(-a2)*c2*(a2/( 2.0*l)) => I[1];
     }
+    
+
     
     fun float tick(float in)
     {
-        updateX();
+
         updateForce();
         updateCollisions();
+        updateX();
         updateU(); 
-        
+
         return dU; 
     }
 }
 //*******sound off bc chuck doesn't work with my headphones and just checking waveforms at the moment.......
 RingDoveSyrinxLTM ltm => Dyno limiter => blackhole; //dac
 limiter.limit(); 
-100 => limiter.gain; 
+0.9 => limiter.gain; 
+limiter => dac; 
 
 
 <<< "**********************************" >>>;
@@ -224,22 +260,27 @@ if( !fout.good() )
     me.exit();
 }
 
-//10::second => now;
-//1::second => now; 
-    "x[0]"  + "," + "x[1]" +"," + "dx[0]"  + "," + "dx[1]" + "," + "a1" + "," + "a2" + "," + "dU"  + "," + "U"  + ","  + "intU"  + ","+ "subDU" + ","+"F[0]" + "," + "F[1]" + "," + "I[0]" + "," + "I[1]" + "," +  "testDU1" + "," + "testDU2" + "\n" => string output; 
-    fout.write( output ); 
-
+//4::second => now; //advance forward a bit
+//    "x[0]"  + "," + "x[1]" +"," + "dx[0]"  + "," + "dx[1]" + "," + "a1" + "," + "a2" + "," + "dU"  + "," + "U"  + ","  + "intU"  + ","+ "subDU" + ","+"F[0]" + "," + "F[1]" + "," + "I[0]" + "," + "I[1]" + "," +  "testDU1" + "," + "testDU2" + "\n" => string output; 
+//    fout.write( output ); 
+    
+    
+1::second => now; 
 now => time start; 
-while(now - start < 15::ms)
+while(now - start < 250000::samp)//10::ms*1000)
 {
     
     //  <<< ltm.dU  + " , " + ltm.x[0] + " , " +  ltm.d2x[0] + " , " + ltm.F[0] + " , " + ltm.I[0] + " , " + ltm.a1 + " , " + ltm.a2 + " , " + ltm.zM >>>;
     //<<< ltm.dU  + " , " + ltm.x[1] + " , " + ltm.x[0] +" , " +  ltm.d2x[1] + " , " + ltm.F[1] + " , " + ltm.I[1] + " , " + ltm.a1 + " , " + ltm.a2 + " , " + ltm.zM >>>;
+  
     // <<<ltm.x[0] + " , " +  ltm.x[1] + " , " + ltm.cpo1 + " , " + ltm.cpo2 + " , "+ ltm.cpo3 + " , " + ltm.I[0] + " , " + ltm.I[1] + " , " + ltm.zM >>>;
-    ltm.x[0]  + "," + ltm.x[1] +"," + ltm.dx[0]  + "," + ltm.dx[1] + "," + ltm.a1 + "," + ltm.a2 + "," + ltm.dU  + "," + ltm.U  + "," + ltm.intU  + "," + ltm.subDU  + "," + ltm.F[0]*1000.0 + "," + ltm.F[1]*1000.0+ ","  + ltm.I[0] + "," + ltm.I[1]  + "," +  ltm.testDU1*1000.0 + "," + ltm.testDU2 +  "\n" => string output; 
+  //  ltm.x[0]  + "," + ltm.x[1] +"," + ltm.dx[0]  + "," + ltm.dx[1] + "," + ltm.a1 + "," + ltm.a2 + "," + ltm.dU  + "," + ltm.U  + "," + ltm.intU  + "," + ltm.subDU  + "," + ltm.F[0]*1000.0 + "," + ltm.F[1]*1000.0+ ","  + ltm.I[0] + "," + ltm.I[1]  + "," +  ltm.testDU1*1000.0 + "," + ltm.testDU2 +  "\n" => string output; 
+  
   //  + ltm.cpo2 + ","+ ltm.cpo3 + "," + ltm.I[0] + "," + ltm.I[1] + "," + ltm.zM + "\n" => string output; 
     
-    <<< ltm.x[0]  + "," + ltm.x[1] +"," + ltm.dx[0]  + "," + ltm.dx[1] + "," + ltm.a1 + "," + ltm.a2 + "," + ltm.dU  + "," + ltm.U  + "," + ltm.F[0] + "," + ltm.F[1] + ","+ ltm.I[0] + "," + ltm.I[1] + "\n" >>>;
+   // <<< ltm.x[0]  + "," + ltm.x[1] +"," + ltm.dx[0]  + "," + ltm.dx[1] + "," + ltm.a1 + "," + ltm.a2 + "," + ltm.dU  + "," + ltm.U  + "," + ltm.F[0] + "," + ltm.F[1] + ","+ ltm.I[0] + "," + ltm.I[1] + "\n" >>>;
+  //  <<<ltm.dU>>>;
+  ltm.dU + "\n" => string output; 
     fout.write( output ); 
     
     1::samp => now;   

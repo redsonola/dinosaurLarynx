@@ -156,8 +156,10 @@ const syrinxMembraneSynthesis =  /* javascript */`class SyrinxMembrane
         let preshDiff = (this.pG - this.p0) / this.zG ; 
 
         this.dp0 = this.timeStep*( this.dp0 + (physConstants * (preshDiff-this.U) )) ; 
+        // console.log( physConstants + "   ,    " + preshDiff + "    ,    "+ this.zG + "    ,    " + this.pG+"    ,    " + this.dp0 + "    ,    " + this.p0 );
         
         this.p0 += this.dp0 ; //this is correct, below is incorrect, but keep this way for now to prevent blow-up
+
     }
     
     protected updateU() : void
@@ -188,12 +190,7 @@ const syrinxMembraneSynthesis =  /* javascript */`class SyrinxMembrane
         if ( this.U < 0 )
         {
             this.U = 0.0 ;             
-        }
-
-
-        //<<< "after U: " + "x: "  + totalX + " p0: " + p0 + " p1: " + p1 + " U: " + U + " dU " + dU >>>;
-
- 
+        } 
     }
     
     protected updateMass() : void
@@ -261,6 +258,7 @@ const syrinxMembraneSynthesis =  /* javascript */`class SyrinxMembrane
                          
         this.updateBrochialPressure();
         this.updateU();
+
         
         //update x & params needed for x
         this.updateForce(); 
@@ -274,6 +272,7 @@ const syrinxMembraneSynthesis =  /* javascript */`class SyrinxMembrane
         this.updatePG();
 
         return this.p1;
+            
     }
     
     //changes tension thus, frequency

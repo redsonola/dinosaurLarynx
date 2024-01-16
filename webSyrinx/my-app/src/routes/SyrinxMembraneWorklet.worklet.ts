@@ -191,11 +191,19 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
     }
 
     //period of the comb filter for the waveguide
-    protected getPeriod() : number
+    // protected getPeriod() : number
+    // {
+    //     let LFreq = this.membrane.c/(2*this.membrane.L);
+    //     let period = 0.5 / LFreq;
+    //     return period; //in seconds 
+    // }
+
+    protected getPeriod()
     {
-        let LFreq = this.membrane.c/(2*this.membrane.L);
-        let period = 0.5 / LFreq;
-        return period; //in seconds 
+        let LFreq =  this.membrane.c/(2.0*this.membrane.L); //- the resonant freq. of the tube
+        let period =  ( (0.5 * this.membrane.SRATE) / (LFreq) - 1); //in samples
+        period = period / this.membrane.SRATE; //convert back to seconds
+        return period;
     }
 
     protected hadrosaurInit() : void
@@ -211,12 +219,12 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
         this.membrane.modPG = 80;
    
         this.membrane.initTension(); 
-        this.membrane.initZ0;
+        //this.membrane.initZ0; -- PUT BACK IN AND FIX
 
         //repeat, maybe I should arrayify...
         this.membrane2.a = 4.5; 
         this.membrane2.h = 4.5; 
-        this.membrane2.L = 116; //dummy
+        this.membrane2.L = 116; //dummy 
         this.membrane2.d = 5; 
 
         //in various
@@ -224,7 +232,7 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
         this.membrane2.modPG = 80;
    
         this.membrane2.initTension(); 
-        this.membrane2.initZ0;
+        //this.membrane2.initZ0(); -- PUT BACK IN AND FIX
     }
 
     static get parameterDescriptors() {
@@ -324,15 +332,26 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
         this.membrane.changePG(parameters.pG);
         this.membrane.changeTension(parameters.tension);
 
+        //notes for debugging max, also need to fix the z0 & zG values
+        //110.581 -- in Max 8/C++ (same here), U - 61.3752 -- something like that, totalX - 0.0067006, p0: 634.423, 
+        //          phys constants    presh diff   zG          pG          dp0 
+        //min.syrinx~: 1.47841e+06  ,  61.3752,  9.21507,  1200  ,  3.07286e-11
+
+        // 1478412.81   , 673.26,   9.21507,  9599.9999999995    ,    3.811205705514186e-12    ,    3395.8585323673797
+
+        //110.581 -- in Javascript, U - 673.2602852001678, --total X: 0.03177011149362136, p0: 3395.8585323673833
+        // 1478412.81   ,    673.2602852001681    ,    3.811205705514186e-12
+        // 1478410.  ,       61.3752  ,                1.35037e-18
+
         const pOut = this.membrane.tick(this.lastSample); //the syrinx membrane  //Math.random() * 2 - 1; 
 
         //********1st delayLine => tracheaFilter => flip => last sample  *********
-        let curOut = this.delayLineGenerate(pOut+this.lastSample, channel, parameters, this.bronch1Delay1, this.delayTime);
+        let curOut = this.delayLineGenerate(pOut+this.lastSample, channel, this.tracheaDelay1, this.delayTime);
         this.lastSample = this.tracheaFilter.tick(curOut); //low-pass filter
         this.lastSample = this.lastSample * -1; //flip
 
         //********2nd delayLine, going back *********
-        this.lastSample = this.delayLineGenerate(this.lastSample, channel, parameters, this.bronch1Delay2, this.delayTime);
+        this.lastSample = this.delayLineGenerate(this.lastSample, channel, this.tracheaDelay2, this.delayTime);
         this.lastSample = this.wallLoss.tick(this.lastSample); 
 
         //******** Add delay lines ==> High Pass Filter => out  *********
@@ -358,8 +377,8 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
             this.initFunc();
         }
 
-        //****** output w/high pass *********      
-
+        //****** output w/high pass *********  
+        
         return fout;
     }
 
@@ -391,12 +410,12 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
 
         //******** Sound is generated and travels up each bronchi *********
         const pOut = this.membrane.tick(this.lastSample); //the syrinx membrane  //Math.random() * 2 - 1; 
-        let curOut = this.delayLineGenerate(pOut+this.lastSample, channel, parameters, this.bronch1Delay1, this.delayTimeBronchi);
+        let curOut = this.delayLineGenerate(pOut+this.lastSample, channel, this.bronch1Delay1, this.delayTimeBronchi);
         this.lastSample = this.bronch1Filter.tick(curOut); //low-pass filter
         this.lastSample = this.lastSample * -1; //flip
 
         const pOut2 = this.membrane2.tick(this.lastSample2); //the syrinx membrane  //Math.random() * 2 - 1; 
-        let curOut2 = this.delayLineGenerate(pOut2+this.lastSample2, channel, parameters, this.bronch2Delay1, this.delayTimeBronchi);
+        let curOut2 = this.delayLineGenerate(pOut2+this.lastSample2, channel, this.bronch2Delay1, this.delayTimeBronchi);
         this.lastSample2 = this.bronch2Filter.tick(curOut2); //low-pass filter
         this.lastSample2 = this.lastSample2 * -1; //flip 
 
@@ -404,18 +423,18 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
         let scatterOut = this.scatteringJunction.scatter(curOut, curOut2, this.lastTracheaSample); 
 
         //******** Sound travels through trachea *********
-        let trachOut = this.delayLineGenerate(scatterOut.trach + this.lastTracheaSample, channel, parameters, this.tracheaDelay1, this.delayTime);
+        let trachOut = this.delayLineGenerate(scatterOut.trach + this.lastTracheaSample, channel, this.tracheaDelay1, this.delayTime);
         this.lastTracheaSample = this.tracheaFilter.tick(trachOut); //low-pass filter
         this.lastTracheaSample = this.lastTracheaSample * -1; //flip 
 
         //******** Sound is reflected from bronchi & trachea *********
-        this.lastSample = this.delayLineGenerate(scatterOut.b1, channel, parameters, this.bronch1Delay2, this.delayTimeBronchi);
+        this.lastSample = this.delayLineGenerate(scatterOut.b1, channel, this.bronch1Delay2, this.delayTimeBronchi);
         this.lastSample = this.wallLoss.tick(this.lastSample); 
 
-        this.lastSample2 = this.delayLineGenerate(scatterOut.b2, channel, parameters, this.bronch2Delay2, this.delayTimeBronchi);
+        this.lastSample2 = this.delayLineGenerate(scatterOut.b2, channel, this.bronch2Delay2, this.delayTimeBronchi);
         this.lastSample2 = this.wallLoss.tick(this.lastSample2); 
 
-        this.lastTracheaSample = this.delayLineGenerate(this.lastTracheaSample, channel, parameters, this.tracheaDelay2, this.delayTime);
+        this.lastTracheaSample = this.delayLineGenerate(this.lastTracheaSample, channel, this.tracheaDelay2, this.delayTime);
         //this.lastTracheaSample = this.wallLoss.tick(this.lastTracheaSample); 
 
         //******** Add delay lines ==> High Pass Filter => out  *********
@@ -432,12 +451,13 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
         }
 
         return fout;
+
+        
     }
-
-
+    
     //this is the delayLine generate -- note: I will probably have to have multiple delay lines
     //this function altered slightly from tonejs FeedbackCombFilter
-    protected delayLineGenerate(input, channel, parameters, delayLine, delayTime) : number {
+    protected delayLineGenerate(input, channel, delayLine, delayTime) : number {
         const delayedSample = delayLine.get(channel, delayTime * this.sampleRate);
         delayLine.push(channel, input);
         return delayedSample;

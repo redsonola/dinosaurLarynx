@@ -29,13 +29,13 @@
 
 */
 
-//Syrinx Membrane
+//Syrinx Membrane - note: it works with 1/2 the Ps value per the paper? What is going on, then?
 class RingDoveSyrinxLTM extends Chugen
 {
     //time steps, for discrete real-time implementation
     second/samp => float SRATE;
     1/SRATE => float T; //to make concurrent with Smyth paper
-    (T*1000)/2 => float timeStep; //this is for integrating smoothly, change from Smyth (eg.*1000) bc everything here is in ms not sec, so convert
+    (T*1000.0)/2.0 => float timeStep; //this is for integrating smoothly, change from Smyth (eg.*1000) bc everything here is in ms not sec, so convert
 
     //membrane displacement
     [0.0, 0.0] @=> float x[]; 
@@ -64,7 +64,7 @@ class RingDoveSyrinxLTM extends Chugen
 
     //pressure values - limit cycle is half of predicted? --> 0.00212.5 to .002675?
     //no - 0.0017 to 0.0031 -- tho, 31 starts with noise, if dividing by 2 in the timestep
-    0.0043 => float Ps; //pressure in the syringeal lumen, 0.004 is default Ps for this model but only 1/2 of predicted works
+    0.002 => float Ps; //pressure in the syringeal lumen, 0.004 is default Ps for this model but only 1/2 of predicted works
     
     //geometry
     d1 + (d2/2) => float dM; //imaginary horizontal midline -- above act on upper mass, below on lower
@@ -99,7 +99,8 @@ class RingDoveSyrinxLTM extends Chugen
         if(aMin > 0)
         {
             //breaking up the equation so I can easily see order of operations is correct
-            2*l*Math.sqrt((2*Ps)/p) => float firstMult; 
+            //2*l*Math.sqrt((2*Ps)/p) => float firstMult; 
+            2*l*Math.sqrt((2*Ps)/p) => float firstMult;
             heaveisideA(a2-a1, a1)*dx[0] => float firstAdd; 
             heaveisideA(a1-a2, a2)*dx[1]=> float secondAdd;
             
@@ -203,7 +204,8 @@ fun float syringealArea(float z)
 
      //replace with equation from diss.
      fun float defIForce(float z0, float z1)
-     {
+     {         
+         
          syringealArea(z0) => float aZ0;
          syringealArea(z1) => float aZ1;
 
@@ -286,7 +288,7 @@ fun float syringealArea(float z)
          
          defIForce( 0, d1 ) + defIForce(d1, dM) => F[0];
    //      defIForce(dM, d1+d2) => F[1]; //trying
-         defIForce(dM, d1+(d2/2)) => F[1]; //modifying in terms of equation presented on (A.8) p.110
+         defIForce(dM, d1+d2) => F[1]; //modifying in terms of equation presented on (A.8) p.110
 
      }
      
@@ -377,7 +379,7 @@ if( !fout.good() )
 
 5::second => now; 
 now => time start;
-while(now - start < 1000::ms)
+while(now - start < 10::ms)
 {
   //  <<< ltm.dU  + " , " + ltm.x[0] + " , " +  ltm.d2x[0] + " , " + ltm.F[0] + " , " + ltm.I[0] + " , " + ltm.a1 + " , " + ltm.a2 + " , " + ltm.zM >>>;
     //<<< ltm.dU  + " , " + ltm.x[1] + " , " + ltm.x[0] +" , " +  ltm.d2x[1] + " , " + ltm.F[1] + " , " + ltm.I[1] + " , " + ltm.a1 + " , " + ltm.a2 + " , " + ltm.zM >>>;

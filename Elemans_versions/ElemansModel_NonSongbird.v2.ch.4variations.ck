@@ -29,33 +29,92 @@
 
 */
 
-//Syrinx Membrane
+//The evolution of the syrinx: An acoustic theory -- 2019 paper with up to date computational modeling 
+//https://journals.plos.org/plosbiology/article/file?id=10.1371/journal.pbio.2006507&type=printable
+
+//Sensitivity of Source?Filter Interaction to Specific Vocal Tract Shapes
+//https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9390861/
+
+//In situ vocal fold properties and pitch prediction by dynamic actuation of the songbird syrinx
+//https://www.nature.com/articles/s41598-017-11258-1.pdf
+
+//https://arc.aiaa.org/doi/abs/10.2514/6.2018-0578
+
+//universal methods of sound production in birds
+//https://www.nature.com/articles/ncomms9978.pdf
+
+//Zacharelli 2008, "the syrinx i sbrought into a phonatory position by two paired syringeal muscles; 
+//the m. sternotrachealis (ST) - he ST moves the entire syrinx downward
+//and m. tracheolateralis (TL) - TL directly affects position in the LTM  "
+//Lateral Vibratory Mass (LVM) instead of Lateral Tympaniform Membrane (LTM) as it is not thin in ring doves.
+
+//cont. Zaccahrell ch. 4 notes
+//When looking at the forces acting on the LVM (Fig. 4.1b), it becomes clear that any pressure differences between the air sac surrounding the syrinx (the interclavicular air sac) and syringeal lumen causes a net force to act on the LVM. This so-called transmural pressure Pt affects the tension in the membrane (Bertram and Pedley, 1982; Bertram, 2004). 
+//Picas -- pressure in the interclavicular air sac (icas) -- above syrinx lvm
+//Ptcas -- pressure in the caudal thoracic air sac (ctas) -- below syrinx lvm
+//Pt =Picas - Pctas
+
+//Considering the mechanics, the LVM tension is affected by both 
+//1) the transmural stress caused by a pressure differential between the bronchus and ICAS and 
+//2) the stress exerted by muscles.
+//both the transmural pressure and TL stress affect tension in the LVM.
+
+//If we look at the forces acting on the syrinx membranes (Fig. 4.1b), the most important physiological control parameters are 
+//1) the bronchial-tracheal pressure gradient, 
+//2) the transmural pressure difference and 
+//3) the stress exerted by syringeal muscles.
+
+//TODO: implement graphs on pg. 73 of Zaccharelli for Ps, Pt, Ptl
+
+//Syrinx Membrane - note: it works with 1/2 the Ps value per the paper? What is going on, then?
 class RingDoveSyrinxLTM extends Chugen
 {
     //time steps, for discrete real-time implementation
     second/samp => float SRATE;
     1/SRATE => float T; //to make concurrent with Smyth paper
-    (T*1000)/2 => float timeStep; //this is for integrating smoothly, change from Smyth (eg.*1000) bc everything here is in ms not sec, so convert
+    (T*1000.0)/2.0 => float timeStep; //this is for integrating smoothly, change from Smyth (eg.*1000) bc everything here is in ms not sec, so convert
 
     //membrane displacement
     [0.0, 0.0] @=> float x[]; 
     [0.0, 0.0] @=> float dx[]; 
     [0.0, 0.0] @=> float d2x[]; 
     [0.0, 0.0] @=> float F[]; //force
-    0.001 => float m; //mass
+    0.0017 => float m; //mass, table C.1
         
     //damping and stiffness coefficients 
-    0.001 => float r; //damping
-    0.02 => float k; //stiffness
-    0.005 => float kc; //coupling constant
+    0.0012 => float r; //damping, table C.1
+    0.0022 => float k; //stiffness -- orig. 0.02 in fig. 3.2 zaccharelli -- now back to original-ish? table C.1
+    0.006 => float kc; //coupling constant, table C.1 (before, 0.005)
     
     [0.0, 0.0] @=> float I[]; //collisions
     
     //biological parameters of ring dove syrinx, in cm
     0.15 => float w; //trachea width
-    0.3 => float l; //length of the trachea
+    0.3 => float l; //length of the trachea, 4.1 table
     0.003 => float a01; //lower rest area
     0.003 => float a02; //upper rest area, testing a02/a01 = 0.8, testing a convergent syrinx
+    
+    //time-varying (control) tension parameters (introduced in ch 4 & appendix C)
+    0.0 => float Ptl; //stress due to the TL tracheolateralis (TL) - TL directly affects position in the LTM -- probably change in dinosaur.
+    0.0 => float minPtl; 
+    20.0 => float maxPtl; 
+    -0.03 => float a0min; 
+    0.01 => float a0max; 
+    a0max - a0min => float a0Change; 
+    
+    //time-varying (input control) parameters Q, which reflect sum of syringeal pressures
+    0.8 => float Qmin; 
+    1.2 => float Qmax;
+    Qmin => float Q; //F(t) = Q(t)F0
+    0 => Pt; //-1 to 0.5 using CTAS, normalized to 1, max but usually around 0.5 max -- from graph on p. 70, Pt = PICAS - PCTAS (max 3.5), 
+    Pt + Ptl => float Psum;
+    0.0 => float minPsum; 
+    20.0 => float maxPsum; 
+    Qmax - Qmin => float Qchange;
+
+
+    
+    //adding an extra zero -- previous --> 0.4, 0.24, 0.28
     0.04 => float d1; //1st mass height
     0.24 - d1 => float d2; //2nd mass displacement from first
     0.28 - (d1+d2) => float d3; //3rd mass displacement from 2nd
@@ -64,7 +123,7 @@ class RingDoveSyrinxLTM extends Chugen
 
     //pressure values - limit cycle is half of predicted? --> 0.00212.5 to .002675?
     //no - 0.0017 to 0.0031 -- tho, 31 starts with noise, if dividing by 2 in the timestep
-    0.0043 => float Ps; //pressure in the syringeal lumen, 0.004 is default Ps for this model but only 1/2 of predicted works
+    0.0045 => float Ps; //pressure in the syringeal lumen, 0.004 is default Ps for this model but only 1/2 of predicted works
     
     //geometry
     d1 + (d2/2) => float dM; //imaginary horizontal midline -- above act on upper mass, below on lower
@@ -99,7 +158,8 @@ class RingDoveSyrinxLTM extends Chugen
         if(aMin > 0)
         {
             //breaking up the equation so I can easily see order of operations is correct
-            2*l*Math.sqrt((2*Ps)/p) => float firstMult; 
+            //2*l*Math.sqrt((2*Ps)/p) => float firstMult; 
+            2*l*Math.sqrt((2*Ps)/p) => float firstMult;
             heaveisideA(a2-a1, a1)*dx[0] => float firstAdd; 
             heaveisideA(a1-a2, a2)*dx[1]=> float secondAdd;
             
@@ -113,9 +173,12 @@ class RingDoveSyrinxLTM extends Chugen
     
     fun void updateX()
     {
+       m/Q => float mt; //time-varying mass due to muscle tensions, etc.
+       k*Q => float kt; //time-varying stiffness due to muscle tensions, etc.
+        
        //update d2x/dt
-       timeStep * ( d2x[0] + ( (1.0/m) * ( F[0] - r*dx[0] - k*x[0] + I[0] - kc*( x[0] - x[1] )) ) ) => d2x[0]; 
-       timeStep * ( d2x[1] + ( (1.0/m) * ( F[1] - r*dx[1] - k*x[1] + I[1] - kc*( x[1] - x[0] )) ) ) => d2x[1];  
+       timeStep * ( d2x[0] + ( (1.0/mt) * ( F[0] - r*dx[0] - kt*x[0] + I[0] - kc*( x[0] - x[1] )) ) ) => d2x[0]; 
+       timeStep * ( d2x[1] + ( (1.0/mt) * ( F[1] - r*dx[1] - kt*x[1] + I[1] - kc*( x[1] - x[0] )) ) ) => d2x[1];  
               
        for( 0=>int i; i<x.cap(); i++ )
        {
@@ -203,7 +266,8 @@ fun float syringealArea(float z)
 
      //replace with equation from diss.
      fun float defIForce(float z0, float z1)
-     {
+     {         
+         
          syringealArea(z0) => float aZ0;
          syringealArea(z1) => float aZ1;
 
@@ -286,7 +350,7 @@ fun float syringealArea(float z)
          
          defIForce( 0, d1 ) + defIForce(d1, dM) => F[0];
    //      defIForce(dM, d1+d2) => F[1]; //trying
-         defIForce(dM, d1+(d2/2)) => F[1]; //modifying in terms of equation presented on (A.8) p.110
+         defIForce(dM, d1+d2) => F[1]; //modifying in terms of equation presented on (A.8) p.110
 
      }
      
@@ -326,21 +390,52 @@ fun float syringealArea(float z)
              ( -c2/(4*l) )*( a2 + ( (aM*d2)/( 2*L2 ) ) ) => I[1];                 
          }
      }
+     
+     
+     //update areas due to syringeal pressure (implements Zaccharelli, 2008 Ch. 4 & Appendix C)
+     fun void updateRestingAreas()
+     {
+         Ptl*(a0Change/maxPtl) + a0min => a01; 
+         Ptl*(a0Change/maxPtl) + a0min => a02; 
+     }
+     
+    fun void updateQ()
+    {
+        Ptl + Pt => Psum; //update Psum first
+        Psum*( Qchange/maxPsum ) + minQ => Q; //now update Q
+    }
     
     fun float tick(float in)
     {
-        updateForce();
+
         updateCollisions();
         updateX();
+        updateForce();
         updateU(); 
+        updateRestingAreas();
+        updateQ();
         
         return dU; 
     }
 }
 
 RingDoveSyrinxLTM ltm => Dyno limiter => dac; 
-limiter.limit(); 
+Envelope e => blackhole; 
+0.002 => e.value; 
+0.00530 => e.target; 
+5::second => e.duration;
 
+now + 6::second => time later; //swoop for 1 second
+
+while( now < later)
+{
+    e.value() => ltm.Ps;
+    1::samp => now; 
+    //<<<ltm.Ps>>>;
+}
+ 
+
+limiter.limit(); 
 
 /*
 <<<ltm.defIForce(0, ltm.d1)>>>;
@@ -359,25 +454,29 @@ limiter.limit();
 
 
 <<< "**********************************" >>>;
-
+/*
 FileIO fout;
 
 // open for write
 fout.open( "/Users/courtney/Programs/physically_based_modeling_synthesis/out3.txt", FileIO.WRITE );
 
 // test
+
 if( !fout.good() )
 {
     cherr <= "can't open file for writing..." <= IO.newline();
     me.exit();
 }
+*/
 
-    "x[0]"  + "," + "x[1]" +"," + "dx[0]"  + "," + "dx[1]" + "," + "a1" + "," + "a2" + "," + "dU"  + ", "+"F[0]" + "," + "F[1]" + "," + "I[0]" + "," + "I[1]" +"\n" => string output; 
-    fout.write( output );
 
-5::second => now; 
-now => time start;
-while(now - start < 1000::ms)
+ //   "x[0]"  + "," + "x[1]" +"," + "dx[0]"  + "," + "dx[1]" + "," + "a1" + "," + "a2" + "," + "dU"  + ", "+"F[0]" + "," + "F[1]" + "," + "I[0]" + "," + "I[1]" +"\n" => string output; 
+//    fout.write( output );
+
+
+
+/*
+while(now - start < 10::ms)    
 {
   //  <<< ltm.dU  + " , " + ltm.x[0] + " , " +  ltm.d2x[0] + " , " + ltm.F[0] + " , " + ltm.I[0] + " , " + ltm.a1 + " , " + ltm.a2 + " , " + ltm.zM >>>;
     //<<< ltm.dU  + " , " + ltm.x[1] + " , " + ltm.x[0] +" , " +  ltm.d2x[1] + " , " + ltm.F[1] + " , " + ltm.I[1] + " , " + ltm.a1 + " , " + ltm.a2 + " , " + ltm.zM >>>;
@@ -401,8 +500,10 @@ while(now - start < 1000::ms)
     1::samp => now;   
 }  
 
+
 // close the thing
 fout.close();
+*/
 
 //TODO for tomorrow:
 //1. Check expectations, this is close -- but I only skimmed that part
