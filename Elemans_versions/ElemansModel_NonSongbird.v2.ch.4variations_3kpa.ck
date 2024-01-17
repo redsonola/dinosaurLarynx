@@ -419,77 +419,7 @@ fun float syringealArea(float z)
     }
 }
 
-//this is redundant but I definitely know what is happening here and will stop any crazy magical thinking debug loops on this topic cold.
-class Flip extends Chugen
-{
-    
-    //the pressure up, pressure down difference
-    fun float tick(float in)
-    {
-        return in*-1.0;   
-    }  
-}
-
-//okay, this is just to test -- sanity debug check -- make sure -- obviously I can't keep this as a chugen, but probably
-//in end result will not be using chugens at all.
-class BirdTracheaFilter extends Chugen
-{
-    1.0 => float a1;
-    1.0 => float b0;
-    0.0 => float lastOut; 
-    0.0 => float lastV; 
-    
-    fun float tick(float in)
-    {
-        b0*in => float vin;
-        vin + lastV - a1*lastOut => float out;
-        out => lastOut; 
-        vin => lastV; 
-        return out; 
-    }     
-}
-
-//this needs to be checked again
-//the h(z) to this is a bit unclear for me
-//need to test freq response
-class HPFilter extends Chugen
-{
-    1.0 => float a1;
-    1.0 => float b0;
-    0.0 => float lastOut; 
-    0.0 => float lastV; 
-    
-    fun float tick(float in)
-    {
-        in - b0*in => float vin;
-        vin + (a1-b0)*lastV - a1*lastOut => float out;
-        out => lastOut; 
-        vin => lastV; 
-        return out; 
-    }     
-}
-
-//RingDoveSyrinxLTM ltm => Dyno limiter => dac; 
-
-//run it through the throat, etc.
-BirdTracheaFilter lp; 
-RingDoveSyrinxLTM ltm => DelayA delay => lp => blackhole;
-lp => Flip flip => delay => HPFilter hpOut => Dyno limiter => dac;
-
-7.0 => float L;  
-0.35 => float a; 
-0.35 => float h; 
-setParamsForReflectionFilter();
-
-347.4 => float c; // in m/s
-c/(2*(L/100.0)) => float LFreq; // -- the resonant freq. of the tube (?? need to look at this)
-( (0.5*second / samp) / (LFreq) - 1) => float period; //* 0.5 in the STK for the clarinet model... clarinet.cpp hmmm
-//( (second / samp) / (2*LFreq) - 1) => float period; //* 0.5 in the STK for the clarinet model... clarinet.cpp hmmm
-
-period::samp => delay.delay;
-//period::samp => delay2.delay; 
-30 => limiter.gain;  
- 
+RingDoveSyrinxLTM ltm => Dyno limiter => dac; 
 
 //3::second => now; //3 minutes of sound
 //<<<ltm.Psum>>>;
@@ -497,7 +427,7 @@ period::samp => delay.delay;
 // create trill 
 Envelope envPs => blackhole; 
 0.0 => envPs.value; 
-0.013 => envPs.target; 
+0.0035 => envPs.target; 
 1::second => envPs.duration;
 
 SinOsc oscPt => blackhole;
@@ -507,7 +437,7 @@ limiter.limit();
 
 Envelope envPtl => blackhole; 
 0 => envPtl.value;
-20 => envPtl.target;
+15 => envPtl.target;
 
 Envelope envPt => blackhole; 
 -1 => envPt.value;
@@ -527,17 +457,17 @@ while( now < later)
     
     if( envPs.value() == envPs.target() )
     {
-        if( ltm.Ps == 0.013 )
+        if( ltm.Ps == 0.0035 )
         {
-            0.01 => envPs.target;
-            0.0127/0.013 * 20 => envPtl.target;
-            ((0.0127/0.013)*1.5)  - 1.0 => ltm.Pt;
+            0.001 => envPs.target;
+            0.0012/0.0035 * 15 => envPtl.target;
+            ((0.0012/0.0035)*1.5)  - 1.0 => ltm.Pt;
             
         }
         else if( ltm.Ps == 0.01  )
         {
-            0.013 => envPs.target;
-            20 => envPtl.target;
+            0.0035 => envPs.target;
+            15 => envPtl.target;
             -1.0 => ltm.Pt;
         }
     }
@@ -641,45 +571,6 @@ function float logScale(float in, float min, float max)
     Math.log( max / min ) / (max - min)  => float b;
     max / Math.exp(b*max) => float a;
     return a * Math.exp ( b*in );
-}
-
-function void setParamsForReflectionFilter()
-{
-    0.35 => float a; //radius of opening; from Smyth diss
-    0.5 => float ka; //from Smyth
-    ka*(34740/a)*ltm.T => float wT; 
-    
-    //1.8775468475739816 => wT; //try this from example, Ok, No.
-    
-    <<<wT>>>;
-    //magnitude of -1/(1 + 2s) part of oT from Smyth, eq. 4.44
-    ka => float s; //this is kaj, so just the coefficient to sqrt(-1)
-    #(1, 0) => complex numerator;
-    #(1, 2*s) => complex denominator;
-    numerator / denominator => complex complexcHr_s;
-    Math.sqrt( complexcHr_s.re*complexcHr_s.re + complexcHr_s.im*complexcHr_s.im )  => float oT; //magnitude of Hr(s)
-    <<<oT>>>;
-    
-    //s/(1+s*s) => float oT; //imaginary part of oT from Smyth
-    ( 1 + Math.cos(wT) - 2*oT*oT*Math.cos(wT) ) / ( 1 + Math.cos(wT) - 2*oT*oT ) => float alpha; //to determine a1 
-    -alpha + Math.sqrt( alpha*alpha - 1 ) => float a1;
-    (1 + a1 ) / 2 => float b0; 
-    
-    //using a biquad  to implement, eg. https://ccrma.stanford.edu/~jos/fp/BiQuad_Section.html
-    //as xfer function matches Smyth 4.47, here, b0 = g, and implemented as suggested in the above link.
-    //for the low-pass reflector
-    a1 => lp.a1;
-    b0 => lp.b0; 
-    // b0 => loop.b1;
-    // 0 => loop.b2; 
-    // 0 => loop.a2; 
-    
-    //for the highpass output, from Smyth, again
-    a1 => hpOut.a1; 
-    b0 => hpOut.b0; 
-    
-    
-    //<<< "wT: " + wT + " oT: " + oT + " a1: "+ a1 + " b0: " + b0 >>>;
 }
 
 
