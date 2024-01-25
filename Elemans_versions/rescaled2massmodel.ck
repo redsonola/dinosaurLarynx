@@ -88,7 +88,7 @@ class RingDoveSyrinxLTM extends Chugen
     0.02 => float d2; //2nd mass displacement from first - d2 2nd mass thickness 0.02 cm
         
     //pressure values
-    0.008 => float Ps; //pressure in the syringeal lumen, 0.008 or 8 --> however, works around 0.006 instead
+    0.0066 => float Ps; //pressure in the syringeal lumen, 0.008 or 8 --> however, works around 0.006 instead
         
     0.0 => float dU;
     0.0 => float prevDU;
@@ -265,7 +265,7 @@ if( !fout.good() )
 //    fout.write( output ); 
     
     
-1::second => now; 
+2::second => now; 
 now => time start; 
 while(now - start < 250000::samp)//10::ms*1000)
 {

@@ -250,7 +250,7 @@ function printMouthLandmarks( landmarks?: NormalizedLandmark[][], connections?: 
     for(let i=0; i<FACE_LANDMARKS_LIPS_OPENNESS_MEASURES.length; i++)
     {
       let res : NormalizedLandmark = marks[ FACE_LANDMARKS_LIPS_OPENNESS_MEASURES[i].start ];
-      let res2 : NormalizedLandmark = marks[FACE_LANDMARKS_LIPS_OPENNESS_MEASURES[i].end ];
+      let res2 : NormalizedLandmark = marks[ FACE_LANDMARKS_LIPS_OPENNESS_MEASURES[i].end ];
 
       mouthLandmarks.push(res);
       mouthLandmarks.push(res2);
@@ -260,7 +260,7 @@ function printMouthLandmarks( landmarks?: NormalizedLandmark[][], connections?: 
     let openness = distance(mouthLandmarks[2], mouthLandmarks[3]);
 
     m.x = scale(openness, 0.0003, 0.05);
-    m.y = scale(wideness, 0.05, 0.12);
+    m.y = scale(wideness, 0.07, 0.12);
 
     console.log("wideness: " + m.y + " openness: " + m.x);
   } 

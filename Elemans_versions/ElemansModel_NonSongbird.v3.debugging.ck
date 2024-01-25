@@ -43,6 +43,12 @@
 //universal methods of sound production in birds
 //https://www.nature.com/articles/ncomms9978.pdf
 
+//Synthetic Birdsongs as a Tool to Induce, and Iisten to, Replay Activity in Sleeping Birds
+//https://www.frontiersin.org/articles/10.3389/fnins.2021.647978/full
+
+//Nonlinear dynamics in the study of birdsong
+//https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5605333/
+
 //Zacharelli 2008, "the syrinx i sbrought into a phonatory position by two paired syringeal muscles; 
 //the m. sternotrachealis (ST) - he ST moves the entire syrinx downward
 //and m. tracheolateralis (TL) - TL directly affects position in the LTM  "
@@ -79,12 +85,12 @@ class RingDoveSyrinxLTM extends Chugen
     [0.0, 0.0] @=> float dx[]; 
     [0.0, 0.0] @=> float d2x[]; 
     [0.0, 0.0] @=> float F[]; //force
-    0.0017 => float m; //mass, table C.1
+    0.001 => float m; //mass, table C.1
         
     //damping and stiffness coefficients 
-    0.0012 => float r; //damping, table C.1
-    0.0022 => float k; //stiffness -- orig. 0.02 in fig. 3.2 zaccharelli -- now back to original-ish? table C.1
-    0.006 => float kc; //coupling constant, table C.1 (before, 0.005)
+    0.001 => float r; //damping, table C.1
+    0.02 => float k; //stiffness -- orig. 0.02 in fig. 3.2 zaccharelli -- now back to original-ish? table C.1
+    0.005 => float kc; //coupling constant, table C.1 (before, 0.005)
     
     [0.0, 0.0] @=> float I[]; //collisions
     
@@ -121,7 +127,7 @@ class RingDoveSyrinxLTM extends Chugen
 
     //pressure values - limit cycle is half of predicted? --> 0.00212.5 to .002675?
     //no - 0.0017 to 0.0031 -- tho, 31 starts with noise, if dividing by 2 in the timestep
-    0.04 => float Ps; //pressure in the syringeal lumen, 
+    0.002 => float Ps; //pressure in the syringeal lumen, 
     //0.004 is default Ps for this model but only 1/2 of predicted works in trapezoidal model for default params (?)
     //0.02 is the parameter for fig. C3 & does produce sound with the new time-varying tension/muscle pressure params
     
@@ -173,8 +179,11 @@ class RingDoveSyrinxLTM extends Chugen
     
     fun void updateX()
     {
-       m/Q => float mt; //time-varying mass due to muscle tensions, etc.
-       k*Q => float kt; //time-varying stiffness due to muscle tensions, etc.
+       //m/Q => float mt; //time-varying mass due to muscle tensions, etc.
+       //k*Q => float kt; //time-varying stiffness due to muscle tensions, etc.
+       
+       m => float mt;
+       k => float kt;
         
        //update d2x/dt
        timeStep * ( d2x[0] + ( (1.0/mt) * ( F[0] - r*dx[0] - kt*x[0] + I[0] - kc*( x[0] - x[1] )) ) ) => d2x[0]; 
@@ -265,11 +274,11 @@ fun float syringealArea(float z)
      }
 
      //replace with equation from diss.
-     fun float defIForce(float z0, float z1)
+     fun float defIForce(int whichForce)
      {         
          
-         syringealArea(z0) => float aZ0;
-         syringealArea(z1) => float aZ1;
+         //syringealArea(z0) => float aZ0;
+         //syringealArea(z1) => float aZ1;
 
          if( aMin <=0 ) //closed configuration
          {             
@@ -281,9 +290,9 @@ fun float syringealArea(float z)
              Math.min(min0, cpo3) => min0; 
         
              //Zaccarelli, 2009, p110 -- for forces F2, in closed configuration
-             if(   ( ( z0==d1 ) && z1==dM  ) || ( z0==dM && z1==(d1+d2) )   ) //it's F2
+             if(  whichForce == 2  ) //it's F2
              {
-                 if( a1 <= 0 && min0==cpo1 && cpo1 < z1) //case 4
+                 if( a1 <= 0 && min0==cpo1 && cpo1 < dM) //case 4
                  {
                      return 0.0;
                  }
@@ -295,9 +304,16 @@ fun float syringealArea(float z)
                  {
                      return l*Ps*( d2/2 * ( (a1+a2)  / (a1-a2) ) ); 
                  }
-                 else return l*Ps*( Math.min(min0, z1)  - z0); 
+                 else 
+                 { 
+                     //<<<"here: 309">>>;
+                     //return 0.0;
+                     // return l*Ps*( Math.min(min0, d1)  - z0);
+                     return l*Ps*( Math.min(min0, d1+d2) - dM); 
+                     
+                 }
              }
-             else //it's F1
+             else if (whichForce == 1) //it's force 1
              {
                  if( ( a1 > 0 ) && a1 <= Math.fabs(a2) && min0==cpo2 && cpo2 <= dM ) //case 3a
                  {
@@ -307,23 +323,42 @@ fun float syringealArea(float z)
                  {
                      return l*Ps*dM;
                  }
-                 else if ( a1 <= 0 && min0==cpo1 && cpo1 < z1) //case 4
+                 else if ( a1 <= 0 && min0==cpo1 && cpo1 < d1) //case 4
                  {
                      return l*Ps*d1*( a0/(a0-a1));
                  }
                  else 
                  {
-                     return l*Ps*( Math.min(min0, z1)  - z0); 
+                     //<<<"here: 331">>>;
+                     //return 0.0;
+                     //return l*Ps*( Math.min(min0, z1)  - z0); 
+                     return l*Ps*( Math.min(min0, d1)  - 0) + l*Ps*( Math.min(min0, dM)  - d1); 
+                     
                  }
              }
          }
-         else //open configuration
+         else 
          {
-             if(  ( ( ( z0==d1 ) && z1==dM  ) || ( z0==dM && z1==(d1+d2) ) ) && (zAMin == z0)  ) //it's F2 & case 1
+             if(  (whichForce == 2)  ) //it's F2 
              {
-                 return 0.0; 
+                 if( zAMin == dM ) //open divergent
+                 {
+                     return 0.0; 
+                 }
+                 else //open convergent
+                     return l*Ps*d2/2*(1-((a2*a2)/(aM*a2)));
              }
-             else return l*Ps*(z1 - z0)*(1 - ( (aMin*aMin)/(aZ0*aZ1) )  );
+             else //F1
+             {
+                 if( zAMin == dM ) //open divergent
+                 {
+                     return  l*Ps*d1*(1-((a1*a1)/(a0*a1)));
+                 }
+                 else //open convergent
+                 {
+                     return l*Ps* (d1*(1-((a2*a2)/(a0*a1))) + (d2/2*(1-((a2*a2)/(aM*a1))) ) );
+                 }
+             }
          }
      }
      
@@ -348,9 +383,10 @@ fun float syringealArea(float z)
              d1+d2 => zAMin;             
          }   
          
-         defIForce( 0, d1 ) + defIForce(d1, dM) => F[0];
+         //defIForce( 0, d1 ) + defIForce(d1, dM) => F[0];
+         defIForce(1) => F[0]; //0, d1 -- d1, dM, 
    //      defIForce(dM, d1+d2) => F[1]; //trying
-         defIForce(dM, d1+d2) => F[1]; //modifying in terms of equation presented on (A.8) p.110
+         defIForce(2) => F[1]; //modifying in terms of equation presented on (A.8) p.110
 
      }
      
@@ -412,8 +448,8 @@ fun float syringealArea(float z)
         updateX();
         updateForce();
         updateU(); 
-        updateRestingAreas();
-        updateQ();
+        //updateRestingAreas();
+        //updateQ();
         
         return dU; 
     }
@@ -472,9 +508,10 @@ class HPFilter extends Chugen
 //limit to 100 targets, etc.
 class MultiPointEnvelope extends Chugraph
 {
-    100 => int maxPoints;
-    float targets[100]; 
-    dur durations[100]; 
+    float startValue;
+    1000 => int maxPoints;
+    float targets[maxPoints]; 
+    dur durations[maxPoints]; 
     float curTarget; 
     0 => int envCount; //number of targets + duration
     0 => int envIndex; 
@@ -489,7 +526,7 @@ class MultiPointEnvelope extends Chugraph
     
     fun void connectOut(UGen ugen)
     {
-        env => ugen; 
+        env => LPF lp => ugen; 
     }
     
     fun void add(float target, dur duration)
@@ -503,268 +540,93 @@ class MultiPointEnvelope extends Chugraph
             <<<name + " is at max capacity. Can't add more.\n">>>;
     }
     
+    fun float value()
+    {
+        return env.value();
+    }
+    
     fun void reset()
     {
-        0 => envIndex;
+        init(startValue);
     }
     
     //must be run before update() but after adding points
-    fun void init(float startValue)
+    fun void init(float startVal)
     {
+        startVal => startValue;
         startValue => env.value;
-        0 => envIndex; 
+        1 => envIndex; 
         targets[0] => env.target;
         durations[0] => env.duration; 
         
     }
     
+    fun float time()
+    {
+        return env.time(); 
+    }
+    
     //must be run every 1::samp or at whatever sampling rate you want. sryz.
     fun void update()
     {
-        if( envIndex < envCount )
+        if( envIndex < envCount - 1)
         {
-            if( env.value() == targets[envIndex] )
+            if( env.value() == env.target() )
             {
                 envIndex++; 
                 targets[envIndex] => env.target;
                 durations[envIndex] => env.duration;              
-            }
+            }               
         }
-    }
-}
-
-//RingDoveSyrinxLTM ltm => Dyno limiter => dac; 
-
-//run it through the throat, etc.
-BirdTracheaFilter lp; 
-RingDoveSyrinxLTM ltm => DelayA delay => lp => blackhole;
-lp => Flip flip => delay => HPFilter hpOut => Dyno limiter => dac;
-
-7.0 => float L;  
-0.35 => float a; 
-0.35 => float h; 
-setParamsForReflectionFilter();
-
-347.4 => float c; // in m/s
-c/(2*(L/100.0)) => float LFreq; // -- the resonant freq. of the tube (?? need to look at this)
-( (0.5*second / samp) / (LFreq) - 1) => float period; //* 0.5 in the STK for the clarinet model... clarinet.cpp hmmm
-//( (second / samp) / (2*LFreq) - 1) => float period; //* 0.5 in the STK for the clarinet model... clarinet.cpp hmmm
-
-period::samp => delay.delay;
-//period::samp => delay2.delay; 
-1 => limiter.gain;  
- 
-
-//3::second => now; //3 minutes of sound
-//<<<ltm.Psum>>>;
-
-// create trill 
-Envelope envPs => blackhole; 
-0.001 => envPs.value; 
-//0.013 => envPs.target; 
-0.04 => float psTarget;
-psTarget  => envPs.target;
-
-0.5::second => envPs.duration;
-
-SinOsc oscPt => blackhole;
-35 => oscPt.freq; //just eyeballing fig. 4.3 in Zacharelli
-Envelope envSinPt => blackhole; 
-limiter.limit(); 
-
-20 => ltm.Ptl;
-Envelope envPtl => blackhole; 
-0.1::second => envPtl.duration;
-20 => envPtl.value;
-20 => envPtl.target;
-
-
-Envelope envPt => blackhole; 
-0.0 => ltm.Pt;
-//0.5 => envPt.value;
-//-1 => envPt.target;
-//0.1::second => envPt.duration;
-
- 
-now + 10::second => time later; //swoop for 6 seconds
-
-while( now < later)
-{
-    //Ps
-   
-    envPs.value() => ltm.Ps;
-    envPtl.value() => ltm.Ptl; 
-    (oscPt.last()*0.75) - 0.25 => ltm.Pt;
-    
-    if( envPs.value() >= envPs.target() )
-    {
-        if( ltm.Ps >= psTarget )
+        else
         {
-            0.01 => envPs.target;
-            0 => envPtl.target;
-            0.5 => envPt.target;
-            
-            0.1::second => envPs.duration;
-            0.05::second => envPt.duration; 
-            0.05::second => envPtl.duration;
-          
-
-          //  ((0.0127/psTarget)*1.5)  - 1.0 => ltm.Pt;
-            
-        }
-        else if( ltm.Ps <= 0.01  )
-        {
-            psTarget => envPs.target;
-            20 => envPtl.target;
-            -1 => envPt.target;
-
-            0.1::second => envPtl.duration;
-            0.5::second => envPs.duration;
-            0.1::second => envPt.duration;
-        //    -1.0 => ltm.Pt;
-        }
-    }
-   // ltm.Ps/0.013 * 20 => ltm.Ptl;
-    
-    
-
-//    later - now => dur ptE; 
-//    ptE % 0.5::second => ptE; //truncate
-//    if( ptE < 0.4::second*0.5 )
-//    {
-//        20 => oscPt.freq;
-//    }
-//    else 
-//    {
-//        3 => oscPt.freq;
-//    }
-//    (oscPt.last()+1.0)/2.0 * 1.0 => ltm.Ptl;
-//    oscPt.last() *  0.001   => ltm.Pt;
-    //(oscPt.last()+1.0)/2.0 *  0.02 + 0.02 => ltm.Ps;
-
-
-    //update time inside the loop
-    1::samp => now; 
-}
-
-
-
-//mouseEventLoopControllingAirPressure();
-
-//mouse event loop controlling air pressure
-function void mouseEventLoopControllingAirPressure()
-{
-    // HID input and a HID message
-    Hid hi;
-    HidMsg msg;
-    
-    // which mouse
-    0 => int device;
-    // get from command line
-    if( me.args() ) me.arg(0) => Std.atoi => device;
-    
-    // open mouse 0, exit on fail
-    if( !hi.openMouse( device ) ) me.exit();
-    <<< "mouse '" + hi.name() + "' ready", "" >>>;
-    0.0 => float max;
-    
-    0 => int whichBird; 
-    
-    // infinite event loop
-    while( true )
-    {
-        // wait on HidIn as event
-        hi => now;
-        
-        // messages received
-        while( hi.recv( msg ) )
-        {
-            // mouse motion
-            if( msg.isMouseMotion() )
+            if( env.value() == env.target() )
             {
-                // get the normalized X-Y screen cursor pofaition
-                // <<< "mouse normalized position --",
-                // "x:", msg.scaledCursorX, "y:", msg.scaledCursorY >>>;
-                Math.sqrt(msg.deltaY*msg.deltaY + msg.deltaX*msg.deltaX) => float val;
-                // Math.max(max, val) => max; 
-                val / 42 => float totVal; 
-
-                logScale( msg.scaledCursorX, 0.000000001, 1.0 ) => float scaledX; 
-                logScale( msg.scaledCursorY, 0.000000001, 1.0 ) => float scaledY;
-                
-                 
-                
-               //msg.scaledCursorX * (0.01225-0.010954) + 0.010954 => ltm.Ps;
-                //msg.scaledCursorX * (0.01225-0.007954) + 0.007954 => ltm.Ps;
-
-               //(msg.scaledCursorY*1.5)  - 1.0 => ltm.Pt;
-               //(1.0- msg.scaledCursorY) * 19.0 => ltm.Ptl;
-               //<<<ltm.Ps>>>;
-               
-                //msg.scaledCursorX * (0.01225-0.010954) + 0.010954 => ltm.Ps;
-                msg.scaledCursorX * (0.012-0.000954) + 0.000954 => ltm.Ps;
-
-               (msg.scaledCursorY*1.5)  - 1.0 => ltm.Pt;
-               (1.0- msg.scaledCursorY) * 20.0 => ltm.Ptl;
-               <<<ltm.Ps+"," >>>;
-                
-                
+                reset(); 
             }
-                
-                
-            
-        }  
-        1::samp => now;
-    }  
-
+        }
+    }
 }
 
-function float logScale(float in, float min, float max)
+
+//duration in seconds, freq in Hz
+fun float sinTrillGetNextValue(float startAngle, float freq, float duration, float minVal, float maxVal )
 {
-    Math.log( max / min ) / (max - min)  => float b;
-    max / Math.exp(b*max) => float a;
-    return a * Math.exp ( b*in );
+    startAngle + duration =>float angle; //(duration/freq)*Math.PI*2 => float angle;
+    (Math.sin(angle) *0.5) + 1 => float zeroTo1;
+    return zeroTo1*(maxVal - minVal) + minVal; 
 }
 
-function void setParamsForReflectionFilter()
+fun float createSinTrill(MultiPointEnvelope env, float minVal, float maxVal, dur duration)
 {
-    0.35 => float a; //radius of opening; from Smyth diss
-    0.5 => float ka; //from Smyth
-    ka*(34740/a)*ltm.T => float wT; 
+    Math.PI/8.0 => float envPsSinTrill1Dur;
+    100 => float trillFreq;
     
-    //1.8775468475739816 => wT; //try this from example, Ok, No.
+    //positive
+    env.add(sinTrillGetNextValue(0, trillFreq, envPsSinTrill1Dur, minVal, maxVal), duration);
+    env.add(sinTrillGetNextValue(Math.PI/8, trillFreq, envPsSinTrill1Dur, minVal, maxVal), duration);
+    env.add(sinTrillGetNextValue(Math.PI/4, trillFreq, envPsSinTrill1Dur, minVal, maxVal), duration);
+    env.add(sinTrillGetNextValue((Math.PI*3)/8, trillFreq, envPsSinTrill1Dur, minVal, maxVal), duration);
+    env.add(sinTrillGetNextValue(Math.PI/2, trillFreq, envPsSinTrill1Dur, minVal, maxVal), duration);
+    env.add(sinTrillGetNextValue((Math.PI*5)/8, trillFreq, envPsSinTrill1Dur, minVal, maxVal), duration);
+    env.add(sinTrillGetNextValue((Math.PI*3)/4, trillFreq, envPsSinTrill1Dur, minVal, maxVal), duration);
+    env.add(sinTrillGetNextValue((Math.PI*7)/8, trillFreq, envPsSinTrill1Dur, minVal, maxVal), duration);
     
-    <<<wT>>>;
-    //magnitude of -1/(1 + 2s) part of oT from Smyth, eq. 4.44
-    ka => float s; //this is kaj, so just the coefficient to sqrt(-1)
-    #(1, 0) => complex numerator;
-    #(1, 2*s) => complex denominator;
-    numerator / denominator => complex complexcHr_s;
-    Math.sqrt( complexcHr_s.re*complexcHr_s.re + complexcHr_s.im*complexcHr_s.im )  => float oT; //magnitude of Hr(s)
-    <<<oT>>>;
-    
-    //s/(1+s*s) => float oT; //imaginary part of oT from Smyth
-    ( 1 + Math.cos(wT) - 2*oT*oT*Math.cos(wT) ) / ( 1 + Math.cos(wT) - 2*oT*oT ) => float alpha; //to determine a1 
-    -alpha + Math.sqrt( alpha*alpha - 1 ) => float a1;
-    (1 + a1 ) / 2 => float b0; 
-    
-    //using a biquad  to implement, eg. https://ccrma.stanford.edu/~jos/fp/BiQuad_Section.html
-    //as xfer function matches Smyth 4.47, here, b0 = g, and implemented as suggested in the above link.
-    //for the low-pass reflector
-    a1 => lp.a1;
-    b0 => lp.b0; 
-    // b0 => loop.b1;
-    // 0 => loop.b2; 
-    // 0 => loop.a2; 
-    
-    //for the highpass output, from Smyth, again
-    a1 => hpOut.a1; 
-    b0 => hpOut.b0; 
-    
-    
-    //<<< "wT: " + wT + " oT: " + oT + " a1: "+ a1 + " b0: " + b0 >>>;
+    //negative
+    env.add(sinTrillGetNextValue(Math.PI, trillFreq, envPsSinTrill1Dur, minVal, maxVal), duration);
+    env.add(sinTrillGetNextValue(Math.PI+ Math.PI/8, trillFreq, envPsSinTrill1Dur, minVal, maxVal), duration);
+    env.add(sinTrillGetNextValue(Math.PI+ Math.PI/4, trillFreq, envPsSinTrill1Dur, minVal, maxVal), duration);
+    env.add(sinTrillGetNextValue(Math.PI +(Math.PI*3)/8, trillFreq, envPsSinTrill1Dur, minVal, maxVal), duration);
+    env.add(sinTrillGetNextValue(Math.PI + Math.PI/2, trillFreq, envPsSinTrill1Dur, minVal, maxVal), duration);
+    env.add(sinTrillGetNextValue(Math.PI +(Math.PI*5)/8, trillFreq, envPsSinTrill1Dur, minVal, maxVal), duration);
+    env.add(sinTrillGetNextValue(Math.PI +(Math.PI*3)/4, trillFreq, envPsSinTrill1Dur, minVal, maxVal), duration);
+    env.add(sinTrillGetNextValue(Math.PI +(Math.PI*7)/8, trillFreq, envPsSinTrill1Dur, minVal, maxVal), duration);
 }
 
+
+
+RingDoveSyrinxLTM ltm => Dyno limiter => dac; 
+10::second => now; 
 
 /*
 <<<ltm.defIForce(0, ltm.d1)>>>;
