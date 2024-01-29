@@ -198,6 +198,8 @@
 			<button id="resetRecordedMouthMinimumsAndMaximums"> Reset Recorded Minuminums and Maximums </button> <br />
 			<button id="editMouthValueAutoFill"> Fill values with Raw Minimums and Maximums </button> <br />
 			<button id="submitEditMouthConfig"> Update Mouth Tracking Scaling </button>
+			<br />
+<br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br />
 			
 		</div>
 
