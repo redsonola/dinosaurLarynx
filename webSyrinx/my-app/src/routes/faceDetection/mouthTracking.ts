@@ -398,7 +398,7 @@ export function updateWidenessOpennessScaling()
   xScaleMax = parseFloat(mouthOpenMax.value);  
   mouthConfigStatus.innerText = "Mouth Tracking Minimums and Maximums are updated:\n" +
   "\nMouth Wideness Minimum Recorded Scaled Value: " + yScaleMin +
-  "\nMouth Wideness Maximum Recorded Scaled Value: " + yScaleMax + "\n\n"
+  "\nMouth Wideness Maximum Recorded Scaled Value: " + yScaleMax + "\n\n" +
   "\nMouth Openness Minimum Recorded Scaled Value: " + xScaleMin +
   "\nMouth Openness Maximum Recorded Scaled Value: " + xScaleMax + "\n\n" ;
   
