@@ -35,6 +35,16 @@
 	  -webkit-transform: rotateY(180deg);
 	  -moz-transform: rotateY(180deg);
 	}
+
+	.setupButtonInvisible
+	{
+	  	opacity: 0.0;
+	}
+
+	.setupButtonVisible
+	{
+	  	opacity: 1.0;
+	}
 	
 	section {
 	  opacity: 1;
@@ -140,9 +150,14 @@
 	  <br />
 
 	  <section id="demos">
-		<button id="webcamButton" class="mdc-button mdc-button--raised">
+		<button id="webcamButton" class="mdc-button mdc-button--raised" >
 			Enable webcam and control syrinx tension via mouth-tracking
 					  </button>
+
+					  <button id="setupMouthTracking" class="setupButtonInvisible">
+						Adjust Mouth-Tracking Response
+					</button>
+
 		<!-- <h2>Demo: Webcam continuous face landmarks detection</h2>
 		<p>Hold your face in front of your webcam to get real-time face landmarker detection. <br/>Click <b>enable webcam</b> below and grant access to the webcam if prompted.</p> -->
 	
@@ -150,11 +165,41 @@
 		  <div style="position: center;">
 			<video id="webcam" style="position: absolute" autoplay playsinline><track kind="captions"></video>
 			<canvas class="output_canvas" id="output_canvas" style="position: absolute; left: 0px; top: 0px;"></canvas>
+
 		  </div>
+
 		</div>
+
 		<div class="blend-shapes">
 		  <ul class="blend-shapes-list" id="video-blend-shapes"></ul>
 		</div>
+
+
+		<div id="inputValuesForTracking" style="opacity:0; background:rgb(255, 255, 255)">
+			<h3 style="position:center;">Configure Mouth-Tracking Sounding Response </h3>
+
+			<p><b>Instructions:</b> Please adjust your mouth to the desired min and max positions. If far outside the range of 0.0-1.0 or you are experiencing clipping, etc., then adjust the min and max values: <br />
+				1. Click Reset to reset/clear the currently recorded min and max values and initialize.<br />
+				2. Move your mouth to closed and wide positions. Make sure you can blow a stream of air into the microphone to create sound in all mouth positions. Note that it is difficult to open the mouth very wide and accelerate air. If you need, you can click reset again. <br />
+				4. Click 'Fill Mouth Values' to update the values using the recorded min and max from mouthtracking OR enter in your own values.<br />
+				5. Submit your changes to adjust the scale values and sounding response.<br /></p>
+
+			<label id="outputMouthValue"></label><br/>
+
+			<h3>Edit Mouth Tracking Scaling </h3>
+
+			Least Wide:<input type="text" id="leastWideInput"  value="0" /><br />
+			Most Wide:<input type="text" id="mostWideInput"  value="0" /><br />
+			Least Open:<input type="text" id="leastOpenInput"  value="0" /><br />
+			Most Open:<input type="text" id="mostOpenInput" value="0" /><br /><br /> 
+			<label id="mouthConfigStatus">Status: Ready to Config</label><br/>
+			<button id="resetRecordedMouthMinimumsAndMaximums"> Reset Recorded Minuminums and Maximums </button> <br />
+			<button id="editMouthValueAutoFill"> Fill values with Raw Minimums and Maximums </button> <br />
+			<button id="submitEditMouthConfig"> Update Mouth Tracking Scaling </button>
+mouth
+			
+		</div>
+
 	  </section>
 	
 

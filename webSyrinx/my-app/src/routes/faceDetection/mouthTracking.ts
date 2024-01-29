@@ -32,8 +32,23 @@ import { m } from "../dinosaurSyrinx"
    let faceLandmarker : FaceLandmarker;
     let runningMode: "IMAGE" | "VIDEO" = "IMAGE";
     let enableWebcamButton: HTMLButtonElement;
+
+    let inputValuesForTrackingSection: HTMLElement;
+    let outputMouthValue : HTMLLabelElement = document.getElementById("outputMouthValue") as HTMLLabelElement; // initialize output label
+    let editMouthValueAutoFill : HTMLButtonElement = document.getElementById("editMouthValueAutoFill") as HTMLButtonElement; // initialize fill button for mouth params
+    let submitEditMouthConfig : HTMLButtonElement = document.getElementById("submitEditMouthConfig") as HTMLButtonElement; // initialize submit button for mouth params
+
+    let mouthWideMin : HTMLInputElement = document.getElementById("leastWideInput") as HTMLInputElement; // initialize submit button for mouth params
+    let mouthWideMax : HTMLInputElement = document.getElementById("mostWideInput") as HTMLInputElement; // initialize submit button for mouth params
+    let mouthOpenMin : HTMLInputElement = document.getElementById("leastOpenInput") as HTMLInputElement; // initialize submit button for mouth params
+    let mouthOpenMax : HTMLInputElement = document.getElementById("mostOpenInput") as HTMLInputElement; // initialize submit button for mouth params
+    let resetRecordedMouthMinimumsAndMaximums : HTMLButtonElement = document.getElementById("resetRecordedMouthMinimumsAndMaximums") as HTMLButtonElement; // initialize submit button for mouth params
+    let mouthConfigStatus : HTMLLabelElement = document.getElementById("mouthConfigStatus") as HTMLLabelElement; // status for mouth tracking config
+
     let webcamRunning: Boolean = false;
     export const videoWidth = 480;
+
+    let configMouthTrackingButton: HTMLButtonElement;
 
 // Before we can use HandLandmarker class we must wait for it to finish
 // loading. Machine Learning models can be large and take a moment to
@@ -51,8 +66,8 @@ async function createFaceLandmarker() {
     runningMode,
     numFaces: 1
   });
-  if(demosSection) //make sure not null
-    demosSection.classList.remove("invisible");
+  // if(demosSection) //make sure not null
+  //   demosSection.classList.remove("invisible");
 }
 createFaceLandmarker();
 
@@ -79,6 +94,15 @@ if (hasGetUserMedia()) {
     "webcamButton"
   ) as HTMLButtonElement;
   enableWebcamButton.addEventListener("click", enableCam);
+  configMouthTrackingButton = document.getElementById(
+    "setupMouthTracking"
+    ) as HTMLButtonElement;
+    configMouthTrackingButton.addEventListener("click", showInputValuesSection);
+    editMouthValueAutoFill.addEventListener("click", fillMouthInputValues);
+    resetRecordedMouthMinimumsAndMaximums.addEventListener("click", resetMouthMinMax);
+    submitEditMouthConfig.addEventListener("click", updateWidenessOpennessScaling);
+
+    inputValuesForTrackingSection = document.getElementById("inputValuesForTracking") as HTMLElement;
 } else {
   console.warn("getUserMedia() is not supported by your browser");
 }
@@ -93,9 +117,19 @@ function enableCam(event : any) {
   if (webcamRunning === true) {
     webcamRunning = false;
     enableWebcamButton.innerText = "Enable Mouth Tracking Syrinx Control";
+    configMouthTrackingButton.className = "setupButtonInvisible";
+    configMouthTrackingButton.style.opacity = "0";
+    video.style.opacity = "0";
+    canvasElement.style.opacity = "0";
+    inputValuesForTrackingSection.style.opacity = "0";
+
+
   } else {
     webcamRunning = true;
-    enableWebcamButton.innerText = "Disable  Mouth Tracking Syrinx Control";
+    enableWebcamButton.innerText = "Disable Mouth Tracking Syrinx Control";
+    video.style.opacity = "1";
+    canvasElement.style.opacity = "1";
+
   }
 
   // getUsermedia parameters
@@ -126,6 +160,24 @@ async function predictWebcam() {
   canvasElement.style.left = (videoWidth/2) + "px";
   video.style.left = (videoWidth/2) + "px";
 
+  let configTop = (canvasElement.height*.9 ) ;
+  //console.log("configTop: " + configTop);
+
+  //place config button after video
+  configMouthTrackingButton.style.position = "relative";
+  configMouthTrackingButton.style.top = configTop + "px";
+  configMouthTrackingButton.style.left = 0 + "px";
+  inputValuesForTrackingSection.style.position = "relative";
+  inputValuesForTrackingSection.style.top = canvasElement.height + "px";
+  inputValuesForTrackingSection.style.left = 0 + "px";
+
+  
+  if( results && webcamRunning === true)
+  {
+    configMouthTrackingButton.className = "setupButtonVisible";
+    configMouthTrackingButton.style.opacity = "1";
+  }
+
   // Now let's start detecting the stream.
   if (runningMode === "IMAGE") {
     runningMode = "VIDEO";
@@ -135,6 +187,7 @@ async function predictWebcam() {
   if (lastVideoTime !== video.currentTime) {
     lastVideoTime = video.currentTime;
     results = faceLandmarker.detectForVideo(video, startTimeMs);
+    console.log("");
   }
   if (results.faceLandmarks) {
     printMouthLandmarks(results.faceLandmarks);
@@ -238,7 +291,25 @@ function scale(inSig:number, min:number, max:number)
 }
 
 
-//print mouth landmarks values to console
+//min x
+
+let minMX = 1000;
+let minMY = 1000;
+let minrawMX = 1000;
+let minrawMY = 1000;
+
+let maxMX = -1000;
+let maxMY = -1000;
+let maxrawMX = -1000;
+let maxrawMY = -1000;
+
+var xScaleMin = 0.0003;
+var xScaleMax = 0.05;
+var yScaleMin = 0.07;
+var yScaleMax = 0.12;
+
+
+//print mouth landmarks values to console & update mouth values
 function printMouthLandmarks( landmarks?: NormalizedLandmark[][], connections?: any[]) : void {
   if (!landmarks) {
     return;
@@ -259,9 +330,93 @@ function printMouthLandmarks( landmarks?: NormalizedLandmark[][], connections?: 
     let wideness = distance(mouthLandmarks[0], mouthLandmarks[1]);
     let openness = distance(mouthLandmarks[2], mouthLandmarks[3]);
 
-    m.x = scale(openness, 0.0003, 0.05);
-    m.y = scale(wideness, 0.07, 0.12);
+    //note: values are flipped to match the mouse movement. So x is openness and y is wideness
+    m.x = scale(openness, xScaleMin, xScaleMax) ;
 
-    console.log("wideness: " + m.y + " openness: " + m.x);
+    //put some guard rails on the values
+    m.x = Math.max(0.00000001, m.x);
+    m.x = Math.min(1.2, m.x);
+
+    m.y = scale(wideness, yScaleMin, yScaleMax) ;
+
+        //put some guard rails on the values
+        m.y = Math.max(0.00000001, m.y);
+        m.y = Math.min(1.2, m.y);
+
+    //find min values
+    minrawMX = Math.min(minrawMX, openness);
+    minrawMY = Math.min(minrawMY, wideness);
+    minMX = Math.min(minMX, m.x);
+    minMY = Math.min(minMY, m.y);
+
+    //find max values
+    maxrawMX = Math.max(maxrawMX, openness);
+    maxrawMY = Math.max(maxrawMY, wideness);
+    maxMX = Math.max(maxMX, m.x);
+    maxMY = Math.max(maxMY, m.y);
+
+    //console.log("wideness: " + m.y + " openness: " + m.x);
+
+    outputMouthValue.innerText = "Mouth Wideness Scaled: " + m.y +
+    "\nMouth Wideness Minimum Recorded Scaled Value: " + minMY +
+    "\nMouth Wideness Maximum Recorded Scaled Value: " + maxMY +
+
+    "\n\nMouth Wideness Scaled Raw: " + wideness +  
+    "\nMouth Wideness Minimum Recorded Raw Value: " + minrawMY +
+    "\nMouth Wideness Minimum Recorded Raw Value: " + maxrawMY +
+
+    "\n\nMouth Openness: " + m.x +
+    "\nMouth Openness Minimum Recorded Scaled Value: " + minMX +
+    "\nMouth Openness Maximum Recorded Scaled Value: " + maxMX +
+
+    "\n\nMouth Openness Scaled Raw: " + openness +  
+    "\nMouth Openness Minimum Recorded Raw Value: " + minrawMX +
+    "\nMouth Openness Maximum Recorded Raw Value: " + maxrawMX;
+
   } 
+}
+
+export function fillMouthInputValues()
+{
+
+   mouthWideMin.value = minrawMY.toString();
+   mouthWideMax.value = maxrawMY.toString();
+   mouthOpenMin.value = minrawMX.toString();
+   mouthOpenMax.value = maxrawMX.toString();
+
+}
+
+export function updateWidenessOpennessScaling()
+{
+  yScaleMin = parseFloat(mouthWideMin.value);
+  yScaleMax = parseFloat(mouthWideMax.value);
+  xScaleMin = parseFloat(mouthOpenMin.value);
+  xScaleMax = parseFloat(mouthOpenMax.value);  
+  mouthConfigStatus.innerText = "Mouth Tracking Minimums and Maximums are updated:\n" +
+  "\nMouth Wideness Minimum Recorded Scaled Value: " + yScaleMin +
+  "\nMouth Wideness Minimum Recorded Scaled Value: " + yScaleMax + "\n\n"
+  "\nMouth Openness Minimum Recorded Scaled Value: " + xScaleMin +
+  "\nMouth Openness Minimum Recorded Scaled Value: " + xScaleMax + "\n\n" ;
+  
+}
+
+export function resetMouthMinMax()
+{
+  minrawMX = 1000;
+  minrawMY = 1000;
+  maxrawMX = -1000;
+  maxrawMY = -1000;
+  mouthConfigStatus.innerText = "Mouth Tracking Minimums and Maximums are reset.\n\n";
+}
+
+export function showInputValuesSection()
+{
+  if(inputValuesForTrackingSection.style.opacity === "0" )
+  {
+    inputValuesForTrackingSection.style.opacity = "1";
+  }
+  else
+  {
+    inputValuesForTrackingSection.style.opacity = "0";
+  }
 }
