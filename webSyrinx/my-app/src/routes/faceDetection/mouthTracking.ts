@@ -122,6 +122,8 @@ function enableCam(event : any) {
     video.style.opacity = "0";
     canvasElement.style.opacity = "0";
     inputValuesForTrackingSection.style.opacity = "0";
+    configMouthTrackingButton.innerText = "Adjust Mouth-Tracking Response";
+
 
 
   } else {
@@ -129,6 +131,8 @@ function enableCam(event : any) {
     enableWebcamButton.innerText = "Disable Mouth Tracking Syrinx Control";
     video.style.opacity = "1";
     canvasElement.style.opacity = "1";
+    inputValuesForTrackingSection.style.opacity = "0";
+    configMouthTrackingButton.innerText = "Adjust Mouth-Tracking Response";
 
   }
 
@@ -414,9 +418,11 @@ export function showInputValuesSection()
   if(inputValuesForTrackingSection.style.opacity === "0" )
   {
     inputValuesForTrackingSection.style.opacity = "1";
+    configMouthTrackingButton.innerText = "Hide Mouth Tracking Configuration Controls";
   }
   else
   {
     inputValuesForTrackingSection.style.opacity = "0";
+    configMouthTrackingButton.innerText = "Adjust Mouth-Tracking Response";
   }
 }
