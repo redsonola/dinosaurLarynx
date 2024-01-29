@@ -423,6 +423,6 @@ export function showInputValuesSection()
   else
   {
     inputValuesForTrackingSection.style.opacity = "0";
-    configMouthTrackingButton.innerText = "Adjust Mouth-Tracking Response";
+    configMouthTrackingButton.innerText = "Adjust Mouth-Tracking Response"; //test
   }
 }
