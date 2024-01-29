@@ -39,11 +39,13 @@
 	.setupButtonInvisible
 	{
 	  	opacity: 0.0;
+		z-index: 0.0;
 	}
 
 	.setupButtonVisible
 	{
 	  	opacity: 1.0;
+		z-index: 100.0;
 	}
 	
 	section {
@@ -146,11 +148,11 @@
 	  <h1>Face landmark detection using the MediaPipe FaceLandmarker task</h1>
 
 	
-	  <!-- <section id="demos"></section> class="invisible"> -->
+	  <!-- <section id="demos"></section> class="invisible"> mdc-button mdc-button--raised  -->
 	  <br />
 
 	  <section id="demos">
-		<button id="webcamButton" class="mdc-button mdc-button--raised" >
+		<button id="webcamButton" class="z-index: 100.0;" >
 			Enable webcam and control syrinx tension via mouth-tracking
 					  </button>
 
