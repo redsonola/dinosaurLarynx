@@ -45,6 +45,11 @@ import { m } from "../dinosaurSyrinx"
     let resetRecordedMouthMinimumsAndMaximums : HTMLButtonElement = document.getElementById("resetRecordedMouthMinimumsAndMaximums") as HTMLButtonElement; // initialize submit button for mouth params
     let mouthConfigStatus : HTMLLabelElement = document.getElementById("mouthConfigStatus") as HTMLLabelElement; // status for mouth tracking config
 
+    let micSoftMin : HTMLInputElement = document.getElementById("softInput") as HTMLInputElement; // initialize submit button for mouth params
+    let micLoudMax : HTMLInputElement = document.getElementById("loudInput") as HTMLInputElement; // initialize submit button for mouth params
+    let resetRecordedMouthMinimumsAndMaximumsMic : HTMLButtonElement = document.getElementById("resetRecordedMouthMinimumsAndMaximumsMic") as HTMLButtonElement; // initialize submit button for mouth params
+    let mouthConfigStatusMic : HTMLLabelElement = document.getElementById("mouthConfigStatusMic") as HTMLLabelElement; // status for mouth tracking config
+  
     let webcamRunning: Boolean = false;
     export const videoWidth = 480;
 
@@ -191,7 +196,6 @@ async function predictWebcam() {
   if (lastVideoTime !== video.currentTime) {
     lastVideoTime = video.currentTime;
     results = faceLandmarker.detectForVideo(video, startTimeMs);
-    console.log("");
   }
   if (results.faceLandmarks) {
     printMouthLandmarks(results.faceLandmarks);
@@ -199,6 +203,11 @@ async function predictWebcam() {
       drawingUtils.drawConnectors(
         landmarks,
         FACE_LANDMARKS_LIPS_OPENNESS_MEASURES,
+        { color: "#E0E0E0" }
+      );
+      drawingUtils.drawConnectors(
+        landmarks,
+        FACE_LANDMARKS_LIPS_INSIDE,
         { color: "#E0E0E0" }
       );
     }
@@ -241,15 +250,35 @@ function drawBlendShapes(el: HTMLElement, blendShapes: any[]) {
 
 
 /** Landmarks for lips */
-// export const FACE_LANDMARKS_LIPS_OUTSIDE: any[] = [
-//   {start: 61, end: 146},  {start: 146, end: 91},  {start: 91, end: 181},
-//   {start: 181, end: 84},  {start: 84, end: 17},   {start: 17, end: 314},
-//   {start: 314, end: 405}, {start: 405, end: 321}, {start: 321, end: 375},
-//   {start: 375, end: 291}, {start: 61, end: 185},  {start: 185, end: 40},
-//   {start: 40, end: 39},   {start: 39, end: 37},   {start: 37, end: 0},
-//   {start: 0, end: 267},   {start: 267, end: 269}, {start: 269, end: 270},
-//   {start: 270, end: 409}, {start: 409, end: 291}
-// ];
+export const FACE_LANDMARKS_LIPS_OUTSIDE: any[] = [
+  {start: 61, end: 146},  {start: 146, end: 91},  {start: 91, end: 181},
+  {start: 181, end: 84},  {start: 84, end: 17},   {start: 17, end: 314},
+  {start: 314, end: 405}, {start: 405, end: 321}, {start: 321, end: 375},
+  {start: 375, end: 291}, {start: 61, end: 185},  {start: 185, end: 40},
+  {start: 40, end: 39},   {start: 39, end: 37},   {start: 37, end: 0},
+  {start: 0, end: 267},   {start: 267, end: 269}, {start: 269, end: 270},
+  {start: 270, end: 409}, {start: 409, end: 291}
+]; //draw these to see what they look like
+
+
+/** Landmarks for lips */
+export const FACE_LANDMARKS_LIPS_OUTSIDE_BOTTOM: any[] = [
+  {start: 61, end: 146},  {start: 146, end: 91},  {start: 91, end: 181},
+  {start: 181, end: 84},  {start: 84, end: 17},   {start: 17, end: 314},
+  {start: 314, end: 405}, {start: 405, end: 321}, {start: 321, end: 375},
+  {start: 375, end: 291}, //{start: 61, end: 185},  {start: 185, end: 40},
+  // {start: 40, end: 39},   {start: 39, end: 37},   {start: 37, end: 0},
+  // {start: 0, end: 267},   {start: 267, end: 269}, {start: 269, end: 270},
+  // {start: 270, end: 409}, {start: 409, end: 291}
+]; //draw these to see what they look like
+
+/** Landmarks for lips */
+export const FACE_LANDMARKS_LIPS_OUTSIDE_TOP: any[] = [
+  {start: 61, end: 185},  {start: 185, end: 40},
+   {start: 40, end: 39},   {start: 39, end: 37},   {start: 37, end: 0},
+   {start: 0, end: 267},   {start: 267, end: 269}, {start: 269, end: 270},
+   {start: 270, end: 409}, {start: 409, end: 291}
+]; //draw these to see what they look like
 
 //measures mouth wideness more or less
 export const FACE_LANDMARKS_MOUTH_WIDENESS: any[] = [
@@ -294,9 +323,36 @@ function scale(inSig:number, min:number, max:number)
   return (inSig - min)/(max - min);
 }
 
+//I didn't know the formula to calculate the area of a polygon so I found this on stackoverflow
+//https://stackoverflow.com/questions/16285134/calculating-polygon-area
+function calcPolygonArea(vertices: {x:number, y:number}[]) {
+  var total = 0;
+
+  for (var i = 0, l = vertices.length; i < l; i++) {
+    var addX = vertices[i].x;
+    var addY = vertices[i == vertices.length - 1 ? 0 : i + 1].y;
+    var subX = vertices[i == vertices.length - 1 ? 0 : i + 1].x;
+    var subY = vertices[i].y;
+
+    total += (addX * addY * 0.5);
+    total -= (subX * subY * 0.5);
+  }
+
+  return Math.abs(total);
+}
+
+function updateMouthArea(areaMouthLandmarks:any[]) : number
+{
+  let vertices:{x:number, y:number}[] = [];
+  for(let i=0; i<areaMouthLandmarks.length; i++)
+  {
+    vertices.push({x: areaMouthLandmarks[i].x, y: areaMouthLandmarks[i].y});
+  }
+  return calcPolygonArea(vertices);
+}
+
 
 //min x
-
 let minMX = 1000;
 let minMY = 1000;
 let minrawMX = 1000;
@@ -307,18 +363,32 @@ let maxMY = -1000;
 let maxrawMX = -1000;
 let maxrawMY = -1000;
 
-var xScaleMin = 0.0003;
-var xScaleMax = 0.05;
-var yScaleMin = 0.07;
-var yScaleMax = 0.12;
+//x value -- wideness, but m.y because it replaces the mouse m.y value -- change this
+// var xScaleMin = 0.0003;
+// var xScaleMax = 0.05;
+//var yScaleMin = 0.07;
+// var yScaleMax = 0.12;
+
+var wideMin = 0.07;
+var wideMax = 0.12;
+var mouthAreaMax = 0.0; 
+var mouthAreaMin = 0.005480977000770437
+
+var minMic = 1000;
+var maxMic = -1000;
+var softestMic = -1.0;
+var loudestMic = 1.0;
 
 
+let minMouthArea = 1000;
+let maxMouthArea = -1000;
 //print mouth landmarks values to console & update mouth values
 function printMouthLandmarks( landmarks?: NormalizedLandmark[][], connections?: any[]) : void {
   if (!landmarks) {
     return;
   }
   let mouthLandmarks = []; 
+  let insideMouthLandmarks = [];
   let marks : NormalizedLandmark[] = landmarks[0];
   if( marks )
   {
@@ -331,17 +401,35 @@ function printMouthLandmarks( landmarks?: NormalizedLandmark[][], connections?: 
       mouthLandmarks.push(res2);
     }
 
+    for(let i=0; i<FACE_LANDMARKS_LIPS_INSIDE.length; i++)
+    {
+      let res : NormalizedLandmark = marks[ FACE_LANDMARKS_LIPS_INSIDE[i].start ];
+      let res2 : NormalizedLandmark = marks[ FACE_LANDMARKS_LIPS_INSIDE[i].end ];
+
+      insideMouthLandmarks.push(res);
+      insideMouthLandmarks.push(res2);
+    }
+
     let wideness = distance(mouthLandmarks[0], mouthLandmarks[1]);
     let openness = distance(mouthLandmarks[2], mouthLandmarks[3]);
 
+    //find perimeter of mouth
+    let mouthArea = updateMouthArea(insideMouthLandmarks); //area of the open mouth
+    minMouthArea = Math.min(minMouthArea, mouthArea);
+    maxMouthArea = Math.max(maxMouthArea, mouthArea);
+    //console.log("Mouth Area: " + mouthArea + ", min: "+ minMouthArea + ", max: " + maxMouthArea);
+
     //note: values are flipped to match the mouse movement. So x is openness and y is wideness
-    m.x = scale(openness, xScaleMin, xScaleMax) ;
+    let wide = scale(wideness, wideMin, wideMax) ;
 
     //put some guard rails on the values
     m.x = Math.max(0.00000001, m.x);
     m.x = Math.min(1.2, m.x);
 
-    m.y = scale(wideness, yScaleMin, yScaleMax) ;
+    m.x = scale(wideness, wideMin, wideMax) ;
+    m.y = scale(mouthArea, 0.0, 0.005480977000770437); //testing mouth area
+    //console.log("m.y: "+m.y+" wideness: " +wide +" Mouth Area: " + mouthArea + ", min: "+ minMouthArea + ", max: " + maxMouthArea);
+
 
         //put some guard rails on the values
         m.y = Math.max(0.00000001, m.y);
@@ -392,16 +480,29 @@ export function fillMouthInputValues()
 
 export function updateWidenessOpennessScaling()
 {
-  yScaleMin = parseFloat(mouthWideMin.value);
-  yScaleMax = parseFloat(mouthWideMax.value);
-  xScaleMin = parseFloat(mouthOpenMin.value);
-  xScaleMax = parseFloat(mouthOpenMax.value);  
+  wideMin = parseFloat(mouthWideMin.value);
+  wideMax = parseFloat(mouthWideMax.value);
+  mouthAreaMin = parseFloat(mouthOpenMin.value);
+  mouthAreaMax = parseFloat(mouthOpenMax.value);  
   mouthConfigStatus.innerText = "Mouth Tracking Minimums and Maximums are updated:\n" +
-  "\nMouth Wideness Minimum Recorded Scaled Value: " + yScaleMin +
-  "\nMouth Wideness Maximum Recorded Scaled Value: " + yScaleMax + "\n\n" +
-  "\nMouth Openness Minimum Recorded Scaled Value: " + xScaleMin +
-  "\nMouth Openness Maximum Recorded Scaled Value: " + xScaleMax + "\n\n" ;
+  "\nMouth Wideness Minimum Recorded Scaled Value: " + wideMin +
+  "\nMouth Wideness Maximum Recorded Scaled Value: " + wideMax + "\n\n" +
+  "\nMouth Openness Minimum Recorded Scaled Value: " + mouthAreaMin +
+  "\nMouth Openness Maximum Recorded Scaled Value: " + mouthAreaMax + "\n\n" ;
   
+}
+
+export function updateMicrophoneScaling()
+{
+  wideMin = parseFloat(mouthWideMin.value);
+  wideMax = parseFloat(mouthWideMax.value);
+  mouthAreaMin = parseFloat(mouthOpenMin.value);
+  mouthAreaMax = parseFloat(mouthOpenMax.value);  
+  mouthConfigStatus.innerText = "Mouth Tracking Minimums and Maximums are updated:\n" +
+  "\nMouth Wideness Minimum Recorded Scaled Value: " + wideMin +
+  "\nMouth Wideness Maximum Recorded Scaled Value: " + wideMax + "\n\n" +
+  "\nMouth Openness Minimum Recorded Scaled Value: " + mouthAreaMin +
+  "\nMouth Openness Maximum Recorded Scaled Value: " + mouthAreaMax + "\n\n" ;
 }
 
 export function resetMouthMinMax()
@@ -411,6 +512,13 @@ export function resetMouthMinMax()
   maxrawMX = -1000;
   maxrawMY = -1000;
   mouthConfigStatus.innerText = "Mouth Tracking Minimums and Maximums are reset.\n\n";
+}
+
+export function resetMicMinMax()
+{
+  minMic = 1000;
+  maxMic = -1000;
+  mouthConfigStatusMic.innerText = "Microphone Minimums and Maximums are reset.\n\n";
 }
 
 export function showInputValuesSection()

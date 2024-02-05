@@ -186,18 +186,30 @@
 				4. Click 'Fill Mouth Values' to update the values using the recorded min and max from mouthtracking OR enter in your own values.<br />
 				5. Submit your changes to adjust the scale values and sounding response.<br /></p>
 
+				<button id="resetRecordedMouthMinimumsAndMaximums"> Reset Recorded Minuminums and Maximums for Mouth Wideness/Openness </button> <br />
+				<button id="editMouthValueAutoFill"> Fill values with Raw Minimums and Maximums for Mouth Wideness/Openness  </button> <br />
+				<button id="submitEditMouthConfig"> Update Mouth Tracking Scalin for Mouth Wideness/Openness</button> <br />
+
+			<!--	<button id="resetRecordedMouthMinimumsAndMaximumsMic"> Reset Recorded Minuminums and Maximums for Microphone Input </button> <br />
+				<button id="editMouthValueAutoFillMic"> Fill values with Raw Minimums and Maximums for Microphone Input   </button> <br />
+				<button id="submitEditMouthConfigMic"> Update Mouth Tracking Scalin for for Microphone Input </button> <br /> -->
+
 			<label id="outputMouthValue"></label><br/>
 
-			<h3>Edit Mouth Tracking Scaling </h3>
+			<h3>Edit Mouth Tracking Wideness/Openness Scaling - Controls Tension </h3>
 
 			Least Wide:<input type="text" id="leastWideInput"  value="0" /><br />
 			Most Wide:<input type="text" id="mostWideInput"  value="0" /><br />
 			Least Open:<input type="text" id="leastOpenInput"  value="0" /><br />
 			Most Open:<input type="text" id="mostOpenInput" value="0" /><br /><br /> 
 			<label id="mouthConfigStatus">Status: Ready to Config</label><br/>
-			<button id="resetRecordedMouthMinimumsAndMaximums"> Reset Recorded Minuminums and Maximums </button> <br />
-			<button id="editMouthValueAutoFill"> Fill values with Raw Minimums and Maximums </button> <br />
-			<button id="submitEditMouthConfig"> Update Mouth Tracking Scaling </button>
+
+			<!-- <h3>Edit Microphone Response for Blowing - Controls Air Pressure </h3>
+
+			Most Soft:<input type="text" id="softInput"  value="0" /><br />
+			Most Loud:<input type="text" id="loudInput"  value="0" /><br />
+			<label id="mouthConfigStatus">Status: Ready to Config</label><br/> -->
+
 			<br />
 <br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br />
 			
