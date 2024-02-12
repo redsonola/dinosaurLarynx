@@ -204,11 +204,14 @@
 			Most Open:<input type="text" id="mostOpenInput" value="0" /><br /><br /> 
 			<label id="mouthConfigStatus">Status: Ready to Config</label><br/>
 
-			<!-- <h3>Edit Microphone Response for Blowing - Controls Air Pressure </h3>
+			 <h3>Edit Microphone Response for Blowing - Controls Air Pressure </h3>
 
-			Most Soft:<input type="text" id="softInput"  value="0" /><br />
-			Most Loud:<input type="text" id="loudInput"  value="0" /><br />
-			<label id="mouthConfigStatus">Status: Ready to Config</label><br/> -->
+			<label id="micConfigStatus">Status: Ready to Config</label><br/> 
+			Enter in New Mic Max:<input type="text" id="micMax"  value="0" /><br />
+
+			<button id="resetMicMax"> Reset Loudest Recorded to 0.0 </button> <br />
+			<button id="micAutoFill"> Fill values with current Microphone Max</button> <br />
+			<button id="submitMicMax"> Update Max Microphone Volume</button> <br />
 
 			<br />
 <br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br />

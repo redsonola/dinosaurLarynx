@@ -436,20 +436,20 @@ function scaleTensionTwoMembranes(ctrlValue: number): number {
 //todo: refactor this out and freaking clean this up
 export var minTens = 941;
 let tensBuffer : number[] = [];
-let maxTensBuffer : number = 50; //we'll see what it needs to be
-let lastTens = 50;
+let maxTensBuffer : number = 15; //we'll see what it needs to be
+let lastTens =0;
 let maxStep = 200;
 function avgFilterTension(input: number) : number
 {
-    if( input < 50 && input <  lastTens  )
-    {
-        maxStep = 5;
-    }
-    else 
-    {
-        //8510292
-        maxStep = 1000000;
-    }
+    // if( input < 50 && input <  lastTens  )
+    // {
+    //     maxStep = 5;
+    // }
+    // else 
+    // {
+    //     //8510292
+    //     maxStep = 1000000;
+    // }
 
     tensBuffer.push(input);
     if( tensBuffer.length >= maxTensBuffer) //its a queue
@@ -463,22 +463,22 @@ function avgFilterTension(input: number) : number
         sum += tensBuffer[i];
     }
     let res = sum / tensBuffer.length;
-    let step = Math.abs(lastTens - res);
+    // let step = lastTens - res;
 
-    if (step > maxStep)
-    {
-        if( step > 0)
-            res = lastTens + maxStep;
-        else
-            res = lastTens - maxStep;
+    // if (step > Math.abs(maxStep))
+    // {
+    //     if( step > 0)
+    //         res = lastTens + maxStep;
+    //     else
+    //         res = lastTens - maxStep;
 
-        tensBuffer.push(res);
-        if( tensBuffer.length >= maxTensBuffer) //its a queue
-        {
-            tensBuffer.splice(0, 1);
-        }
-    }
-    lastTens = res;
+    //     tensBuffer.push(res);
+    //     if( tensBuffer.length >= maxTensBuffer) //its a queue
+    //     {
+    //         tensBuffer.splice(0, 1);
+    //     }
+    // }
+    // lastTens = res;
     return res;
 }
 
@@ -486,19 +486,19 @@ function avgFilterTension(input: number) : number
 ///--------------------------------------------------------------------------------------------
 ///--------------------------------------------------------------------------------------------
 let pgBuffer : number[] = [];
-let maxPGBuffer : number = 50  ; //we'll see what it needs to be
+let maxPGBuffer : number = 30  ; //we'll see what it needs to be
 let lastPG = 0;
-let maxPGStep = 10;
+let maxPGStep = 100000;
 function avgFilterPG(input: number) : number
 {
-    if( input < 10 && input <  lastPG )
-    {
-        maxPGStep = 1;
-    }
-    else 
-    {
-        maxPGStep = 100000;
-    }
+    // if( input < 10 && input <  lastPG )
+    // {
+    //     maxPGStep = 1;
+    // }
+    // else 
+    // {
+    //     maxPGStep = 100000;
+    // }
 
     pgBuffer.push(input);
     if( pgBuffer.length >= maxPGBuffer) //its a queue
@@ -513,21 +513,21 @@ function avgFilterPG(input: number) : number
     }
 
     let res = sum / pgBuffer.length;
-    let step = lastPG - res;
-    if (step > maxPGStep)
-    {
-        if( step > 0)
-            res = lastPG + maxPGStep;
-        else
-            res = lastPG - maxPGStep;
+    // let step = lastPG - res;
+    // if (step > Math.abs(maxPGStep))
+    // {
+    //     if( step > 0)
+    //         res = lastPG + maxPGStep;
+    //     else
+    //         res = lastPG - maxPGStep;
 
-        pgBuffer.push(res);
-        if( pgBuffer.length >= maxPGBuffer) //its a queue
-        {
-            pgBuffer.splice(0, 1);
-        }
-    }
-    lastPG = res;
+    //     pgBuffer.push(res);
+    //     if( pgBuffer.length >= maxPGBuffer) //its a queue
+    //     {
+    //         pgBuffer.splice(0, 1);
+    //     }
+    // }
+    // lastPG = res;
     return res;
 
 
@@ -556,7 +556,7 @@ function scaleTensionOnlyLow(ctrlValue: number): number {
 
     //add or minus a certain amt.
     tens += scaledX * (10000000 * m.y);
-    tens = Math.max(350, tens);
+    tens = Math.max(256080, tens);
     tens = Math.min(maxTens, tens);
 
     return tens;
@@ -567,35 +567,72 @@ function scaleTensionOnlyLow(ctrlValue: number): number {
 function scalePGValuesLow(micIn: number, tens: number, ctrlValue: number): number {
     //pG is based on the tension
 
-    let maxMaxPG = 400;
+    let maxMaxPG = 400; //656080.2213529117
+
     let floorPG = 20;
-    if (tens < 3615563) {
+    if (tens < 256080) {  
+        maxMaxPG = 2.5;
+    }
+    else if (tens < 356080) {
+        maxMaxPG = 5;
+    }
+    else if (tens < 400800) {
+        maxMaxPG = 10;
+    }
+    else if (tens < 456080) {
+        maxMaxPG = 20;
+    }
+    else if (tens < 656080) {
+        maxMaxPG = 25;
+    }
+    else if (tens < 1656080) {
+        maxMaxPG = 50;
+    }
+    else if (tens < 3015563) {
+        maxMaxPG = 100;
+    }
+    else if (tens < 4515563) {
+        maxMaxPG = 150;
+    }
+    else if (tens < 6015563) {   //5675073.28 8027448.10
         floorPG = 20; //changed from 400
-        maxMaxPG = 500;
+        maxMaxPG = 200;
     }
-    else {
-        floorPG = 100;
-        maxMaxPG = 1000;
+    else if (tens<7015563) { 
+
+        floorPG = 20;
+        maxMaxPG = 225;
     }
-    let maxPG = (ctrlValue * (maxMaxPG - floorPG)) + floorPG;
-    let pG = micIn * maxPG;
+    else 
+    {
+        floorPG = 20;
+        maxMaxPG = 300;
+    }
 
-    if (ctrlValue < 0.8)
-        pG = Math.min(pG, 2200);
-    else
-        pG = Math.min(pG, 5000);
+    let maxPG = maxMaxPG;// (ctrlValue * (maxMaxPG - floorPG)) + floorPG;
+    let oldMaxPG = (ctrlValue * (maxMaxPG - floorPG)) + floorPG;
 
-    //have mouse values modify the tension as well -- try
+    let rawMicIn = micIn;
+    //micIn = logScale(micIn, 0.0000001, 1.0) * 3.0;
+    let pG = micIn * maxPG ;
+    pG *= 3; 
 
     //put 0 at the center
     let scaledX = m.x - 0.5;
 
     //add or minus a certain amt.
+    /*
     if (pG > 30) //don't add if pG is already super low
         {pG += scaledX * (100 * m.y);} //note: was 500}
-    pG = Math.max(pG, 0);
+        */
 
-    //console.log(pG, tens, maxPG);
+    pG = Math.max(pG, 0);
+    if(rawMicIn < 0.04)
+    {
+        pG=0;
+    }
+
+    console.log(micIn.toFixed(2), pG.toFixed(2), tens.toFixed(2));
     return pG;
 }
 
@@ -615,12 +652,15 @@ function scaleTensionOneMembrane(ctrlValue: number): number {
     return tens;
 }
 
-export var softestMicValue = 0.001;
-export var loudestMicValue = 1.0;
+//this needed as the audio interface/mic amplititude response reduces substantially when using the webcam at the same time.
+export var micScaling: Record<'soft' | 'loud', number> = { soft :0.0,  loud: 1.0} ;
 function scaleMicValues(micIn : number) : number
 {
     //adjust threshols
-    return  micIn * (loudestMicValue-softestMicValue) + softestMicValue;
+    //return  micIn * (micScaling.loud-micScaling.soft) + micScaling.soft;
+    let res = (micIn - micScaling.soft)/(micScaling.loud - micScaling.soft);
+    res = Math.min(1.0, res); //cap it at 1.0
+    return res; 
 }
 
 //--------------------------------------------------------------------------------------------
@@ -631,9 +671,12 @@ var membrane: SyrinxMembraneFS;
 var currentMembraneCount = 2; //default
 var independentMembranes = false; //default
 export var useMouse = true; //default
+export var curMicIn = 0.0;
+export var curMaxMicIn = { max: 0.0};
 export function trachealSyrinx() {
     //document.documentElement.requestFullscreen();
 
+    let micConfigStatus : HTMLLabelElement = document.getElementById("micConfigStatus") as HTMLLabelElement; // status for mic config
 
     // document.documentElement.requestFullscreen().catch((err) => {
     //   console.log(
@@ -645,7 +688,7 @@ export function trachealSyrinx() {
 
         const limiter = new Tone.Limiter();
         const compressor = new Tone.Compressor();
-        const gain = new Tone.Gain(20); //to do -- make visible to UI
+        const gain = new Tone.Gain(50); //to do -- make visible to UI
         membrane = new SyrinxMembraneFS({ pG: 0.0 }); //needs to be global.. 
 
 
@@ -664,10 +707,15 @@ export function trachealSyrinx() {
         if (typeof num === "number") {
             setInterval(() => {
                 let num = meter.getValue();
+                curMicIn = num as number;
+                curMaxMicIn.max = Math.max(curMaxMicIn.max, curMicIn);
+
                 num = scaleMicValues(num as number);
+                micConfigStatus.innerHTML = "Mic raw: " + curMicIn.toFixed(2) + " Scaled: " + num.toFixed(2)  + " Recorded Max: " + curMaxMicIn.max.toFixed(2) + " Scaled Max: " + micScaling.loud.toFixed(2);
 
                 //let tens = scaleTensionTwoMembranes(m.y);
                  let tens = avgFilterTension(scaleTensionOnlyLow(m.y));
+                 //console.log(tens);
                  //let tens = avgFilterTension(scaleTensionTwoMembranes(m.y));
 
                 let rightTens = 0;
@@ -681,11 +729,11 @@ export function trachealSyrinx() {
                 tension.setValueAtTime(tens, 0.0);
 
                 //pG is based on the tension
-                // let pG = avgFilterPG(scalePGValuesTwoMembranes(num as number, tens, m.y)); //TODO: find PG given 2 separate membrane values
+                 //let pG = scalePGValuesTwoMembranes(num as number, tens, m.y); //TODO: find PG given 2 separate membrane values
                 let pG = avgFilterPG(scalePGValuesLow(num as number, tens, m.y)); //TODO: find PG given 2 separate membrane values
 
 
-                console.log("pG: " + pG + " tens: " + tens);
+                //console.log("pG: " + pG.toFixed(2) + " tens: " + tens.toFixed(2));
 
                // pG = 1200; //testing value
                 if (currentMembraneCount == 1) {

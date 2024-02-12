@@ -16,7 +16,7 @@
 // ++ into typescript
 
 import { DrawingUtils, FaceLandmarker, FilesetResolver, type NormalizedLandmark } from "@mediapipe/tasks-vision";
-import { m } from "../dinosaurSyrinx"
+import { m, micScaling, curMicIn, curMaxMicIn } from "../dinosaurSyrinx"
 
 // const vision : any  = await FilesetResolver.forVisionTasks(
 //     // path/to/wasm/root
@@ -33,6 +33,14 @@ import { m } from "../dinosaurSyrinx"
     let runningMode: "IMAGE" | "VIDEO" = "IMAGE";
     let enableWebcamButton: HTMLButtonElement;
 
+    let micMaxInput : HTMLInputElement = document.getElementById("micMax") as HTMLInputElement; // initialize submit button for mouth params
+    let micConfigStatus : HTMLLabelElement = document.getElementById("micConfigStatus") as HTMLLabelElement; // status for mic config
+    let resetMicMax : HTMLButtonElement = document.getElementById("resetMicMax") as HTMLButtonElement; // initialize submit button for mouth params
+    let micAutoFill : HTMLButtonElement = document.getElementById("micAutoFill") as HTMLButtonElement; // initialize submit button for mouth params
+    let submitMicMax : HTMLButtonElement = document.getElementById("submitMicMax") as HTMLButtonElement; // initialize submit button for mouth params
+
+
+
     let inputValuesForTrackingSection: HTMLElement;
     let outputMouthValue : HTMLLabelElement = document.getElementById("outputMouthValue") as HTMLLabelElement; // initialize output label
     let editMouthValueAutoFill : HTMLButtonElement = document.getElementById("editMouthValueAutoFill") as HTMLButtonElement; // initialize fill button for mouth params
@@ -44,11 +52,6 @@ import { m } from "../dinosaurSyrinx"
     let mouthOpenMax : HTMLInputElement = document.getElementById("mostOpenInput") as HTMLInputElement; // initialize submit button for mouth params
     let resetRecordedMouthMinimumsAndMaximums : HTMLButtonElement = document.getElementById("resetRecordedMouthMinimumsAndMaximums") as HTMLButtonElement; // initialize submit button for mouth params
     let mouthConfigStatus : HTMLLabelElement = document.getElementById("mouthConfigStatus") as HTMLLabelElement; // status for mouth tracking config
-
-    let micSoftMin : HTMLInputElement = document.getElementById("softInput") as HTMLInputElement; // initialize submit button for mouth params
-    let micLoudMax : HTMLInputElement = document.getElementById("loudInput") as HTMLInputElement; // initialize submit button for mouth params
-    let resetRecordedMouthMinimumsAndMaximumsMic : HTMLButtonElement = document.getElementById("resetRecordedMouthMinimumsAndMaximumsMic") as HTMLButtonElement; // initialize submit button for mouth params
-    let mouthConfigStatusMic : HTMLLabelElement = document.getElementById("mouthConfigStatusMic") as HTMLLabelElement; // status for mouth tracking config
   
     let webcamRunning: Boolean = false;
     export const videoWidth = 480;
@@ -106,7 +109,11 @@ if (hasGetUserMedia()) {
     editMouthValueAutoFill.addEventListener("click", fillMouthInputValues);
     resetRecordedMouthMinimumsAndMaximums.addEventListener("click", resetMouthMinMax);
     submitEditMouthConfig.addEventListener("click", updateWidenessOpennessScaling);
+    resetMicMax.addEventListener("click", resetMicMinMax );
+    submitMicMax.addEventListener("click", submitMicMaxFunc);
+    micAutoFill.addEventListener("click", micAutoFillSubmit);
 
+    
     inputValuesForTrackingSection = document.getElementById("inputValuesForTracking") as HTMLElement;
 } else {
   console.warn("getUserMedia() is not supported by your browser");
@@ -353,14 +360,14 @@ function updateMouthArea(areaMouthLandmarks:any[]) : number
 
 
 //min x
-let minMX = 1000;
+//let minMX = 1000;
 let minMY = 1000;
-let minrawMX = 1000;
+//let minrawMX = 1000;
 let minrawMY = 1000;
 
-let maxMX = -1000;
+//let maxMX = -1000;
 let maxMY = -1000;
-let maxrawMX = -1000;
+//let maxrawMX = -1000;
 let maxrawMY = -1000;
 
 //x value -- wideness, but m.y because it replaces the mouse m.y value -- change this
@@ -371,8 +378,8 @@ let maxrawMY = -1000;
 
 var wideMin = 0.07;
 var wideMax = 0.12;
-var mouthAreaMax = 0.0; 
-var mouthAreaMin = 0.005480977000770437
+var mouthAreaMin = 0.0; 
+var mouthAreaMax = 0.005480977000770437
 
 var minMic = 1000;
 var maxMic = -1000;
@@ -382,6 +389,12 @@ var loudestMic = 1.0;
 
 let minMouthArea = 1000;
 let maxMouthArea = -1000;
+var mouthAreaRaw = 0.0;
+var mouthArea = 0.0;
+var minMouthAreaRaw = 1000;
+var maxMouthAreaRaw = -1000;
+
+
 //print mouth landmarks values to console & update mouth values
 function printMouthLandmarks( landmarks?: NormalizedLandmark[][], connections?: any[]) : void {
   if (!landmarks) {
@@ -414,9 +427,13 @@ function printMouthLandmarks( landmarks?: NormalizedLandmark[][], connections?: 
     let openness = distance(mouthLandmarks[2], mouthLandmarks[3]);
 
     //find perimeter of mouth
-    let mouthArea = updateMouthArea(insideMouthLandmarks); //area of the open mouth
-    minMouthArea = Math.min(minMouthArea, mouthArea);
-    maxMouthArea = Math.max(maxMouthArea, mouthArea);
+    mouthAreaRaw = updateMouthArea(insideMouthLandmarks); //area of the open mouth
+
+    mouthArea = scale(mouthAreaRaw, mouthAreaMin, mouthAreaMax); 
+
+
+    //minMouthArea = Math.min(0.1, mouthArea);
+    maxMouthArea = Math.max(0, mouthArea);
     //console.log("Mouth Area: " + mouthArea + ", min: "+ minMouthArea + ", max: " + maxMouthArea);
 
     //note: values are flipped to match the mouse movement. So x is openness and y is wideness
@@ -426,30 +443,34 @@ function printMouthLandmarks( landmarks?: NormalizedLandmark[][], connections?: 
     m.x = Math.max(0.00000001, m.x);
     m.x = Math.min(1.2, m.x);
 
-    m.x = scale(wideness, wideMin, wideMax) ;
-    m.y = scale(mouthArea, 0.0, 0.005480977000770437); //testing mouth area
+            // //put some guard rails on the values -- got rid of this for now
+            // m.y = Math.max(0.00000001, m.y);
+            // m.y = Math.min(1.2, m.y);
+
+    m.y =  scale(wideness, wideMin, wideMax) ;
+    m.y = Math.min(0.9, m.y); 
+    m.x = mouthArea//testing mouth area
+    m.x = Math.min(0.9, m.x); 
     //console.log("m.y: "+m.y+" wideness: " +wide +" Mouth Area: " + mouthArea + ", min: "+ minMouthArea + ", max: " + maxMouthArea);
 
 
-        //put some guard rails on the values
-        m.y = Math.max(0.00000001, m.y);
-        m.y = Math.min(1.2, m.y);
+
 
     //find min values
-    minrawMX = Math.min(minrawMX, openness);
+    minMouthAreaRaw = Math.min(minMouthAreaRaw, mouthAreaRaw);
     minrawMY = Math.min(minrawMY, wideness);
-    minMX = Math.min(minMX, m.x);
+    //minMX = Math.min(minMX, m.x);
     minMY = Math.min(minMY, m.y);
 
     //find max values
-    maxrawMX = Math.max(maxrawMX, openness);
+    maxMouthAreaRaw = Math.max(maxMouthAreaRaw, mouthAreaRaw);
     maxrawMY = Math.max(maxrawMY, wideness);
-    maxMX = Math.max(maxMX, m.x);
+    //maxMX = Math.max(maxMX, m.x);
     maxMY = Math.max(maxMY, m.y);
 
     //console.log("wideness: " + m.y + " openness: " + m.x);
 
-    outputMouthValue.innerText = "Mouth Wideness Scaled: " + m.y +
+    outputMouthValue.innerText = "Mouth Wideness Scaled: " + m.x +
     "\nMouth Wideness Minimum Recorded Scaled Value: " + minMY +
     "\nMouth Wideness Maximum Recorded Scaled Value: " + maxMY +
 
@@ -457,13 +478,13 @@ function printMouthLandmarks( landmarks?: NormalizedLandmark[][], connections?: 
     "\nMouth Wideness Minimum Recorded Raw Value: " + minrawMY +
     "\nMouth Wideness Minimum Recorded Raw Value: " + maxrawMY +
 
-    "\n\nMouth Openness: " + m.x +
-    "\nMouth Openness Minimum Recorded Scaled Value: " + minMX +
-    "\nMouth Openness Maximum Recorded Scaled Value: " + maxMX +
+    "\n\nMouth Openness: " + m.y +
+    "\nMouth Openness Minimum Recorded Scaled Value: " + minMouthArea +
+    "\nMouth Openness Maximum Recorded Scaled Value: " + maxMouthArea +
 
-    "\n\nMouth Openness Scaled Raw: " + openness +  
-    "\nMouth Openness Minimum Recorded Raw Value: " + minrawMX +
-    "\nMouth Openness Maximum Recorded Raw Value: " + maxrawMX;
+    "\n\nMouth Openness Scaled Raw: " + m.y +  
+    "\nMouth Openness Minimum Recorded Raw Value: " + minMouthAreaRaw +
+    "\nMouth Openness Maximum Recorded Raw Value: " + maxMouthAreaRaw;
 
   } 
 }
@@ -473,8 +494,8 @@ export function fillMouthInputValues()
 
    mouthWideMin.value = minrawMY.toString();
    mouthWideMax.value = maxrawMY.toString();
-   mouthOpenMin.value = minrawMX.toString();
-   mouthOpenMax.value = maxrawMX.toString();
+   mouthOpenMin.value = minMouthAreaRaw.toString();
+   mouthOpenMax.value = maxMouthAreaRaw.toString();
 
 }
 
@@ -492,24 +513,24 @@ export function updateWidenessOpennessScaling()
   
 }
 
-export function updateMicrophoneScaling()
-{
-  wideMin = parseFloat(mouthWideMin.value);
-  wideMax = parseFloat(mouthWideMax.value);
-  mouthAreaMin = parseFloat(mouthOpenMin.value);
-  mouthAreaMax = parseFloat(mouthOpenMax.value);  
-  mouthConfigStatus.innerText = "Mouth Tracking Minimums and Maximums are updated:\n" +
-  "\nMouth Wideness Minimum Recorded Scaled Value: " + wideMin +
-  "\nMouth Wideness Maximum Recorded Scaled Value: " + wideMax + "\n\n" +
-  "\nMouth Openness Minimum Recorded Scaled Value: " + mouthAreaMin +
-  "\nMouth Openness Maximum Recorded Scaled Value: " + mouthAreaMax + "\n\n" ;
-}
+// export function updateMicrophoneScaling()
+// {
+//   wideMin = parseFloat(mouthWideMin.value);
+//   wideMax = parseFloat(mouthWideMax.value);
+//   mouthAreaMin = parseFloat(mouthOpenMin.value);
+//   mouthAreaMax = parseFloat(mouthOpenMax.value);  
+//   mouthConfigStatus.innerText = "Mouth Tracking Minimums and Maximums are updated:\n" +
+//   "\nMouth Wideness Minimum Recorded Scaled Value: " + wideMin +
+//   "\nMouth Wideness Maximum Recorded Scaled Value: " + wideMax + "\n\n" +
+//   "\nMouth Openness Minimum Recorded Scaled Value: " + mouthAreaMin +
+//   "\nMouth Openness Maximum Recorded Scaled Value: " + mouthAreaMax + "\n\n" ;
+// }
 
 export function resetMouthMinMax()
 {
-  minrawMX = 1000;
+  minMouthAreaRaw = 1000;
   minrawMY = 1000;
-  maxrawMX = -1000;
+  maxMouthAreaRaw = -1000;
   maxrawMY = -1000;
   mouthConfigStatus.innerText = "Mouth Tracking Minimums and Maximums are reset.\n\n";
 }
@@ -518,7 +539,20 @@ export function resetMicMinMax()
 {
   minMic = 1000;
   maxMic = -1000;
-  mouthConfigStatusMic.innerText = "Microphone Minimums and Maximums are reset.\n\n";
+  curMaxMicIn.max = 0;
+  micConfigStatus.innerText = "Microphone maximum is reset to 0.0.\n\n";
+}
+
+export function submitMicMaxFunc()
+{
+  micScaling.loud = parseFloat(micMaxInput.value);
+}
+
+
+export function micAutoFillSubmit()
+{
+  micMaxInput.value = curMaxMicIn.max.toString();
+  micConfigStatus.innerText = "Microphone Max input box has been filled to current value.\n\n";
 }
 
 export function showInputValuesSection()
@@ -534,3 +568,8 @@ export function showInputValuesSection()
     configMouthTrackingButton.innerText = "Adjust Mouth-Tracking Response"; //test build
   }
 }
+
+// let micMaxInput : HTMLInputElement = document.getElementById("micMax") as HTMLInputElement; // initialize submit button for mouth params
+// let micConfigStatus : HTMLLabelElement = document.getElementById("micConfigStatus") as HTMLLabelElement; // status for mic config
+// let micAutoFill : HTMLButtonElement = document.getElementById("micAutoFill") as HTMLButtonElement; // initialize submit button for mouth params
+// let submitMicMax : HTMLButtonElement = document.getElementById("submitMicMax") as HTMLButtonElement; // initialize submit button for mouth params
