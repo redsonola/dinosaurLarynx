@@ -436,7 +436,7 @@ function scaleTensionTwoMembranes(ctrlValue: number): number {
 //todo: refactor this out and freaking clean this up
 export var minTens = 941;
 let tensBuffer : number[] = [];
-let maxTensBuffer : number = 15; //we'll see what it needs to be
+let maxTensBuffer : number = 5; //we'll see what it needs to be
 let lastTens =0;
 let maxStep = 200;
 function avgFilterTension(input: number) : number
@@ -486,7 +486,7 @@ function avgFilterTension(input: number) : number
 ///--------------------------------------------------------------------------------------------
 ///--------------------------------------------------------------------------------------------
 let pgBuffer : number[] = [];
-let maxPGBuffer : number = 30  ; //we'll see what it needs to be
+let maxPGBuffer : number = 10  ; //we'll see what it needs to be
 let lastPG = 0;
 let maxPGStep = 100000;
 function avgFilterPG(input: number) : number
@@ -536,9 +536,10 @@ function avgFilterPG(input: number) : number
 ///--------------------------------------------------------------------------------------------
 ///--------------------------------------------------------------------------------------------
 //we see -- testing for mouth-scaling
-function scaleTensionOnlyLow(ctrlValue: number): number {
+function scaleTensionOnlyLow(ctrlValue: number, xctrl: number): number {
     let tens = 0;
-    let maxTens = 8510292;
+    let maxTens = 808510292;
+    let maxTens2 = 16615563;
     // if (m.y < 0.75) {
     //     tens = ((ctrlValue) * (9890243.3116 - 2083941)) + 2083941;
     // }
@@ -547,15 +548,15 @@ function scaleTensionOnlyLow(ctrlValue: number): number {
     //     tens = ((ctrlValue) * (98989831.3116 - addOn)) + addOn;
     // }
 
-    tens = ((ctrlValue) * (3615563- 350)) + 350;
+    tens = ((ctrlValue) * (maxTens2- 256080)) + 256080;
 
     //add something from the x value
 
     //put 0 at the center
-    let scaledX = m.x - 0.5;
+    let scaledX = m.x ; //take out this for mouth -- have it only add.
 
     //add or minus a certain amt.
-    tens += scaledX * (10000000 * m.y);
+    tens += scaledX * (10000 * m.y); //have what the area adds be a percentage of the wideness.
     tens = Math.max(256080, tens);
     tens = Math.min(maxTens, tens);
 
@@ -618,13 +619,13 @@ function scalePGValuesLow(micIn: number, tens: number, ctrlValue: number): numbe
     pG *= 3; 
 
     //put 0 at the center
-    let scaledX = m.x - 0.5;
+    let scaledX = ctrlValue; //don't subtract right now.
 
     //add or minus a certain amt.
-    /*
+    
     if (pG > 30) //don't add if pG is already super low
-        {pG += scaledX * (100 * m.y);} //note: was 500}
-        */
+        {pG += scaledX * (100 * m.y);} //note: was 500} //just adds a little
+        
 
     pG = Math.max(pG, 0);
     if(rawMicIn < 0.04)
@@ -673,6 +674,8 @@ var independentMembranes = false; //default
 export var useMouse = true; //default
 export var curMicIn = 0.0;
 export var curMaxMicIn = { max: 0.0};
+export var tens = 0.0;
+
 export function trachealSyrinx() {
     //document.documentElement.requestFullscreen();
 
@@ -714,7 +717,8 @@ export function trachealSyrinx() {
                 micConfigStatus.innerHTML = "Mic raw: " + curMicIn.toFixed(2) + " Scaled: " + num.toFixed(2)  + " Recorded Max: " + curMaxMicIn.max.toFixed(2) + " Scaled Max: " + micScaling.loud.toFixed(2);
 
                 //let tens = scaleTensionTwoMembranes(m.y);
-                 let tens = avgFilterTension(scaleTensionOnlyLow(m.y));
+                tens = avgFilterTension(scaleTensionOnlyLow(m.y, m.x));
+                
                  //console.log(tens);
                  //let tens = avgFilterTension(scaleTensionTwoMembranes(m.y));
 

@@ -16,7 +16,7 @@
 // ++ into typescript
 
 import { DrawingUtils, FaceLandmarker, FilesetResolver, type NormalizedLandmark } from "@mediapipe/tasks-vision";
-import { m, micScaling, curMicIn, curMaxMicIn } from "../dinosaurSyrinx"
+import { m, micScaling, curMicIn, curMaxMicIn, tens } from "../dinosaurSyrinx"
 
 // const vision : any  = await FilesetResolver.forVisionTasks(
 //     // path/to/wasm/root
@@ -448,9 +448,9 @@ function printMouthLandmarks( landmarks?: NormalizedLandmark[][], connections?: 
             // m.y = Math.min(1.2, m.y);
 
     m.y =  scale(wideness, wideMin, wideMax) ;
-    m.y = Math.min(0.9, m.y); 
+    m.y = Math.min(5.0, m.y); 
     m.x = mouthArea//testing mouth area
-    m.x = Math.min(0.9, m.x); 
+    m.x = Math.min(5.0, m.x); 
     //console.log("m.y: "+m.y+" wideness: " +wide +" Mouth Area: " + mouthArea + ", min: "+ minMouthArea + ", max: " + maxMouthArea);
 
 
@@ -484,8 +484,9 @@ function printMouthLandmarks( landmarks?: NormalizedLandmark[][], connections?: 
 
     "\n\nMouth Openness Scaled Raw: " + m.y +  
     "\nMouth Openness Minimum Recorded Raw Value: " + minMouthAreaRaw +
-    "\nMouth Openness Maximum Recorded Raw Value: " + maxMouthAreaRaw;
+    "\nMouth Openness Maximum Recorded Raw Value: " + maxMouthAreaRaw +
 
+    "\n\nVocal tension (After mapping): " + tens + "\n\n";
   } 
 }
 

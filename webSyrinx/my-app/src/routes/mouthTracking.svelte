@@ -192,7 +192,7 @@
 
 			<!--	<button id="resetRecordedMouthMinimumsAndMaximumsMic"> Reset Recorded Minuminums and Maximums for Microphone Input </button> <br />
 				<button id="editMouthValueAutoFillMic"> Fill values with Raw Minimums and Maximums for Microphone Input   </button> <br />
-				<button id="submitEditMouthConfigMic"> Update Mouth Tracking Scalin for for Microphone Input </button> <br /> -->
+				<button id="submitEditMouthConfigMic"> Update Mouth Tracking Scaling for for Microphone Input </button> <br /> -->
 
 			<label id="outputMouthValue"></label><br/>
 
