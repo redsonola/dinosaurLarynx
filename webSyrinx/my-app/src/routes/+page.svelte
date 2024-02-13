@@ -25,9 +25,13 @@
 		<p>Changing the tension affects the pitch and timbre. The lower you move your mouse (you can scroll down) the lower the tension, and generally, the lower the pitch. The higher your mouse moves, the higher the pitch. Moving the mouse left will also slightly lower the tension, while moving it right will slightly raise it.
 	In addition, as you accelerate and decelerate your breath whilst blowing into the microphone, you are also driving pitch, timbre, and volume of the sound.</p>
 		
-	<p>		Alternatively, enable your webcam and use your mouthshape to control the tension on the vocal cords! The wider and more open your mouth is, the higher the tension. And vice versa.</p>
+	<p>		Alternatively, enable your webcam and use your mouthshape to control the tension on the vocal cords! The wider and more open your mouth is, the higher the tension. And vice versa. </p>
+	<p> <a href="https://vimeo.com/912455205">Click for Video of Demonstration and Instructions for webcam mouth-tracking</a> </p>
 
-	<p>The default mode of the computational model employs a two membranes (a tracheobronchial, meaning two membranes, one each in the bronchi) syrinx like a songbird (passerine). However, you can switch between this mode and a tracheal mode with only one membrane (one vibrating membrane in the trachea), like an ostrich, duck, or dove.</p>
+	<p>The default mode of the computational model employs a two membranes (a tracheobronchial, meaning two membranes, one each in the bronchi) syrinx like a songbird (passerine). However, you can switch between this mode and a tracheal mode with only one membrane (one vibrating membrane in the trachea), like an ostrich, duck, or dove.
+		<br /> <br />
+		<b>Important Note:</b> Currently, the running model on this website has been optimized for webcam and mouth-tracking use. Use of the mousepad will not elicit very much variation. Additionally, parameters have not yet been re-optimized for the trachael syrinx (one membrane). It will still make sound, but it is not necessarily recommended. Please check back later for updates.<br />
+	</p>
 	</directions>
 	<!-- <h1>
 

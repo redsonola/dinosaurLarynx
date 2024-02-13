@@ -184,11 +184,14 @@
 				1. Click Reset to reset/clear the currently recorded min and max values and initialize.<br />
 				2. Move your mouth to closed and wide positions. Make sure you can blow a stream of air into the microphone to create sound in all mouth positions. Note that it is difficult to open the mouth very wide and accelerate air. If you need, you can click reset again. <br />
 				4. Click 'Fill Mouth Values' to update the values using the recorded min and max from mouthtracking OR enter in your own values.<br />
-				5. Submit your changes to adjust the scale values and sounding response.<br /></p>
+				5. Submit your changes to adjust the scale values and sounding response.<br />
+			<br />
+			Note: Please scroll down to adjust microphone response. If you are not hearing sound when you blow into the microphone or it is really soft, then you may need to adjust it.<br />
+			</p>
 
 				<button id="resetRecordedMouthMinimumsAndMaximums"> Reset Recorded Minuminums and Maximums for Mouth Wideness/Openness </button> <br />
 				<button id="editMouthValueAutoFill"> Fill values with Raw Minimums and Maximums for Mouth Wideness/Openness  </button> <br />
-				<button id="submitEditMouthConfig"> Update Mouth Tracking Scalin for Mouth Wideness/Openness</button> <br />
+				<button id="submitEditMouthConfig"> Update Mouth Tracking Scaling for Mouth Wideness/Openness</button> <br />
 
 			<!--	<button id="resetRecordedMouthMinimumsAndMaximumsMic"> Reset Recorded Minuminums and Maximums for Microphone Input </button> <br />
 				<button id="editMouthValueAutoFillMic"> Fill values with Raw Minimums and Maximums for Microphone Input   </button> <br />
