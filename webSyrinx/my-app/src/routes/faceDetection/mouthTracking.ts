@@ -16,7 +16,7 @@
 // ++ into typescript
 
 import { DrawingUtils, FaceLandmarker, FilesetResolver, type NormalizedLandmark } from "@mediapipe/tasks-vision";
-import { m, micScaling, curMicIn, curMaxMicIn, tens } from "../dinosaurSyrinx"
+import { m, micScaling, curMicIn, curMaxMicIn, tens, trachealSyrinx } from "../dinosaurSyrinx"
 
 // const vision : any  = await FilesetResolver.forVisionTasks(
 //     // path/to/wasm/root
@@ -121,6 +121,7 @@ if (hasGetUserMedia()) {
 
 // Enable the live webcam view and start detection.
 function enableCam(event : any) {
+  trachealSyrinx(); //start the sound just in case.
   if (!faceLandmarker) {
     console.log("Wait! faceLandmarker not loaded yet.");
     return;
