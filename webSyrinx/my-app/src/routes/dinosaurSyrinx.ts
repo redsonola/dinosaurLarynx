@@ -565,6 +565,7 @@ function scaleTensionOnlyLow(ctrlValue: number, xctrl: number): number {
 
 
 //pG for only low
+export var noiseFloor: number = 0.18;
 function scalePGValuesLow(micIn: number, tens: number, ctrlValue: number): number {
     //pG is based on the tension
 
@@ -626,6 +627,12 @@ function scalePGValuesLow(micIn: number, tens: number, ctrlValue: number): numbe
     if (pG > 30) //don't add if pG is already super low
         {pG += scaledX * (100 * m.y);} //note: was 500} //just adds a little
         
+
+    //add in a mic noise floor -- production code now. 1/13/24
+    if( micIn < noiseFloor)
+    {
+        pG = 0;
+    }
 
     pG = Math.max(pG, 0);
     if(rawMicIn < 0.04)
