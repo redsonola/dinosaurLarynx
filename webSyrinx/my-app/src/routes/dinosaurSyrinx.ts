@@ -548,7 +548,7 @@ function scaleTensionOnlyLow(ctrlValue: number, xctrl: number): number {
     //     tens = ((ctrlValue) * (98989831.3116 - addOn)) + addOn;
     // }
 
-    tens = ((ctrlValue) * (maxTens2- 256080)) + 256080;
+    tens = ((ctrlValue) * (maxTens2- 156080)) + 156080;
 
     //add something from the x value
 
@@ -557,7 +557,7 @@ function scaleTensionOnlyLow(ctrlValue: number, xctrl: number): number {
 
     //add or minus a certain amt.
     tens += scaledX * (10000 * m.y); //have what the area adds be a percentage of the wideness.
-    tens = Math.max(256080, tens);
+    tens = Math.max(156080, tens);
     tens = Math.min(maxTens, tens);
 
     return tens;
@@ -635,10 +635,10 @@ function scalePGValuesLow(micIn: number, tens: number, ctrlValue: number): numbe
     }
 
     pG = Math.max(pG, 0);
-    if(rawMicIn < 0.04)
-    {
-        pG=0;
-    }
+    // if(rawMicIn < 0.04)
+    // {
+    //     pG=0;
+    // }
 
     console.log(micIn.toFixed(2), pG.toFixed(2), tens.toFixed(2));
     return pG;
