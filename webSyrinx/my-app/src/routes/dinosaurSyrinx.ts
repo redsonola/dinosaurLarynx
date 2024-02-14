@@ -573,10 +573,10 @@ function scalePGValuesLow(micIn: number, tens: number, ctrlValue: number): numbe
 
     let floorPG = 20;
     if (tens < 256080) {  
-        maxMaxPG = 5;
+        maxMaxPG = 10;
     }
     else if (tens < 356080) {
-        maxMaxPG = 7;
+        maxMaxPG = 10;
     }
     else if (tens < 400800) {
         maxMaxPG = 10;
@@ -591,24 +591,24 @@ function scalePGValuesLow(micIn: number, tens: number, ctrlValue: number): numbe
         maxMaxPG = 40;
     }
     else if (tens < 3015563) {
-        maxMaxPG = 70;
+        maxMaxPG = 50;
     }
     else if (tens < 4515563) {
-        maxMaxPG = 100;
+        maxMaxPG = 60;
     }
     else if (tens < 6015563) {   //5675073.28 8027448.10
         floorPG = 20; //changed from 400
-        maxMaxPG = 150;
+        maxMaxPG = 70;
     }
     else if (tens<7015563) { 
 
         floorPG = 20;
-        maxMaxPG = 225;
+        maxMaxPG = 80;
     }
     else 
     {
         floorPG = 20;
-        maxMaxPG = 300;
+        maxMaxPG = 100;
     }
 
     let maxPG = maxMaxPG;// (ctrlValue * (maxMaxPG - floorPG)) + floorPG;
