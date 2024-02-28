@@ -558,7 +558,7 @@ function scaleTensionOnlyLow(ctrlValue: number, xctrl: number): number {
     //add or minus a certain amt.
     tens += scaledX * (10000 * m.y); //have what the area adds be a percentage of the wideness.
     tens = Math.max(156080, tens);
-    tens = Math.min(maxTens, tens);
+    //tens = Math.min(maxTens, tens);
 
     return tens;
 }
@@ -591,19 +591,19 @@ function scalePGValuesLow(micIn: number, tens: number, ctrlValue: number): numbe
         maxMaxPG = 50;
     }
     else if (tens < 3015563) {
-        maxMaxPG = 100;
+        maxMaxPG = 60;
     }
     else if (tens < 4515563) {
-        maxMaxPG = 125;
+        maxMaxPG = 70;
     }
     else if (tens < 6015563) {   //5675073.28 8027448.10
         floorPG = 20; //changed from 400
-        maxMaxPG = 150;
+        maxMaxPG = 80;
     }
     else if (tens<7015563) { 
 
-        floorPG = 20;
-        maxMaxPG = 175;
+        floorPG = 90;
+        maxMaxPG = 90;
     }
     else 
     {
