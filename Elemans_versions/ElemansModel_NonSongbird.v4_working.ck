@@ -85,7 +85,7 @@ class RingDoveSyrinxLTM extends Chugen
     [0.0, 0.0] @=> float dx[]; 
     [0.0, 0.0] @=> float d2x[]; 
     [0.0, 0.0] @=> float F[]; //force
-    0.0017 => float m; //mass, table C.1
+    0.001 => float m; //mass, table C.1
         
     //damping and stiffness coefficients 
     0.001 => float r; //damping, table C.1 // 0.0012 => float r;

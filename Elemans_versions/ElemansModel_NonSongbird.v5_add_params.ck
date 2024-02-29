@@ -85,18 +85,19 @@ class RingDoveSyrinxLTM extends Chugen
     [0.0, 0.0] @=> float dx[]; 
     [0.0, 0.0] @=> float d2x[]; 
     [0.0, 0.0] @=> float F[]; //force
+    
+    //********* constants that change during modeling the coo!!! 2/2024 Table C.1 p. 134 ************
     0.0017 => float m; //mass, table C.1
-        
+    0.022 => float k; //stiffness -- orig. 0.02 in fig. 3.2 zaccharelli -- now back to original-ish? table C.1
+    0.006 => float kc; //coupling constant, table C.1 (before, 0.005)
+    0.0012 => float r; //damping, table C.1 // 0.0012 => float r;
+
+    
     //damping and stiffness coefficients 
-    0.001 => float r; //damping, table C.1 // 0.0012 => float r;
     //0.0022 => float k; //stiffness -- orig. 0.02 in fig. 3.2 zaccharelli -- now back to original-ish? table C.1
     //0.006 => float kc; //coupling constant, table C.1 (before, 0.005)
     
-    //***********changed back to test 2/2024
-    //go back to previous values to test
-    0.02 => float k; //stiffness -- orig. 0.02 in fig. 3.2 zaccharelli -- now back to original-ish? table C.1
-    0.005 => float kc; //coupling constant, table C.1 (before, 0.005)
-    
+
     [0.0, 0.0] @=> float I[]; //collisions
     
     //biological parameters of ring dove syrinx, in cm
@@ -132,7 +133,7 @@ class RingDoveSyrinxLTM extends Chugen
 
     //pressure values - limit cycle is half of predicted? --> 0.00212.5 to .002675?
     //no - 0.0017 to 0.0031 -- tho, 31 starts with noise, if dividing by 2 in the timestep
-    0.004 => float Ps; //pressure in the syringeal lumen, 
+    0.0045 => float Ps; //pressure in the syringeal lumen, 
     //0.004 is default Ps for this model but only 1/2 of predicted works in trapezoidal model for default params (?)
     //0.02 is the parameter for fig. C3 & does produce sound with the new time-varying tension/muscle pressure params
     
@@ -185,12 +186,8 @@ class RingDoveSyrinxLTM extends Chugen
     fun void updateX()
     {
         //for controlling muscle tension parameters -- disable for now 2/2024
-       //m/Q => float mt; //time-varying mass due to muscle tensions, etc.
-       //k*Q => float kt; //time-varying stiffness due to muscle tensions, etc.
-       
-       //go back to previous equation for now, to test.
-       m => float mt; 
-       k => float kt; 
+       m/Q => float mt; //time-varying mass due to muscle tensions, etc.
+       k*Q => float kt; //time-varying stiffness due to muscle tensions, etc.
         
        //update d2x/dt
        timeStep * ( d2x[0] + ( (1.0/mt) * ( F[0] - r*dx[0] - kt*x[0] + I[0] - kc*( x[0] - x[1] )) ) ) => d2x[0]; 
@@ -255,7 +252,7 @@ fun float syringealArea(float z)
         }
      }
      
-     //from Steinecke, et. al  1994 & 1995 --> a smoothing heaveside not sure if this is important yet.
+     //from Steinecke, et. al  1994 & 1995 --> a smoothing heaveside not sure if this is important yet. <--NOPE!!!
      fun float heaveisideA(float val, float a)
      {
          if( val > 0 )
@@ -385,7 +382,7 @@ fun float syringealArea(float z)
      
      //note: is it worth implementing eq. A.5 for pressure? on p. 108 Zaccarelli
      
-     //TODO: recheck this w/table - check.
+     //TODO: recheck this w/table - checked done!
      fun void updateCollisions()
      {           
            
@@ -449,8 +446,8 @@ fun float syringealArea(float z)
         updateForce();
         updateCollisions();
         updateU(); 
-        //updateRestingAreas();
-        //updateQ();
+        updateRestingAreas();
+        updateQ();
         
         return dU; 
     }
@@ -624,10 +621,11 @@ fun float createSinTrill(MultiPointEnvelope env, float minVal, float maxVal, dur
     env.add(sinTrillGetNextValue(Math.PI +(Math.PI*7)/8, trillFreq, envPsSinTrill1Dur, minVal, maxVal), duration);
 }
 
+
+
+RingDoveSyrinxLTM ltm => Dyno limiter => dac; 
+
 /*
-
-//RingDoveSyrinxLTM ltm => Dyno limiter => dac; 
-
 //run it through the throat, etc.
 BirdTracheaFilter lp; 
 RingDoveSyrinxLTM ltm => DelayA delay => lp => blackhole;
@@ -648,9 +646,6 @@ period::samp => delay.delay;
 
 */
 
-RingDoveSyrinxLTM ltm => Dyno limiter => dac;
-10 => limiter.gain;  
-3::second => now; //3 seconds of sound
 
 /*
 FileIO fout;
@@ -675,9 +670,7 @@ string output;
 //    1::samp => now; 
 //}
 
-//mouseEventLoopControllingAirPressure();
 
-/*
 
 mouseEventLoopControllingAirPressure();
 
@@ -724,11 +717,14 @@ function void mouseEventLoopControllingAirPressure()
                 
                  
                 
-               //msg.scaledCursorX * (0.01225-0.010954) + 0.010954 => ltm.Ps;
+               //msg.scaledCursorX * 0.006 => ltm.Ps;
+                msg.scaledCursorX * 0.006 => ltm.Ps;
+
+
                 //msg.scaledCursorX * (0.01225-0.007954) + 0.007954 => ltm.Ps;
 
-               //(msg.scaledCursorY*1.5)  - 1.0 => ltm.Pt;
-               //(1.0- msg.scaledCursorY) * 19.0 => ltm.Ptl;
+               ((msg.scaledCursorY*1.5)  - 1.0) => ltm.Pt;
+               (1-msg.scaledCursorY) * 17.0 => ltm.Ptl;
                //<<<ltm.Ps>>>;
                
                 //msg.scaledCursorX * (0.01225-0.010954) + 0.010954 => ltm.Ps;
@@ -738,11 +734,11 @@ function void mouseEventLoopControllingAirPressure()
                 //0.1224 - 18 ptl lowest w/o distortion
                 //0.11
                 
-                0.01222 => ltm.Ps;
+                //0.01222 => ltm.Ps;
 
-               (msg.scaledCursorY*1.5)  - 1.0 => ltm.Pt;
-               (1.0- msg.scaledCursorY) * 20.0 => ltm.Ptl;
-               <<<ltm.Ps+"," + ltm.Ptl+ "," + ltm.Pt>>>;
+               //(msg.scaledCursorY*1.5)  - 1.0 => ltm.Pt;
+               //(1.0- msg.scaledCursorY) * 20.0 => ltm.Ptl;
+               //<<<ltm.Ps+"," + ltm.Ptl+ "," + ltm.Pt>>>;
                 
                 
             }
@@ -761,6 +757,8 @@ function float logScale(float in, float min, float max)
     max / Math.exp(b*max) => float a;
     return a * Math.exp ( b*in );
 }
+
+/*
 
 function void setParamsForReflectionFilter()
 {
@@ -804,6 +802,8 @@ function void setParamsForReflectionFilter()
 */
 
 
+
+
 /*
 <<<ltm.defIForce(0, ltm.d1)>>>;
 <<<ltm.defIForce(ltm.d1, ltm.dM)>>>;
@@ -819,7 +819,7 @@ function void setParamsForReflectionFilter()
 <<<"d3:" + ltm.d3>>>;
 */
 
-
+/*
 <<< "**********************************" >>>;
 
 FileIO fout;
@@ -877,6 +877,6 @@ fout.close();
 //3. recheck parameters and initial conditions --> check
 //4. recheck forces agains --> check
 
-
+*/
 
 
