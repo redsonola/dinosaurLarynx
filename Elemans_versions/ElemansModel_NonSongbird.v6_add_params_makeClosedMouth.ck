@@ -70,7 +70,9 @@
 //2) the transmural pressure difference and 
 //3) the stress exerted by syringeal muscles.
 
-//TODO: implement graphs on pg. 73 of Zaccharelli for Ps, Pt, Ptl
+//TODO: implement graphs on pg. 73 of Zaccharelli for Ps, Pt, Ptl DONE -ish -- used for interactive ranges for mouse movement
+
+//NOTE: Dove coo is at 600Hz, highest note is 600Hz -- tested it quick and dirty, playing along with SinOsc @ 600HZ.
 
 //global parameter -- speed of sound
 347.4 => float c; // in m/s
@@ -201,7 +203,6 @@ class RingDoveSyrinxLTM extends Chugen
         if(aMin > 0)
         {
             //breaking up the equation so I can easily see order of operations is correct
-            //2*l*Math.sqrt((2*Ps)/p) => float firstMult; 
             2*l*Math.sqrt((2*Ps)/p) => float firstMult;
             heaveisideA(a2-a1, a1)*dx[0] => float firstAdd; 
             heaveisideA(a1-a2, a2)*dx[1]=> float secondAdd;
@@ -213,20 +214,20 @@ class RingDoveSyrinxLTM extends Chugen
            0 => dU; //current dU is 0, then have to smooth for integration just showing that in the code
         }     
         
-        //find U for vocal tract coupling -- more precise than adding dU
+        //find U for vocal tract coupling -- more precise than integrating
         Math.sqrt((2*Ps)/p) => float sq; 
         sq*aMin*heaveiside(aMin) => U;           
     }
     
     //couple the input pressue to this syrinx membrane model
-    fun void updatePAC() //Lous, et. al., 1998
+    fun void updatePAC() //Lous, et. al., 1998 - moved this to coupler class
     {
         z0*U + 2*inputP => pAC;
     }
     
     fun void updateX()
     {
-        //for controlling muscle tension parameters -- disable for now 2/2024
+        //for controlling muscle tension parameters
        m/Q => float mt; //time-varying mass due to muscle tensions, etc.
        k*Q => float kt; //time-varying stiffness due to muscle tensions, etc.
         
@@ -234,7 +235,7 @@ class RingDoveSyrinxLTM extends Chugen
        timeStep * ( d2x[0] + ( (1.0/mt) * ( F[0] - r*dx[0] - kt*x[0] + I[0] - kc*( x[0] - x[1] )) ) ) => d2x[0]; 
        timeStep * ( d2x[1] + ( (1.0/mt) * ( F[1] - r*dx[1] - kt*x[1] + I[1] - kc*( x[1] - x[0] )) ) ) => d2x[1];  
               
-       for( 0=>int i; i<x.cap(); i++ )
+       for( 0=>int i; i<x.size(); i++ )
        {
            //update dx, integrate
            dx[i] => float dxPrev;
@@ -259,28 +260,6 @@ fun float syringealArea(float z)
     else return 0.0; 
 }
 
-
-/*
-//this should be equivalent to the above, but using here right now to completely avoid magical thinking
-fun float syringealArea(float z)
-{
-    if( z==0 || z==(d1+d2+d3) )
-        return a0; 
-    else if(z == d1)
-        return a1; 
-    else if(z == (d1+d2))
-        return a2; 
-    else if(z == dM )
-        return aM; 
-    else
-    {
-        <<< "Error! Called area for unkown value. Need to modify code." >>>;
-        return 0.0; 
-    }
-}
-*/
-
-  
     fun float heaveiside(float val)
     {
         if( val > 0 )
@@ -416,9 +395,6 @@ fun float syringealArea(float z)
          Math.min(min0, cpo2) => min0;  
          Math.min(min0, cpo3) => min0; 
          
-         //TODO: translate inputP to the correct values
-     
-         //Ps - inputP => Ps; //update reflective pressure from trachea --> not sure if this works? maybe need a z0 like Fletcher?
          forceF1(min0, Ps - inputP) => F[0];
          forceF2(min0, Ps - inputP) => F[1]; //modifying in terms of equation presented on (A.8) p.110
 
@@ -744,7 +720,7 @@ p1 =>  coupler => blackhole; //the reflection also is considered in the pressure
 
 //output from trachea
 limiter.limit();
-2.0 => limiter.gain;
+//1.5 => limiter.gain;
 
 dac => WvOut2 writer => blackhole; //record to file
 writer.wavFilename("/tmp/testDoveSounds.wav");
@@ -770,7 +746,7 @@ setParamsForReflectionFilter(lp2);
 
 
 //347.4 => float c; // in m/s
-c/(2*(L/100.0)) => float LFreq; // -- the resonant freq. of the tube (?? need to look at this)
+c/(2*(L/100.0)) => float LFreq; //speed of sound - c - is in meters, so convert L to meters here.
 
 //I didn't *2 the frequency since there is no flip - 3/1/2024
 ( (second / samp) / (LFreq) - 1) => float period; //* 0.5 in the STK for the clarinet model... clarinet.cpp hmmm
