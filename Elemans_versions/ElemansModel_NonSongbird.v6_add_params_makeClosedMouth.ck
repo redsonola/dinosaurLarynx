@@ -583,11 +583,11 @@ DelayA delay, tracheaForward;
 DelayA delay2, tracheaBack; 
 RingDoveSyrinxLTM ltm => delay => lp => blackhole;
 lp => wa => delay => LPF lpf => Dyno limiter => dac;
-1 => lpf.Q;
+//1 => lpf.Q;
 700 => lpf.freq;  
 
-<<<"bpf q: "+lpf.Q()>>>;
-<<<"bpf qfreq: "+lpf.freq()>>>;
+//<<<"bpf q: "+lpf.Q()>>>;
+//<<<"bpf qfreq: "+lpf.freq()>>>;
 
 
 //got rid of flip & highpass filter
@@ -893,7 +893,7 @@ function void mouseEventLoopControllingAirPressure()
                Math.min(audioMin, limiter.last()) => audioMin; 
  
                
-               //<<<ltm.Ps+"," + ltm.Ptl+ "," + ltm.Pt + "," + limiter.last() + " ," +audioMin + "," + audioMax >>>;
+               <<<ltm.Ps+"," + ltm.Ptl+ "," + ltm.Pt + "," + limiter.last() + " ," +audioMin + "," + audioMax >>>;
 
             }
                 
