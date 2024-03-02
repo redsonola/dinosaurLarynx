@@ -72,6 +72,9 @@
 
 //TODO: implement graphs on pg. 73 of Zaccharelli for Ps, Pt, Ptl
 
+//global parameter -- speed of sound
+347.4 => float c; // in m/s
+
 //Syrinx Membrane - note: it works with 1/2 the Ps value per the paper? What is going on, then?
 class RingDoveSyrinxLTM extends Chugen
 {
@@ -93,7 +96,8 @@ class RingDoveSyrinxLTM extends Chugen
     0.0012 => float r; //damping, table C.1 // 0.0012 => float r;
     
     //biological parameters of ring dove syrinx, in cm -- ***change during coo! Table 4.1, p76
-    0.15 => float w; //trachea width
+    0.15 => float w;//1/2 trachea width
+    2*w => float a;//full trachea width
     0.32 => float l; //length of the trachea, 4.1 table **changed
     0.003 => float a01; //lower rest area
     0.003 => float a02; //upper rest area, testing a02/a01 = 0.8, testing a convergent syrinx
@@ -102,11 +106,7 @@ class RingDoveSyrinxLTM extends Chugen
     0.04 => float d1; //1st mass height
     0.24 - d1 => float d2; //2nd mass displacement from first
     0.28 - (d1+d2) => float d3; //3rd mass displacement from 2nd
-    
-    //adding the input pressure to the force -- 2/29/2024
-    0 => float inputP;
-
-    
+        
     //damping and stiffness coefficients 
     //0.0022 => float k; //stiffness -- orig. 0.02 in fig. 3.2 zaccharelli -- now back to original-ish? table C.1
     //0.006 => float kc; //coupling constant, table C.1 (before, 0.005)
@@ -119,6 +119,13 @@ class RingDoveSyrinxLTM extends Chugen
     19.0 => float Ptl; //stress due to the TL tracheolateralis (TL) - TL directly affects position in the LTM -- probably change in dinosaur.
     0.0 => float minPtl; 
     20.0 => float maxPtl; 
+    
+    //changing Ptl
+    Ptl => float goalPtl;//the tension to increase or decrease to    
+    0.0 => float dPtl; //change in tension per sample -- only a class variable so can check value. 
+    5.0 => float modPtl; //a modifier for how quickly dx gets added
+    
+    //more time-varying parameters
     -0.03 => float a0min; 
     0.01 => float a0max; 
     a0max - a0min => float a0Change; 
@@ -133,13 +140,22 @@ class RingDoveSyrinxLTM extends Chugen
     20.0 => float maxPsum; 
     Qmax - Qmin => float Qchange;
     
-
+    //changing Pt
+    Pt => float goalPt;//the tension to increase or decrease to    
+    0.0 => float dPt; //change in tension per sample -- only a class variable so can check value. 
+    5.0 => float modPt; //a modifier for how quickly dx gets added
     
     2.0*l*w => float a0; //a0 is the same for both masses since a01 == a02
 
     //pressure values - limit cycle is half of predicted? --> 0.00212.5 to .002675?
     //no - 0.0017 to 0.0031 -- tho, 31 starts with noise, if dividing by 2 in the timestep
     0.0045 => float Ps; //pressure in the syringeal lumen, 
+    
+    //changing Ps
+    Ps => float goalPs;//the tension to increase or decrease to    
+    0.0 => float dPs; //change in tension per sample -- only a class variable so can check value. 
+    50.0 => float modPs; //a modifier for how quickly dx gets added
+    
     //0.004 is default Ps for this model but only 1/2 of predicted works in trapezoidal model for default params (?)
     //0.02 is the parameter for fig. C3 & does produce sound with the new time-varying tension/muscle pressure params
     
@@ -161,9 +177,17 @@ class RingDoveSyrinxLTM extends Chugen
     0.0 => float cpo3; 
         
     0.0 => float dU;
+    0.0 => float U;
     
     0.00113 => float p; //air density
     
+     //***adding the input pressure to the force -- 2/29/2024
+    //**********from the Fletcher model, adding back vocal tract effects
+    0 => float inputP; //this is reflection from vocal tract
+    (p*c*100)/(pi*a*a) => float z0; //impedence of brochus --small compared to trachea, trying this dummy value until more info 
+    z0/6   => float zG; //NOT USED erase --> an arbitrary impedance smaller than z0, Fletcher
+    0.0 => float pAC; //reflected pressure from the vocal tract after coupling - incl. impedence, etc.
+
     //Steineke & Herzel, 1994  --this part was not clear there but--->
     //confirmed! Herzel, H., Berry, D., Titze, I., & Steinecke, I. (1995). Nonlinear dynamics of the voice: Signal analysis and biomechanical modeling. Chaos (Woodbury, N.Y.), 5(1), 30?34. 
     //https://doi.org/10.1063/1.166078
@@ -171,8 +195,9 @@ class RingDoveSyrinxLTM extends Chugen
     3.0 * k => float c1; 
     3.0 * k => float c2; 
 
-    fun void updateU()
+    fun void updateU(float Ps)
     {
+        //find du
         if(aMin > 0)
         {
             //breaking up the equation so I can easily see order of operations is correct
@@ -186,7 +211,17 @@ class RingDoveSyrinxLTM extends Chugen
         else
         {
            0 => dU; //current dU is 0, then have to smooth for integration just showing that in the code
-        }                
+        }     
+        
+        //find U for vocal tract coupling -- more precise than adding dU
+        Math.sqrt((2*Ps)/p) => float sq; 
+        sq*aMin*heaveiside(aMin) => U;           
+    }
+    
+    //couple the input pressue to this syrinx membrane model
+    fun void updatePAC() //Lous, et. al., 1998
+    {
+        z0*U + 2*inputP => pAC;
     }
     
     fun void updateX()
@@ -284,7 +319,7 @@ fun float syringealArea(float z)
      }
      
      //finds force 1 
-     fun float forceF1(float min0)
+     fun float forceF1(float min0, float Ps)
      {
          if( aMin <=0 ) //closed configuration
          {
@@ -320,7 +355,7 @@ fun float syringealArea(float z)
          }
      }
      
-     fun float forceF2(float min0)
+     fun float forceF2(float min0, float Ps)
      {
          if( aMin <= 0) //closed configuration
          {
@@ -354,7 +389,7 @@ fun float syringealArea(float z)
          }
      }
      
-     fun float updateForce()
+     fun void updateForce()
      {
          //find current areas according to p. 106, Zaccarelli, 2009
          a01/(2*l) => float x01;
@@ -381,9 +416,11 @@ fun float syringealArea(float z)
          Math.min(min0, cpo2) => min0;  
          Math.min(min0, cpo3) => min0; 
          
-         Ps + inputP => Ps; //update reflective pressure from trachea --> not sure if this works? maybe need a z0 like Fletcher?
-         forceF1(min0) => F[0];
-         forceF2(min0) => F[1]; //modifying in terms of equation presented on (A.8) p.110
+         //TODO: translate inputP to the correct values
+     
+         //Ps - inputP => Ps; //update reflective pressure from trachea --> not sure if this works? maybe need a z0 like Fletcher?
+         forceF1(min0, Ps - inputP) => F[0];
+         forceF2(min0, Ps - inputP) => F[1]; //modifying in terms of equation presented on (A.8) p.110
 
      }
      
@@ -446,34 +483,82 @@ fun float syringealArea(float z)
         Psum*( Qchange/maxPsum ) + Qmin => Q; //now update Q
     }
     
-    fun float tick() //without trachea
+    //changes Ps
+    fun void changePs(float ps)
     {
-
-        updateX();
-        updateForce();
-        updateCollisions();
-        updateU(); 
-        updateRestingAreas();
-        updateQ();
-        
-        return dU; 
+        ps => goalPs; 
     }
     
+    fun void changePtl(float ptl)
+    {
+        ptl => goalPtl; 
+    }
+    
+    fun void changePt(float pt)
+    {
+        pt => goalPt; 
+    }
+    
+    /*
+    fun void updatePs()
+    {
+        goalPs - Ps => float diff; 
+        (dPs + diff)*T*modPs => dPs ; 
+        Ps + dPs => Ps;      
+    }
+    */
+    
+    fun void updatePs()
+    {
+        updateParamD(Ps, goalPs, dPs, modPs) => dPs;
+        updateParam(Ps, goalPs, dPs, modPs) => Ps;
+    }
+    
+    fun void updatePtl()
+    {
+        updateParamD(Ptl, goalPtl, dPtl, modPtl) => dPtl;
+        updateParam(Ptl, goalPtl, dPtl, modPtl) => Ptl;
+    }
+    
+    fun void updatePt()
+    {
+        updateParamD(Pt, goalPt, dPt, modPt) => dPt;
+        updateParam(Pt, goalPt, dPt, modPt) => Pt;
+    }
+    
+    fun float updateParamD( float param, float paramGoal, float derivative, float modN )
+    {
+        paramGoal - param => float diff; 
+        (derivative + diff)*T*modN => derivative ; 
+        return derivative;   
+    }
+
+    
+    fun float updateParam( float param, float paramGoal, float derivative, float modN )
+    {
+        param + derivative => param; 
+        return param;        
+    }
+
     fun float tick(float inP) //with trachea, inP is the input pressure from waveguide / tube / trachea modeling... 
     {
-        inP => inputP;
-        
         updateX();
         updateForce(); //update the Ps with the inputP here
         updateCollisions();
-        updateU(); 
+        updateU(Ps - inputP); 
         updateRestingAreas();
         updateQ();
+        
+        //update time-varying & user-controlled parameters
+        updatePs(); //implements a smoothing function
+        updatePtl();
+        updatePt(); 
         
         return dU; 
     }
 }
 
+//**************************
 //this is redundant but I definitely know what is happening here and will stop any crazy magical thinking debug loops on this topic cold.
 class Flip extends Chugen
 {
@@ -483,6 +568,46 @@ class Flip extends Chugen
     {
         return in*-1.0;   
     }  
+}
+
+//************************** Trying this since mtm not connected to the instance?? 
+//**************************
+
+//sound of syrinx membrane through vocal tract
+//run it through the throat, etc.
+BirdTracheaFilter lp, lp2; 
+WallLossAttenuation wa, wa2;
+HPFilter hpOut;
+Flip flip, flip2;
+DelayA delay, tracheaForward;
+DelayA delay2, tracheaBack; 
+RingDoveSyrinxLTM ltm => delay => lp => blackhole;
+lp => wa => delay => LPF lpf => Dyno limiter => dac;
+
+//got rid of flip & highpass filter
+
+//**************************
+//**************************
+
+//an attempt to couple vocal tract via waveguide synthesis, derived from Lous, et. al, 1998
+class CoupleLTMwithTract extends Chugen
+{
+    //RingDoveSyrinxLTM mtm; //the syrinx labia
+    float p1;
+    
+    fun float tick(float in){        
+        //-- this is seconds, but I want to xlate to samples
+        //does this make sense? look at parameters for airflow, too
+        ltm.z0/(second/samp) * ltm.U => p1;
+        
+        in*2 + p1 => ltm.inputP; 
+        return p1; //output pressure
+    }
+    
+    fun float last()
+    {
+        return p1; 
+    }
 }
 
 //okay, this is just to test -- sanity debug check -- make sure -- obviously I can't keep this as a chugen, but probably
@@ -533,14 +658,14 @@ class WallLossAttenuation extends Chugen
     wFromFreq(freq) => float w;   
     //150.0*2.0*pi => float w;  
     
-    0.35 => float a; //  1/2 diameter of trachea, in m - NOTE this is from SyrinxMembrane -- 
+    0.3 => float a; //  1/2 diameter of trachea, in m - NOTE this is from SyrinxMembrane -- 
     //TODO:  to factor out the constants that are used across scopes: a, L, c, etc
     calcPropogationAttenuationCoeff() => float propogationAttenuationCoeff; //theta in Fletcher1988 p466
     calcWallLossCoeff() => float wallLossCoeff; //beta in Fletcher
     0.0 => float out;           
     
     
-    fun float calcConstants()
+    fun void calcConstants()
     {
         c/(2*L) => freq;
         wFromFreq(freq) => w;
@@ -592,165 +717,57 @@ class WallLossAttenuation extends Chugen
     } 
 }
 
-//limit to 100 targets, etc.
-class MultiPointEnvelope extends Chugraph
-{
-    float startValue;
-    1000 => int maxPoints;
-    float targets[maxPoints]; 
-    dur durations[maxPoints]; 
-    float curTarget; 
-    0 => int envCount; //number of targets + duration
-    0 => int envIndex; 
-    Envelope env; 
-    "multiPointEnvelope" => string name;
-    1 => int shouldReset;
-    
-    fun void connectIn(UGen ugen)
-    {
-        ugen => env; 
-    } 
-    
-    fun void connectOut(UGen ugen)
-    {
-        env => LPF lp => ugen; 
-    }
-    
-    fun void add(float target, dur duration)
-    {
-        target => targets[envCount]; 
-        duration => durations[envCount];
-
-        if(envCount < maxPoints)
-            envCount++;
-        else
-            <<<name + " is at max capacity. Can't add more.\n">>>;
-    }
-    
-    fun float value()
-    {
-        return env.value();
-    }
-    
-    fun void reset()
-    {
-        init(startValue);
-    }
-    
-    //must be run before update() but after adding points
-    fun void init(float startVal)
-    {
-        startVal => startValue;
-        startValue => env.value;
-        1 => envIndex; 
-        targets[0] => env.target;
-        durations[0] => env.duration; 
-        
-    }
-    
-    fun float time()
-    {
-        return env.time(); 
-    }
-    
-    //must be run every 1::samp or at whatever sampling rate you want. sryz.
-    fun void update()
-    {
-        if( envIndex < envCount - 1)
-        {
-            if( env.value() == env.target() )
-            {
-                envIndex++; 
-                targets[envIndex] => env.target;
-                durations[envIndex] => env.duration;              
-            }               
-        }
-        else
-        {
-            if( env.value() == env.target() )
-            {
-                reset(); 
-            }
-        }
-    }
-}
-
-
-//duration in seconds, freq in Hz
-fun float sinTrillGetNextValue(float startAngle, float freq, float duration, float minVal, float maxVal )
-{
-    startAngle + duration =>float angle; //(duration/freq)*Math.PI*2 => float angle;
-    (Math.sin(angle) *0.5) + 1 => float zeroTo1;
-    return zeroTo1*(maxVal - minVal) + minVal; 
-}
-
-fun float createSinTrill(MultiPointEnvelope env, float minVal, float maxVal, dur duration)
-{
-    Math.PI/8.0 => float envPsSinTrill1Dur;
-    100 => float trillFreq;
-    
-    //positive
-    env.add(sinTrillGetNextValue(0, trillFreq, envPsSinTrill1Dur, minVal, maxVal), duration);
-    env.add(sinTrillGetNextValue(Math.PI/8, trillFreq, envPsSinTrill1Dur, minVal, maxVal), duration);
-    env.add(sinTrillGetNextValue(Math.PI/4, trillFreq, envPsSinTrill1Dur, minVal, maxVal), duration);
-    env.add(sinTrillGetNextValue((Math.PI*3)/8, trillFreq, envPsSinTrill1Dur, minVal, maxVal), duration);
-    env.add(sinTrillGetNextValue(Math.PI/2, trillFreq, envPsSinTrill1Dur, minVal, maxVal), duration);
-    env.add(sinTrillGetNextValue((Math.PI*5)/8, trillFreq, envPsSinTrill1Dur, minVal, maxVal), duration);
-    env.add(sinTrillGetNextValue((Math.PI*3)/4, trillFreq, envPsSinTrill1Dur, minVal, maxVal), duration);
-    env.add(sinTrillGetNextValue((Math.PI*7)/8, trillFreq, envPsSinTrill1Dur, minVal, maxVal), duration);
-    
-    //negative
-    env.add(sinTrillGetNextValue(Math.PI, trillFreq, envPsSinTrill1Dur, minVal, maxVal), duration);
-    env.add(sinTrillGetNextValue(Math.PI+ Math.PI/8, trillFreq, envPsSinTrill1Dur, minVal, maxVal), duration);
-    env.add(sinTrillGetNextValue(Math.PI+ Math.PI/4, trillFreq, envPsSinTrill1Dur, minVal, maxVal), duration);
-    env.add(sinTrillGetNextValue(Math.PI +(Math.PI*3)/8, trillFreq, envPsSinTrill1Dur, minVal, maxVal), duration);
-    env.add(sinTrillGetNextValue(Math.PI + Math.PI/2, trillFreq, envPsSinTrill1Dur, minVal, maxVal), duration);
-    env.add(sinTrillGetNextValue(Math.PI +(Math.PI*5)/8, trillFreq, envPsSinTrill1Dur, minVal, maxVal), duration);
-    env.add(sinTrillGetNextValue(Math.PI +(Math.PI*3)/4, trillFreq, envPsSinTrill1Dur, minVal, maxVal), duration);
-    env.add(sinTrillGetNextValue(Math.PI +(Math.PI*7)/8, trillFreq, envPsSinTrill1Dur, minVal, maxVal), duration);
-}
-
-
 
 //RingDoveSyrinxLTM ltm => Dyno limiter => dac; 
 
+//from membrane to trachea and part way back
+//RingDoveSyrinxLTM ltm => delay => lp => flip => delay2 => wa; //reflection from trachea end back to bronchus beginning
 
-//run it through the throat, etc.
-BirdTracheaFilter lp; 
-WallLossAttenuation wa;
-HPFilter hpOut;
-Gain flip;
-DelayA delay;
-RingDoveSyrinxLTM ltm => Gain p1 => delay => lp => blackhole;
-lp => wa => flip => delay => hpOut => Dyno limiter => dac;
-delay => p1;
-p1 => ltm;  
 
+//couple the returning pressure reflection to the syrinx model
+CoupleLTMwithTract coupler; 
+//ltm => coupler.mtm; 
+coupler => tracheaForward => lp2 => tracheaBack => wa2 => blackhole; //took out flip for closed mouth
+
+//the feedback from trachea reflection, affecting pressure in syrinx membrane dynamics
+Gain p1; 
+wa2 => p1; 
+wa2 => tracheaForward => blackhole;  
+p1 =>  coupler => blackhole; //the reflection also is considered in the pressure output of the syrinx
+  
+
+//output from trachea
+limiter.limit();
+2.0 => limiter.gain;
 
 dac => WvOut2 writer => blackhole; //record to file
 writer.wavFilename("/tmp/testDoveSounds.wav");
 // temporary workaround to automatically close file on remove-shred -- is it temporary??
 null @=> writer;
 
--1 => flip.gain;
 
-limiter.limit();
-10.0 => limiter.gain;
 
 //0.15 => float w; //trachea width
 //0.32 => float l; //length of the trachea, 4.1 table **changed
 
 8.0 => float L;  //in centimenters, from here: https://www.researchgate.net/publication/308389527_On_the_Morphological_Description_of_Tracheal_and_Esophageal_Displacement_and_Its_Phylogenetic_Distribution_in_Avialae/download?_tp=eyJjb250ZXh0Ijp7ImZpcnN0UGFnZSI6Il9kaXJlY3QiLCJwYWdlIjoiX2RpcmVjdCJ9fQ
-0.23 => float a; //from small bird measurements in Smyth
-0.23 => float h; 
+ltm.a => float a; //from small bird measurements in Smyth
+ltm.a => float h; 
 L => wa.L;
 a => wa.a;
-wa.calcWallLossCoeff();
-setParamsForReflectionFilter();
+L => wa2.L;
+a => wa2.a;
+wa.calcConstants();
+wa2.calcConstants();
+setParamsForReflectionFilter(lp);
+setParamsForReflectionFilter(lp2);
 
-347.4 => float c; // in m/s
+
+//347.4 => float c; // in m/s
 c/(2*(L/100.0)) => float LFreq; // -- the resonant freq. of the tube (?? need to look at this)
-( (0.5*second / samp) / (LFreq) - 1) => float period; //* 0.5 in the STK for the clarinet model... clarinet.cpp hmmm
+
+//I didn't *2 the frequency since there is no flip - 3/1/2024
+( (second / samp) / (LFreq) - 1) => float period; //* 0.5 in the STK for the clarinet model... clarinet.cpp hmmm
 //( (second / samp) / (2*LFreq) - 1) => float period; //* 0.5 in the STK for the clarinet model... clarinet.cpp hmmm
 
 period::samp => delay.delay;
@@ -804,6 +821,9 @@ function void mouseEventLoopControllingAirPressure()
     
     0 => int whichBird; 
     
+    -10 => float audioMax;
+    10 => float audioMin;
+    
     // infinite event loop
     while( true )
     {
@@ -816,6 +836,9 @@ function void mouseEventLoopControllingAirPressure()
             // mouse motion
             if( msg.isMouseMotion() )
             {
+                
+                //<<< ltm.inputP, coupler.last(), ltm.Ps, ltm.U, ltm.z0, ltm.dU >>>; 
+                
                 // get the normalized X-Y screen cursor pofaition
                 // <<< "mouse normalized position --",
                 // "x:", msg.scaledCursorX, "y:", msg.scaledCursorY >>>;
@@ -826,16 +849,25 @@ function void mouseEventLoopControllingAirPressure()
                 logScale( msg.scaledCursorX, 0.000000001, 1.0 ) => float scaledX; 
                 logScale( msg.scaledCursorY, 0.000000001, 1.0 ) => float scaledY;
                 
-                
                //msg.scaledCursorX * 0.006 => ltm.Ps;
                 //msg.scaledCursorX * 0.01 => ltm.Ps;
-                (msg.scaledCursorY)*0.04 + 0.04 => ltm.Ps;
+                
+                ltm.changePs((msg.scaledCursorX)*0.034 + 0.001); //go up to 0.0692
+          
 
                //msg.scaledCursorX * (0.01225-0.007954) + 0.007954 => ltm.Ps;
                
-               msg.scaledCursorY * 10 + 5  => ltm.Ptl;
+               msg.scaledCursorY * 15 + 5 => float Ptl;
+               ltm.changePtl(Ptl);
+               
+               
+              
+               
+               //if( Ptl > 19.5 )
+               
+               
                //((1.0-msg.scaledCursorY)*1.5)  - 1.0 => ltm.Pt;
-               ((1.0-msg.scaledCursorY)*2)  - 1.0 => ltm.Pt;
+               ltm.changePt(((1.0-msg.scaledCursorY)*2)  - 1.0);
 
                //<<<ltm.Ps>>>;
                
@@ -850,9 +882,13 @@ function void mouseEventLoopControllingAirPressure()
 
                //(msg.scaledCursorY*1.5)  - 1.0 => ltm.Pt;
                //(1.0- msg.scaledCursorY) * 20.0 => ltm.Ptl;
-               <<<ltm.Ps+"," + ltm.Ptl+ "," + ltm.Pt>>>;
-                
-                
+               
+               Math.max(audioMax, limiter.last()) => audioMax; 
+               Math.min(audioMin, limiter.last()) => audioMin; 
+ 
+               
+               <<<ltm.Ps+"," + ltm.Ptl+ "," + ltm.Pt + "," + limiter.last() + " ," +audioMin + "," + audioMax >>>;
+
             }
                 
                 
@@ -872,47 +908,64 @@ function float logScale(float in, float min, float max)
 
 
 
-function void setParamsForReflectionFilter()
+function void setParamsForReflectionFilter(BirdTracheaFilter lp)
 {
-    0.35 => float a; //radius of opening; from Smyth diss
-    0.5 => float ka; //from Smyth
-    ka*(34740/a)*ltm.T => float wT; 
+    //https://asa-scitation-org.proxy.libraries.smu.edu/doi/pdf/10.1121/1.1911130
+    //Benade -- acoustics in a cylindrical tube reference for w & ka
     
-    //1.8775468475739816 => wT; //try this from example, Ok, No.
+    //mem.c/(4*L) => float freq;
+    //freq*2.0*Math.PI => float w;
+    //(w/mem.c)*a => float ka; //from Smyth
     
-    <<<wT>>>;
+    
+    //0.5 => ka; //estimation of ka at cut-off from Smyth
+    //find cutoff freq from this reference, then find ka
+    //https://www.everythingrf.com/community/waveguide-cutoff-frequency#:~:text=Editorial%20Team%20%2D%20everything%20RF&text=The%20cut%2Doff%20frequency%20of%20a%20waveguide%20is%20the%20frequency,this%20frequency%20will%20be%20attenuated.
+    //ka at the cut-off frequency of the waveguide
+    //1.8412c/2pia
+    //1.8412*mem.c/(2*Math.PI*a) => float cutOffFreq;
+    //1.87754*mem.c/(2*Math.PI*a) => float cutOffFreq;
+    //0.11*mem.c/(2*Math.PI*a) => float cutOffFreq;
+    
+    1.8412  => float ka; //the suggested value of 0.5 by Smyth by ka & cutoff does not seem to work with given values (eg. for smaller a given) & does not produce 
+    //0.5  => float ka; //the suggested value of 0.5 by Smyth by ka & cutoff does not seem to work with given values (eg. for smaller a given) & does not produce 
+    
+    //expected results -- eg. the wT frequency equation as given does not match the example 4.13(?), but the standard cutoff for metal waveguides does fine 
+    //need to triple-check calculations, perhaps send an email to her.
+    ka*(c/ltm.a)*ltm.T => float wT; //transition frequency wT
+    //https://www.phys.unsw.edu.au/jw/cutoff.html#cutoff -- cut off of instrument with tone holes
+    //https://hal.science/hal-02188757/document
+    
     //magnitude of -1/(1 + 2s) part of oT from Smyth, eq. 4.44
     ka => float s; //this is kaj, so just the coefficient to sqrt(-1)
-    #(1, 0) => complex numerator;
+    #(-1, 0) => complex numerator;
     #(1, 2*s) => complex denominator;
     numerator / denominator => complex complexcHr_s;
     Math.sqrt( complexcHr_s.re*complexcHr_s.re + complexcHr_s.im*complexcHr_s.im )  => float oT; //magnitude of Hr(s)
-    <<<oT>>>;
     
-    //s/(1+s*s) => float oT; //imaginary part of oT from Smyth
     ( 1 + Math.cos(wT) - 2*oT*oT*Math.cos(wT) ) / ( 1 + Math.cos(wT) - 2*oT*oT ) => float alpha; //to determine a1 
     -alpha + Math.sqrt( alpha*alpha - 1 ) => float a1;
     (1 + a1 ) / 2 => float b0; 
     
-    //using a biquad  to implement, eg. https://ccrma.stanford.edu/~jos/fp/BiQuad_Section.html
-    //as xfer function matches Smyth 4.47, here, b0 = g, and implemented as suggested in the above link.
+    //using my own filter code for absolute clarity 
     //for the low-pass reflector
     a1 => lp.a1;
     b0 => lp.b0; 
-    // b0 => loop.b1;
-    // 0 => loop.b2; 
-    // 0 => loop.a2; 
     
     //for the highpass output, from Smyth, again
     a1 => hpOut.a1; 
     b0 => hpOut.b0; 
     
+    <<<"a:"+a>>>;
+    <<<"oT:" + oT + " wT:" + wT>>>;
+    <<<"a1:"+a1 + "   b0:"+b0>>>;
+    
+    <<<"*************">>>;
+    
+    
     
     //<<< "wT: " + wT + " oT: " + oT + " a1: "+ a1 + " b0: " + b0 >>>;
 }
-
-
-
 
 
 

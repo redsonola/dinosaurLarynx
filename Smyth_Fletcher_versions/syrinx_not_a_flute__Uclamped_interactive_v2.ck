@@ -357,6 +357,7 @@ class WallLossAttenuation extends Chugen
         wFromFreq(c/(2*L)) => w;
         calcPropogationAttenuationCoeff() => propogationAttenuationCoeff;
         calcWallLossCoeff() => wallLossCoeff;
+        return wallLossCoeff;
         
     } 
     
@@ -410,7 +411,7 @@ class Flip extends Chugen
 //pnOut = pJ - pnOut
 //Zn - impedences 
 //pJ = 2*sumOf(pnOuts*1/Zns)/sumOf(Zns)
-class ScatteringJunction extends Chubgraph
+class ScatteringJunction extends Chugraph
 { 
     
     inlet => Gain bronchus1Z => Gain add; 
