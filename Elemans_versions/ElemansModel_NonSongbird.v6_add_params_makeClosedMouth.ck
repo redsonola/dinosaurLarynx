@@ -546,43 +546,20 @@ class Flip extends Chugen
     }  
 }
 
-//************************** Trying this since mtm not connected to the instance?? 
-//**************************
-
-//sound of syrinx membrane through vocal tract
-//run it through the throat, etc.
-BirdTracheaFilter lp, lp2; 
-WallLossAttenuation wa, wa2;
-HPFilter hpOut;
-Flip flip, flip2;
-DelayA delay, tracheaForward;
-DelayA delay2, tracheaBack; 
-RingDoveSyrinxLTM ltm => delay => lp => blackhole;
-lp => wa => delay => LPF lpf => Dyno limiter => dac;
-//1 => lpf.Q;
-700 => lpf.freq;  
-
-//<<<"bpf q: "+lpf.Q()>>>;
-//<<<"bpf qfreq: "+lpf.freq()>>>;
-
-
-//got rid of flip & highpass filter
-
-//**************************
-//**************************
-
 //an attempt to couple vocal tract via waveguide synthesis, derived from Lous, et. al, 1998
+//the Zacarelli model only includes the vibrating membrane, and uses dU as the sound output.
+//dU is not the same as the pressure, so, I treat pressure reflections differently so that I can get them back into the model.
 class CoupleLTMwithTract extends Chugen
 {
-    //RingDoveSyrinxLTM mtm; //the syrinx labia
+    RingDoveSyrinxLTM lvm; //the syrinx labia
     float p1;
     
     fun float tick(float in){        
         //-- this is seconds, but I want to xlate to samples
         //does this make sense? look at parameters for airflow, too
-        ltm.z0/(second/samp) * ltm.U => p1;
+        lvm.z0/(second/samp) * lvm.U => p1;
         
-        in*2 + p1 => ltm.inputP; 
+        in*2 + p1 => lvm.inputP; 
         return p1; //output pressure
     }
     
@@ -699,17 +676,31 @@ class WallLossAttenuation extends Chugen
     } 
 }
 
+//************************** Main Code, not classes.
+//**************************
 
-//RingDoveSyrinxLTM ltm => Dyno limiter => dac; 
+//sound of syrinx membrane through vocal tract
+//run it through the throat, etc.
+BirdTracheaFilter lp, lp2; 
+WallLossAttenuation wa, wa2;
+HPFilter hpOut;
+Flip flip, flip2;
+DelayA delay, tracheaForward;
+DelayA delay2, tracheaBack; 
 
-//from membrane to trachea and part way back
-//RingDoveSyrinxLTM ltm => delay => lp => flip => delay2 => wa; //reflection from trachea end back to bronchus beginning
+//audio out
+RingDoveSyrinxLTM ltm => delay => lp => blackhole;
+lp => wa => delay => LPF lpf => Dyno limiter => dac;
+//1 => lpf.Q;
+700 => lpf.freq; //arbitrary, by ear after testing. 
 
+//**************************
+//**************************
 
 //couple the returning pressure reflection to the syrinx model
-CoupleLTMwithTract coupler; 
-//ltm => coupler.mtm; 
+CoupleLTMwithTract coupler; //this waveguide is for pressure reflection for interaction with larynx, does not have an audio out.
 coupler => tracheaForward => lp2 => tracheaBack => wa2 => blackhole; //took out flip for closed mouth
+ltm @=> coupler.lvm;
 
 //the feedback from trachea reflection, affecting pressure in syrinx membrane dynamics
 Gain p1; 
@@ -718,21 +709,17 @@ wa2 => tracheaForward => blackhole;
 p1 =>  coupler => blackhole; //the reflection also is considered in the pressure output of the syrinx
   
 
-//output from trachea
+//limit output from trachea, just in case things get out of control.
 limiter.limit();
-//1.5 => limiter.gain;
 
 dac => WvOut2 writer => blackhole; //record to file
 writer.wavFilename("/tmp/testDoveSounds.wav");
 // temporary workaround to automatically close file on remove-shred -- is it temporary??
 null @=> writer;
 
-
-
-//0.15 => float w; //trachea width
-//0.32 => float l; //length of the trachea, 4.1 table **changed
-
-8.0 => float L;  //in centimenters, from here: https://www.researchgate.net/publication/308389527_On_the_Morphological_Description_of_Tracheal_and_Esophageal_Displacement_and_Its_Phylogenetic_Distribution_in_Avialae/download?_tp=eyJjb250ZXh0Ijp7ImZpcnN0UGFnZSI6Il9kaXJlY3QiLCJwYWdlIjoiX2RpcmVjdCJ9fQ
+11.0 => float L;  //in centimenters, from here: https://www.researchgate.net/publication/308389527_On_the_Morphological_Description_of_Tracheal_and_Esophageal_Displacement_and_Its_Phylogenetic_Distribution_in_Avialae/download?_tp=eyJjb250ZXh0Ijp7ImZpcnN0UGFnZSI6Il9kaXJlY3QiLCJwYWdlIjoiX2RpcmVjdCJ9fQ
+//8 - trachea, 3 - head - included 3 cm extra for head, not modeling that separately. maybe later.
+                  
 ltm.a => float a; //from small bird measurements in Smyth
 ltm.a => float h; 
 L => wa.L;
