@@ -379,7 +379,7 @@ class WallLossAttenuation extends Chugen
     0.0 => float out;           
                  
     
-    fun float calcConstants()
+    fun void calcConstants()
     {
         wFromFreq(freq) => w;
         calcPropogationAttenuationCoeff() => propogationAttenuationCoeff;

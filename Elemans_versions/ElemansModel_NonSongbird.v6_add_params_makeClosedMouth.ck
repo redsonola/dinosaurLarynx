@@ -109,12 +109,7 @@ class RingDoveSyrinxLTM extends Chugen
     0.24 - d1 => float d2; //2nd mass displacement from first
     0.28 - (d1+d2) => float d3; //3rd mass displacement from 2nd
         
-    //damping and stiffness coefficients 
-    //0.0022 => float k; //stiffness -- orig. 0.02 in fig. 3.2 zaccharelli -- now back to original-ish? table C.1
-    //0.006 => float kc; //coupling constant, table C.1 (before, 0.005)
-    
-
-    [0.0, 0.0] @=> float I[]; //collisions
+    [0.0, 0.0] @=> float I[]; //collision forces between 2 side of syrinx membrane
     
     
     //time-varying (control) tension parameters (introduced in ch 4 & appendix C)
@@ -127,12 +122,12 @@ class RingDoveSyrinxLTM extends Chugen
     0.0 => float dPtl; //change in tension per sample -- only a class variable so can check value. 
     5.0 => float modPtl; //a modifier for how quickly dx gets added
     
-    //more time-varying parameters
+    //more time-varying parameters -- vary with different muscle tension values
     -0.03 => float a0min; 
     0.01 => float a0max; 
     a0max - a0min => float a0Change; 
     
-    //time-varying (input control) parameters Q, which reflect sum of syringeal pressures
+    //time-varying (input control) parameters Q, which reflect sum of syringeal pressures & resulting quality factor impacting oscillation eq. in updateX()
     0.8 => float Qmin; 
     1.2 => float Qmax;
     Qmin => float Q; //F(t) = Q(t)F0
@@ -147,13 +142,15 @@ class RingDoveSyrinxLTM extends Chugen
     0.0 => float dPt; //change in tension per sample -- only a class variable so can check value. 
     5.0 => float modPt; //a modifier for how quickly dx gets added
     
+    //area of opening of syrinx at rest
     2.0*l*w => float a0; //a0 is the same for both masses since a01 == a02
 
+    //Ps -- the input air pressure below syrinx
     //pressure values - limit cycle is half of predicted? --> 0.00212.5 to .002675?
     //no - 0.0017 to 0.0031 -- tho, 31 starts with noise, if dividing by 2 in the timestep
     0.0045 => float Ps; //pressure in the syringeal lumen, 
     
-    //changing Ps
+    //changing Ps -- the input air pressure below syrinx
     Ps => float goalPs;//the tension to increase or decrease to    
     0.0 => float dPs; //change in tension per sample -- only a class variable so can check value. 
     50.0 => float modPs; //a modifier for how quickly dx gets added
@@ -164,7 +161,7 @@ class RingDoveSyrinxLTM extends Chugen
     //geometry
     d1 + (d2/2) => float dM; //imaginary horizontal midline -- above act on upper mass, below on lower
     
-    //geometries to calculate force
+    //geometries (ie, areas) found in order to calculate syrinx opening and closing forces
     0.0 => float a1; 
     0.0 => float a2; 
     0.0 => float aMin;
@@ -178,6 +175,7 @@ class RingDoveSyrinxLTM extends Chugen
     0.0 => float cpo2; 
     0.0 => float cpo3; 
         
+    //measures of air flow. dU is the audio out    
     0.0 => float dU;
     0.0 => float U;
     
@@ -193,10 +191,13 @@ class RingDoveSyrinxLTM extends Chugen
     //Steineke & Herzel, 1994  --this part was not clear there but--->
     //confirmed! Herzel, H., Berry, D., Titze, I., & Steinecke, I. (1995). Nonlinear dynamics of the voice: Signal analysis and biomechanical modeling. Chaos (Woodbury, N.Y.), 5(1), 30?34. 
     //https://doi.org/10.1063/1.166078
-    //confirmed in Herzel & Steineke 1995 Bifurcations in an asymmetric vocal-fold model 
+    //confirmed in Herzel & Steineke 1995 Bifurcations in an asymmetric vocal-fold model
+    //c1 & c2 are constants used in the collision force equations  related to damping/stiffness/materiality
     3.0 * k => float c1; 
     3.0 * k => float c2; 
 
+    //update the air flow in the syrinx membrane, ie, the U
+    //dU, 1st derivative of U, is used as the audio output variable
     fun void updateU(float Ps)
     {
         //find du
@@ -225,6 +226,7 @@ class RingDoveSyrinxLTM extends Chugen
         z0*U + 2*inputP => pAC;
     }
     
+    //update the x[], dx[], d2xp[values] - the values describing how open (length-wise) each point (ie, mass) of the syrinx is
     fun void updateX()
     {
         //for controlling muscle tension parameters
@@ -247,8 +249,8 @@ class RingDoveSyrinxLTM extends Chugen
     }
 
 //Not using right now...... but may use later as more general purpose
-//using -- 1/4/2024
-
+//NOT using -- 1/4/2024
+/*
 fun float syringealArea(float z)
 {
     if( z >=0 && z<=d1)
@@ -259,7 +261,9 @@ fun float syringealArea(float z)
         return ((a0-a2)/d3)*(z-d1-d2) + a2;
     else return 0.0; 
 }
+*/
 
+    //heaveside function as described in Zaccarelli(2009)
     fun float heaveiside(float val)
     {
         if( val > 0 )
@@ -286,6 +290,7 @@ fun float syringealArea(float z)
      }
 
 
+     //update the points at which collisions begin
      fun void updateCPO()
      {
          //find all the CPOs
@@ -297,7 +302,7 @@ fun float syringealArea(float z)
          
      }
      
-     //finds force 1 
+     //finds force 1 - F[0] 
      fun float forceF1(float min0, float Ps)
      {
          if( aMin <=0 ) //closed configuration
@@ -334,6 +339,7 @@ fun float syringealArea(float z)
          }
      }
      
+     //finds force 1 - F[1] 
      fun float forceF2(float min0, float Ps)
      {
          if( aMin <= 0) //closed configuration
@@ -368,6 +374,7 @@ fun float syringealArea(float z)
          }
      }
      
+     //update the force for the oscillation equation in updateX()
      fun void updateForce()
      {
          //find current areas according to p. 106, Zaccarelli, 2009
@@ -399,10 +406,8 @@ fun float syringealArea(float z)
          forceF2(min0, Ps - inputP) => F[1]; //modifying in terms of equation presented on (A.8) p.110
 
      }
-     
-     //note: is it worth implementing eq. A.5 for pressure? on p. 108 Zaccarelli
-     
-     //TODO: recheck this w/table - checked done!
+          
+     //Calculate the forces for any vocal fold collisions (I[]), if any
      fun void updateCollisions()
      {           
            
@@ -446,13 +451,15 @@ fun float syringealArea(float z)
      }
      
      
-     //update areas due to syringeal pressure (implements Zaccharelli, 2008 Ch. 4 & Appendix C)
+     //update syringeal membrane areas due to syringeal & TL pressure (implements Zaccharelli, 2008 Ch. 4 & Appendix C)
      fun void updateRestingAreas()
      {
          Ptl*(a0Change/maxPtl) + a0min => a01; 
          Ptl*(a0Change/maxPtl) + a0min => a02; 
      }
      
+    //update the Q based on muscle tension. Q (quality factor) models ratio of energy stored to energy dissapated in a system, in this context combines the muscle pressure
+    //& then modifies stiffness & mass values in the oscillation equation in updateX()
     fun void updateQ()
     {
         Ptl + Pt => Psum; //update Psum first
@@ -484,6 +491,8 @@ fun float syringealArea(float z)
     }
     */
     
+    //******a set of functions to change the user-controlled time-varying parameters. 
+    //*****These are set to smooth the change over time, to prevent cracks and breaks in the sound
     fun void updatePs()
     {
         updateParamD(Ps, goalPs, dPs, modPs) => dPs;
@@ -515,7 +524,9 @@ fun float syringealArea(float z)
         param + derivative => param; 
         return param;        
     }
-
+    
+    
+    //Main processing function of the chugen (plug-in). Everything that does stuff is called from here.
     fun float tick(float inP) //with trachea, inP is the input pressure from waveguide / tube / trachea modeling... 
     {
         updateX();
@@ -533,9 +544,11 @@ fun float syringealArea(float z)
         return dU; 
     }
 }
+//********************************************************************************************************
+//**************************  End Syrinx Membrane class **************************************************
+//********************************************************************************************************
 
-//**************************
-//this is redundant but I definitely know what is happening here and will stop any crazy magical thinking debug loops on this topic cold.
+//this is _definitely_ redundant but I definitely know what is happening here and will stop any crazy magical thinking debug loops on this topic cold.
 class Flip extends Chugen
 {
     
@@ -545,10 +558,13 @@ class Flip extends Chugen
         return in*-1.0;   
     }  
 }
-
+//********************************************************************************************
+//*********************** LVM TO VOCAL TRACT COUPLER **************************************************
+//********************************************************************************************
 //an attempt to couple vocal tract via waveguide synthesis, derived from Lous, et. al, 1998
 //the Zacarelli model only includes the vibrating membrane, and uses dU as the sound output.
 //dU is not the same as the pressure, so, I treat pressure reflections differently so that I can get them back into the model.
+//this couples the pressure to the RingDoveSyrinxLTM class. It must be connected an ltm syrinx object to work.
 class CoupleLTMwithTract extends Chugen
 {
     RingDoveSyrinxLTM lvm; //the syrinx labia
@@ -557,7 +573,7 @@ class CoupleLTMwithTract extends Chugen
     fun float tick(float in){        
         //-- this is seconds, but I want to xlate to samples
         //does this make sense? look at parameters for airflow, too
-        lvm.z0/(second/samp) * lvm.U => p1;
+        lvm.z0/(second/samp) * lvm.U => p1; //outgoing pressure value into the vocal tract
         
         in*2 + p1 => lvm.inputP; 
         return p1; //output pressure
@@ -568,9 +584,14 @@ class CoupleLTMwithTract extends Chugen
         return p1; 
     }
 }
+//***********************
 
-//okay, this is just to test -- sanity debug check -- make sure -- obviously I can't keep this as a chugen, but probably
-//in end result will not be using chugens at all.
+//*********************************************************************
+//*********************** REFLECTION FILTER FOR WAVEGUIDE
+//*********************************************************************
+
+//The reflection filter to use for the trachea waveguide. Parameters are set by the function below the main. Need to refactor it into here, though.
+//Implemented using Smyth(2006) 
 class BirdTracheaFilter extends Chugen
 {
     1.0 => float a1;
@@ -587,10 +608,13 @@ class BirdTracheaFilter extends Chugen
         return out; 
     }     
 }
+//*********************************************************************
 
+//***********************  DEPRECIATED/UNSUSED -- HIGH PASS FILTER FOR BEAK OUTPUT  
 //this needs to be checked again
 //the h(z) to this is a bit unclear for me
 //need to test freq response
+//High pass filter to mimic beak filtering. Not using in this version, since I'm modeling a closed beak.
 class HPFilter extends Chugen
 {
     1.0 => float a1;
@@ -607,7 +631,11 @@ class HPFilter extends Chugen
         return out; 
     }     
 }
+//*********************************************************************
 
+//*********************************************************************
+//***********************  Wall Loss Attenuation Filter for Waveguide *********  
+//********************************************************************
 //Using a lumped loss scaler value for wall loss. TODO: implement more elegant filter for this, but so far, it works, so after everything else works.
 class WallLossAttenuation extends Chugen
 {
@@ -624,24 +652,18 @@ class WallLossAttenuation extends Chugen
     0.0 => float out;           
     
     
+    //recalculate and set all the constants. Call THIS function when setting the class variables.
     fun void calcConstants()
     {
         c/(2*L) => freq;
         wFromFreq(freq) => w;
         calcPropogationAttenuationCoeff() => propogationAttenuationCoeff;
-        calcWallLossCoeff() => wallLossCoeff;
-        
-        /*
-        <<< "******* START WALL LOSS ******" >>>;
-        <<< "a:"+a >>>;
-        <<< "w:"+w >>>;
-        <<< "wallLossCoeff:"+wallLossCoeff >>>;
-        <<< "L:"+L >>>;
-        <<< "******* END WALL LOSS ******" >>>;
-        */
-        
+        calcWallLossCoeff() => wallLossCoeff;        
     } 
     
+    
+    //***** Set of functions to calculate all the variables from the new set of parameters. ****
+    //***** Don't call directly, as this will not set anything, but return the numerical values only useful for this context.
     fun float calcWallLossCoeff()
     {
         //return 1.0 - (1.2*propogationAttenuationCoeff*L);
@@ -658,28 +680,34 @@ class WallLossAttenuation extends Chugen
         return frq*Math.PI*2; 
     }
     
-    fun void setFreq(float f)
+    fun void setFreq(float f) //this one can be called separately, actually
     {
         wFromFreq(f); 
     }
+    //***** END Parameter setting/initializing functions.
     
-    //the two different bronchi as they connect in1 & in2
+    //Main code of this filter, well, lumped loss function
     fun float tick(float in)
     {
         in*wallLossCoeff => out;
         return out; 
     } 
     
+    //return the last value calculated for debugging purposes, mostly
     fun float last()
     {
         return out; 
     } 
 }
+//*********************************************************************
 
-//************************** Main Code, not classes.
-//**************************
 
-//sound of syrinx membrane through vocal tract
+
+//********************************************************************************************************
+//************************** START MAIN CODE WHERE I CALL EVERYTHING
+//********************************************************************************************************
+
+//**SOUND of syrinx membrane through vocal tract
 //run it through the throat, etc.
 BirdTracheaFilter lp, lp2; 
 WallLossAttenuation wa, wa2;
@@ -694,10 +722,13 @@ lp => wa => delay => LPF lpf => Dyno limiter => dac;
 //1 => lpf.Q;
 700 => lpf.freq; //arbitrary, by ear after testing. 
 
-//**************************
-//**************************
+//limit output from trachea, just in case things get out of control.
+limiter.limit();
 
-//couple the returning pressure reflection to the syrinx model
+//***END SOUND CIRCUIT
+
+
+//**COUPLING and modeling the returning pressure reflection to the syrinx model
 CoupleLTMwithTract coupler; //this waveguide is for pressure reflection for interaction with larynx, does not have an audio out.
 coupler => tracheaForward => lp2 => tracheaBack => wa2 => blackhole; //took out flip for closed mouth
 ltm @=> coupler.lvm;
@@ -706,17 +737,17 @@ ltm @=> coupler.lvm;
 Gain p1; 
 wa2 => p1; 
 wa2 => tracheaForward => blackhole;  
-p1 =>  coupler => blackhole; //the reflection also is considered in the pressure output of the syrinx
+p1 =>  coupler => blackhole; //the reflection also is considered in the pressure output of the syrinx, unlike Fletcher/Smyth, I don't add at this step but use the Lous, et. al. (1998) equation to combine inside the plug-in
   
 
-//limit output from trachea, just in case things get out of control.
-limiter.limit();
-
+//**Write sound output of the shred to file
 dac => WvOut2 writer => blackhole; //record to file
 writer.wavFilename("/tmp/testDoveSounds.wav");
 // temporary workaround to automatically close file on remove-shred -- is it temporary??
 null @=> writer;
+//** END File writing
 
+//** Setting filter parameters
 11.0 => float L;  //in centimenters, from here: https://www.researchgate.net/publication/308389527_On_the_Morphological_Description_of_Tracheal_and_Esophageal_Displacement_and_Its_Phylogenetic_Distribution_in_Avialae/download?_tp=eyJjb250ZXh0Ijp7ImZpcnN0UGFnZSI6Il9kaXJlY3QiLCJwYWdlIjoiX2RpcmVjdCJ9fQ
 //8 - trachea, 3 - head - included 3 cm extra for head, not modeling that separately. maybe later.
                   
@@ -731,7 +762,6 @@ wa2.calcConstants();
 setParamsForReflectionFilter(lp);
 setParamsForReflectionFilter(lp2);
 
-
 //347.4 => float c; // in m/s
 c/(2*(L/100.0)) => float LFreq; //speed of sound - c - is in meters, so convert L to meters here.
 
@@ -740,38 +770,24 @@ c/(2*(L/100.0)) => float LFreq; //speed of sound - c - is in meters, so convert 
 //( (second / samp) / (2*LFreq) - 1) => float period; //* 0.5 in the STK for the clarinet model... clarinet.cpp hmmm
 
 period::samp => delay.delay;
-//period::samp => delay2.delay; 
+period::samp => tracheaForward.delay;
+period::samp => tracheaBack.delay;  
+
+//**END Setting filter parameters
 
 
+mouseEventLoopControllingAirPressure(); //run mouse event loop.
 
-/*
-FileIO fout;
-
-// open for write
-fout.open( "/Users/courtney/Programs/physically_based_modeling_synthesis/testEnv.txt", FileIO.WRITE );
-string output;
-*/
-
-//while( now < later)
-//{
-    //Ps
-   
-//    0.0125 => ltm.Ps;
-//    20-1000*envPs.value() => ltm.Ptl;
-//    1 - envPs.value() => ltm.Pt;
-
-//    envPs.update(); 
-//    envPs.value() + "\n" => output; 
-//    fout.write( output ); 
-   
-//    1::samp => now; 
-//}
+//********************************************************************************************************
+//************END MAIN CODE
+//********************************************************************************************************
 
 
+//********************************************************************************************************
+//************Some Functions to set filter parameters as well as the event loop
+//********************************************************************************************************
 
-mouseEventLoopControllingAirPressure();
-
-//mouse event loop controlling air pressure
+//mouse event loop controlling air pressure & muscle pressure
 function void mouseEventLoopControllingAirPressure()
 {
     // HID input and a HID message
@@ -788,7 +804,7 @@ function void mouseEventLoopControllingAirPressure()
     <<< "mouse '" + hi.name() + "' ready", "" >>>;
     0.0 => float max;
     
-    0 => int whichBird; 
+    0 => int whichBird; //will use in future
     
     -10 => float audioMax;
     10 => float audioMin;
@@ -804,70 +820,41 @@ function void mouseEventLoopControllingAirPressure()
         {
             // mouse motion
             if( msg.isMouseMotion() )
-            {
-                
-                //<<< ltm.inputP, coupler.last(), ltm.Ps, ltm.U, ltm.z0, ltm.dU >>>; 
-                
-                // get the normalized X-Y screen cursor pofaition
-                // <<< "mouse normalized position --",
-                // "x:", msg.scaledCursorX, "y:", msg.scaledCursorY >>>;
-                Math.sqrt(msg.deltaY*msg.deltaY + msg.deltaX*msg.deltaX) => float val;
-                // Math.max(max, val) => max; 
-                val / 42 => float totVal; 
+            {                
+               // get the normalized X-Y screen cursor 
+               // <<< "mouse normalized position --",
+               // "x:", msg.scaledCursorX, "y:", msg.scaledCursorY >>>;
+               Math.sqrt(msg.deltaY*msg.deltaY + msg.deltaX*msg.deltaX) => float val;
+               val / 42 => float totVal; 
 
-                logScale( msg.scaledCursorX, 0.000000001, 1.0 ) => float scaledX; 
-                logScale( msg.scaledCursorY, 0.000000001, 1.0 ) => float scaledY;
+               //create a version in logarithmic scale, could be useful, but not so far
+               logScale( msg.scaledCursorX, 0.000000001, 1.0 ) => float scaledX; 
+               logScale( msg.scaledCursorY, 0.000000001, 1.0 ) => float scaledY;
                 
-               //msg.scaledCursorX * 0.006 => ltm.Ps;
-                //msg.scaledCursorX * 0.01 => ltm.Ps;
-                
-                ltm.changePs((msg.scaledCursorX)*0.036 + 0.001); //go up to 0.0692
-          
-
-               //msg.scaledCursorX * (0.01225-0.007954) + 0.007954 => ltm.Ps;
+               //input air pressure changes based on x screen position
+               //Ranges determined by Zaccarelli(2009) p. 73, Fig. 4.3, lower end increased for mouse playability 
+               ltm.changePs((msg.scaledCursorX)*0.037 + 0.001); //go up to 0.0692
                
+               //Ranges from same set of figures on p. 73 illustrating muscle pressures for coo sound
                msg.scaledCursorY * 15 + 5 => float Ptl;
                ltm.changePtl(Ptl);
-               
-               
-              
-               
-               //if( Ptl > 19.5 )
-               
-               
-               //((1.0-msg.scaledCursorY)*1.5)  - 1.0 => ltm.Pt;
                ltm.changePt(((1.0-msg.scaledCursorY)*2)  - 1.0);
-
-               //<<<ltm.Ps>>>;
                
-                //msg.scaledCursorX * (0.01225-0.010954) + 0.010954 => ltm.Ps;
-                //msg.scaledCursorX * (0.001225/2-0.000954) + 0.000954 => ltm.Ps;
-                //0.008 works
-                //0.1 - 13.5 ptl - highest
-                //0.1224 - 18 ptl lowest w/o distortion
-                //0.11
-                
-                //0.01222 => ltm.Ps;
-
-               //(msg.scaledCursorY*1.5)  - 1.0 => ltm.Pt;
-               //(1.0- msg.scaledCursorY) * 20.0 => ltm.Ptl;
-               
+               //Just some useful code for caw.
                Math.max(audioMax, limiter.last()) => audioMax; 
                Math.min(audioMin, limiter.last()) => audioMin; 
- 
                
-               <<<ltm.Ps+"," + ltm.Ptl+ "," + ltm.Pt + "," + limiter.last() + " ," +audioMin + "," + audioMax >>>;
-
+               //<<<ltm.Ps+"," + ltm.Ptl+ "," + ltm.Pt + "," + limiter.last() + " ," +audioMin + "," + audioMax >>>;
             }
-                
-                
-            
+
         }  
         1::samp => now;
     }  
 
 }
 
+
+//scale input values logarithmically
 function float logScale(float in, float min, float max)
 {
     Math.log( max / min ) / (max - min)  => float b;
@@ -877,6 +864,7 @@ function float logScale(float in, float min, float max)
 
 
 
+//create low-pass filter for the waveguide synthesis, mostly implemeted from Smyth (2004)
 function void setParamsForReflectionFilter(BirdTracheaFilter lp)
 {
     //https://asa-scitation-org.proxy.libraries.smu.edu/doi/pdf/10.1121/1.1911130
@@ -924,93 +912,14 @@ function void setParamsForReflectionFilter(BirdTracheaFilter lp)
     //for the highpass output, from Smyth, again
     a1 => hpOut.a1; 
     b0 => hpOut.b0; 
-    
+
+/*    
     <<<"a:"+a>>>;
     <<<"oT:" + oT + " wT:" + wT>>>;
     <<<"a1:"+a1 + "   b0:"+b0>>>;
     
     <<<"*************">>>;
-    
-    
-    
-    //<<< "wT: " + wT + " oT: " + oT + " a1: "+ a1 + " b0: " + b0 >>>;
-}
-
-
-
-/*
-<<<ltm.defIForce(0, ltm.d1)>>>;
-<<<ltm.defIForce(ltm.d1, ltm.dM)>>>;
-<<<ltm.defIForce(ltm.dM, ltm.d2)>>>;
-<<<"a1:" + ltm.a1>>>;
-<<<"a2:" + ltm.a2>>>;
-<<<"aMin:" + ltm.aMin>>>;
-<<<"cpo1:" + ltm.cpo1>>>;
-<<<"cpo2:" + ltm.cpo2>>>;
-<<<"cpo3:" + ltm.cpo3>>>;
-<<<"d1:" + ltm.d1>>>;
-<<<"d2:" + ltm.d2>>>;
-<<<"d3:" + ltm.d3>>>;
 */
-
-/*
-<<< "**********************************" >>>;
-
-FileIO fout;
-
-// open for write
-fout.open( "/Users/courtney/Programs/physically_based_modeling_synthesis/out3.txt", FileIO.WRITE );
-
-// test
-
-if( !fout.good() )
-{
-    cherr <= "can't open file for writing..." <= IO.newline();
-    me.exit();
 }
-
-
-    "x[0]"  + "," + "x[1]" +"," + "dx[0]"  + "," + "dx[1]" + "," + "a1" + "," + "a2" + "," + "dU"  + ", "+"F[0]" + "," + "F[1]" + "," + "I[0]" + "," + "I[1]" +"\n" => string output; 
-    fout.write( output );
-
-
-
-now => time start;
-while(now - start < 10::ms)    
-{
-  //  <<< ltm.dU  + " , " + ltm.x[0] + " , " +  ltm.d2x[0] + " , " + ltm.F[0] + " , " + ltm.I[0] + " , " + ltm.a1 + " , " + ltm.a2 + " , " + ltm.zM >>>;
-    //<<< ltm.dU  + " , " + ltm.x[1] + " , " + ltm.x[0] +" , " +  ltm.d2x[1] + " , " + ltm.F[1] + " , " + ltm.I[1] + " , " + ltm.a1 + " , " + ltm.a2 + " , " + ltm.zM >>>;
-   // <<<ltm.x[0] + " , " +  ltm.x[1] + " , " + ltm.cpo1 + " , " + ltm.cpo2 + " , "+ ltm.cpo3 + " , " + ltm.I[0] + " , " + ltm.I[1] + " , " + ltm.zM >>>;
- //   ltm.dU  + "," + ltm.x[0]  + "," + ltm.x[1] +"," + ltm.F[0] + "," + ltm.F[1] + "," + ltm.a1 + "," + ltm.a2 + "," + ltm.cpo1 + "," 
-//        + ltm.cpo2 + ","+ ltm.cpo3 + "," + ltm.I[0] + "," + ltm.I[1] + "," + ltm.zM + "\n" => string output; 
-        
-  //      <<< ltm.dU  + "," + ltm.x[0]  + "," + ltm.x[1] +"," + ltm.F[0] + "," + ltm.F[1] + "," + ltm.a1 + "," + ltm.a2 + "," + ltm.cpo1 + "," + ltm.cpo2 + ","+ ltm.cpo3 + "," + ltm.I[0] + "," + ltm.I[1] + "," + ltm.zM + "\n" >>>;
-     
-    
-    
-        ltm.x[0]  + "," + ltm.x[1] +"," + ltm.dx[0]  + "," + ltm.dx[1] + "," + ltm.a1 + "," + ltm.a2 + "," + ltm.dU  + "," + ltm.F[0] + "," + ltm.F[1]+ ","  + ltm.I[0] + "," + ltm.I[1]  + "," +  "\n" => string output; 
-  //  + ltm.cpo2 + ","+ ltm.cpo3 + "," + ltm.I[0] + "," + ltm.I[1] + "," + ltm.zM + "\n" => string output; 
-    
-    //<<< ltm.x[0]  + "," + ltm.x[1] +"," + ltm.dx[0]  + "," + ltm.dx[1] + "," + ltm.a1 + "," + ltm.a2 + "," + ltm.dU  + "," + ltm.F[0] + "," + ltm.F[1] + ","+ ltm.I[0] + "," + ltm.I[1] + "\n" >>>;
-    fout.write( output ); 
-    
-    
-    fout.write( output ); 
-
-    1::samp => now;   
-}  
-
-
-// close the thing
-fout.close();
-
-
-//TODO for tomorrow:
-//1. Check expectations, this is close -- but I only skimmed that part
-//2. recheck collision equations --> check
-//3. recheck parameters and initial conditions --> check
-//4. recheck forces agains --> check
-
-*/
 
 

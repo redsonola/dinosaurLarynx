@@ -85,9 +85,16 @@ class SyrinxMembrane extends Chugen
 
     //biological parameters *******
     1.0 => float V; //volume of the bronchius - in cm^3
-    [150.0*2.0*pi, 250.0*2.0*pi] @=> float w[]; //radian freq of mode n, freq. of membranes: 1, 1.6, 2 & higher order modes are not needed Fletcher, Smyth
+    //[150.0*2.0*pi, 250.0*2.0*pi] @=> float w[]; //radian freq of mode n, freq. of membranes: 1, 1.6, 2 & higher order modes are not needed Fletcher, Smyth
     
-    //coefficsents for d2x updates
+    //this one worked for a dino-like sound
+    [200*2.0*pi*.75, 1.6*200*pi*.75] @=> float w[]; //radian freq of mode n, freq. of membranes: 1, 1.6, 2 & higher order modes are not needed Fletcher, Smyth
+    w[0] => float initW;  
+   
+     //  [500*2.0*pi, 1.6*500*pi] @=> float w[]; //radian freq of mode n, freq. of membranes: 1, 1.6, 2 & higher order modes are not needed Fletcher, Smyth
+
+
+    //coefficients for d2x updates
     2.0 => float q1; 
     w[1]/(q1*2.0) => float k; //damping coeff. -- k = w1/2*Q1
     //300 => float k; //damping coeff. -- k = w1/2*Q1
@@ -119,11 +126,14 @@ class SyrinxMembrane extends Chugen
     //***** end biological parameters
     
     //tension
-    217.6247770440203 => float initT; //this is the tension to produce 150Hz, the example w in the research articles
+    //217.6247770440203 => float initT; //this is the tension to produce 150Hz, the example w in the research articles
+    //Math.sqrt( (5*curT) / (pM*a*h*d) ) => w[0]
+    (w[0]*w[0]*pM*a*h*d)/5 => float initT; //this is the tension to produce 150Hz, the example w in the research articles
     initT => float curT; //tension to produce the default, in N/cm^3
     0.0 => float goalT;//the tension to increase or decrease to    
     0.0 => float dT; //change in tension per sample  
     10.0 => float modT; //how fast tension can change
+    0.0 => float diff; 
     
     //changing pG
     0.0 => float goalPG;//the tension to increase or decrease to    
@@ -133,7 +143,7 @@ class SyrinxMembrane extends Chugen
         
     //impedences
     (p*c)/(pi*a*a) => float z0; //impedence of bronchus --small compared to trachea, trying this dummy value until more info 
-    z0/6   => float zG; //an arbitrary impedance smaller than z0, Fletcher
+    z0/12   => float zG; //an arbitrary impedance smaller than z0, Fletcher
      
      0.0 => float inP1; //to output for debugging     
      0.0 => float forceComponent; 
@@ -141,6 +151,17 @@ class SyrinxMembrane extends Chugen
      0.0 => float moreDrag; 
      
      0.0 => float testAngle;  
+     
+    fun void initZ0()
+    {
+        (p*c)/(pi*a*a) => z0; 
+    }
+              
+    fun void initTension()
+    {
+        (initW*initW*pM*a*h*d)/5 => initT;
+        initT => goalT; 
+    }     
          
     fun void updateForce()
     {
@@ -166,13 +187,13 @@ class SyrinxMembrane extends Chugen
         //a*h*(p0 + p1) => F[i]; //Smyth
         //2*a*h*(p0 + p1)  => F[i]; //this works to start the model w. a zero x value -- Fletcher
         
-        if( x > 0.0 )
+        if( x > 0.0 ) //force if open
         {
            a*h*(p0 + p1) - (2.0*p*U*U*h)/(7.0*Math.pow(a*x, 1.5)) => F; //-- Smyth 
            //memArea* ( ( pressureDiff ) - ( UFactor/overArea  ) ) => F; //fletcher
 
          }
-         else 0.5*a*h*(p0 + p1) => F; //not sure, but divided by 2 produced the results
+         else 0.5*a*h*(p0 + p1) => F; //force if closed
          
          //testing
      }
@@ -324,15 +345,20 @@ class SyrinxMembrane extends Chugen
     
     fun void updateTensionAndW()
     {
-        goalT - curT => float diff; 
-        (dT + diff)*T*modT => dT ; //note: this is probably not a good pace, but we'll see??
-        curT + dT => curT; 
+        goalT - curT => diff; 
+        if(diff != 0)
+        {            
+            (dT + diff)*T*modT => dT ; 
+            curT + dT => curT; 
         
-        Math.sqrt( (5*curT) / (pM*a*h*d) ) => w[0]; //Smyth diss.
-        w[0]*1.6 => w[1]; //Fletcher1988         
+            Math.sqrt( (5*curT) / (pM*a*h*d) ) => w[0]; //Smyth diss.
+            // w[0]*1.6 => w[1]; //Fletcher1988     
+            w[0]*1.6 => w[1]; //this is essentially the same thing, but nevertheless, as this is how I discovered frequencies that 
+            //better fit the dimensions   
+        }    
     }
     
-    //changes the airc flow
+    //changes the air flow
     fun void changePG(float tens)
     {
         tens => goalPG; 
@@ -342,7 +368,19 @@ class SyrinxMembrane extends Chugen
     {
         goalPG - pG => float diff; 
         (dPG + diff)*T*modPG => dPG ; 
-        pG + dPG => pG;      
+        pG + dPG => pG;  
+        
+        //here I'm trying to mimic the slight variations introduced by my hand when I am controlling 
+        //via mouse and it sounds vocal, so that it sounds vocal all the time
+        //TODO: take out when doing the breath.
+        testAngle+0.01 => testAngle; 
+        if(testAngle > Math.pi*2)
+        {
+            0.0=>testAngle;
+        }
+        Math.sin(testAngle) => float vib;
+        vib*(0.005*goalPG) => vib;
+        //pG + vib => pG;     
     }
 
 }
@@ -389,7 +427,7 @@ class WallLossAttenuation extends Chugen
     
     fun float calcPropogationAttenuationCoeff()
     {
-        return (2*Math.pow(10, -5)*Math.sqrt(w)) / a; 
+        return (5*Math.pow(10, -5)*Math.sqrt(w)) / a; //changed the constant for more loss, was 2.0
     }
     
     fun float wFromFreq(float frq)
@@ -433,18 +471,13 @@ class Flip extends Chugen
 //pJ = 2*sumOf(pnOuts*1/Zns)/sumOf(Zns)
 //function void scatteringJunction(WallLossAttenuation bronch1, WallLossAttenuation bronch2, WallLossAttenuation trachea, 
 //DelayA bronch1Delay, DelayA bronch2Delay, DelayA tracheaDelay)
-function void scatteringJunction(DelayA bronch1, DelayA bronch2, DelayA trachea, 
-DelayA bronch1Delay, DelayA bronch2Delay, DelayA tracheaDelay)
+function float scatteringJunction2(DelayA bronch1, DelayA bronch2, DelayA trachea, 
+DelayA bronch1Delay, DelayA bronch2Delay, DelayA tracheaDelay, float z0)
 { 
     
     bronch1 => Gain bronchus1Z => Gain add; 
     bronch2 => Gain bronchus2Z => add; 
     trachea => Gain tracheaZ => add; 
-    
-    0.00118 => float p; 
-    0.35 => float a; 
-    34740 => float c; 
-    (p*c)/(pi*a*a) => float z0;
     
     //assume they have the same tube radius for now - I guess they prob. don't IRL
     1.0/z0 => bronchus1Z.gain;
@@ -471,11 +504,93 @@ DelayA bronch1Delay, DelayA bronch2Delay, DelayA tracheaDelay)
     tracheaZout.op(2); 
     pJ => tracheaZout;
     trachea => tracheaZout => tracheaDelay;
+    
+    return z0;
 }
 
+class ScatteringJunction 
+{
+    Gain pJ; 
+    float z0; 
+    
+    Gain bronchus1Z; 
+    Gain bronchus2Z; 
+    Gain tracheaZ; 
+    Gain add;
+    
+    fun void updateZ0(float impedence)
+    {
+        impedence => z0; 
+        (1.0/z0 + 1.0/z0 + 1.0/z0) => float zSum; 
+        1.0/zSum => pJ.gain;
+        
+        1.0/z0 => bronchus1Z.gain;
+        1.0/z0 => bronchus2Z.gain;
+        1.0/z0 => tracheaZ.gain;
+    }
+    
+    fun void scatter(DelayA bronch1, DelayA bronch2, DelayA trachea, 
+    DelayA bronch1Delay, DelayA bronch2Delay, DelayA tracheaDelay, float impedence)
+    { 
+        
+        bronch1 => bronchus1Z => add; 
+        bronch2 => bronchus2Z => add; 
+        trachea => tracheaZ => add; 
+        
+        //assume they have the same tube radius for now - I guess they prob. don't IRL
+        1.0/z0 => bronchus1Z.gain;
+        1.0/z0 => bronchus2Z.gain;
+        1.0/z0 => tracheaZ.gain;
+        2.0 => add.gain; 
+        
+        updateZ0(impedence); 
+        add => pJ; 
+    
+        Gain bronchus1Zout;
+        bronchus1Zout.op(2); 
+        pJ => bronchus1Zout;
+        bronch1 => bronchus1Zout => bronch1Delay;
+    
+        Gain bronchus2Zout;
+        bronchus2Zout.op(2);
+        pJ => bronchus2Zout;
+        bronch2 => bronchus2Zout => bronch2Delay;
+    
+        Gain tracheaZout;
+        tracheaZout.op(2); 
+        pJ => tracheaZout;
+        trachea => tracheaZout => tracheaDelay;
+    }
+}
+
+//scattering junction implements two membranes at two bronchi, but evidence suggests basal condition is one syrinx membrane in the trachea
+//this implements that. Discards 2nd syrinx bronchus... 
+function void onlyOneNL(DelayA bronch1, DelayA bronch2, DelayA trachea, 
+DelayA bronch1Delay, DelayA bronch2Delay, DelayA tracheaDelay)
+{
+    
+}
+
+// SIMPLE ENVELOPE FOLLOWER, by P. Cook
+//modified by CDB Oct. 2022 to turn into function
+fun OnePole envelopeFollower()
+{
+    
+    // patch
+    adc => Gain g => OnePole p => blackhole;
+    // square the input
+    adc => g;
+    // multiply
+    3 => g.op;
+    
+    // set pole position
+    
+    return p; 
+}
 
 //okay, this is just to test -- sanity debug check -- make sure -- obviously I can't keep this as a chugen, but probably
 //in end result will not be using chugens at all.
+//this filter is the sound that reflects back to the syrinx folds
 class BirdTracheaFilter extends Chugen
 {
     1.0 => float a1;
@@ -496,6 +611,7 @@ class BirdTracheaFilter extends Chugen
 //this needs to be checked again
 //the h(z) to this is a bit unclear for me (checked again seems correct)
 //need to test freq response
+//this filter is the sound that radiates out from the trachea
 class HPFilter extends Chugen
 {
     1.0 => float a1;
@@ -512,6 +628,12 @@ class HPFilter extends Chugen
         return out; 
     }     
 }
+
+
+//the envelope follower for the breath
+envelopeFollower() @=> OnePole envF_breath => LPF breath_env_lp => blackhole;
+100 => breath_env_lp.freq;
+1 => breath_env_lp.Q;
 
 
 //waveguides/tubes altered to model clarinet for an intermediate testable outcome before bronchus, trachea, junction are modeled
@@ -545,8 +667,10 @@ period::samp => tracheaBack.delay;
 
 //from trachea to sound out the 'mouth'
 //tracheaWA => HPFilter hpOut => dac; //from trachea to sound out
+
 tracheaOut => HPFilter hpOut => Dyno limiter =>  dac; //from trachea to sound out
 limiter.limit();
+10 => limiter.gain;
 
 
 //reflection from scattering junction back to bronchus beginning -- 1st bronchus
@@ -572,98 +696,20 @@ adder2 => delayMem2;
 period::samp => bronch2Back.delay;
 //period::samp => bronch1Back.delay;
 
-
 //Aaaand -- setup the scattering junction here to connect all the passage ways
-//scatteringJunction( wa, waBronch2, tracheaWABack, bronch1Back, bronch2Back, tracheaOut);
-scatteringJunction( delay, delayMem2, tracheaBack, bronch1Back, bronch2Back, tracheaOut);
+ScatteringJunction junction; 
+junction.scatter( delay, delayMem2, tracheaBack, bronch1Back, bronch2Back, tracheaOut, mem.z0);
+//<<<"scat" + scatteringJunction2( delay, delayMem2, tracheaBack, bronch1Back, bronch2Back, tracheaOut, mem.z0 )>>>;
 
 //initialize the global variables for a particular bird type
 initGlobals();
 
 //approximating from Smyth diss. 
 setParamsForReflectionFilter();
-       
-
-FileIO fout;
-
-// open for write
-fout.open( "/Users/courtney/Programs/physically_based_modeling_synthesis/out2.txt", FileIO.WRITE );
-
-// test
-if( !fout.good() )
-{
-    cherr <= "can't open file for writing..." <= IO.newline();
-    me.exit();
-}
-
-
--326.3054 => float hMax; 
-50.0 => float hMin; 
-
-0.0 => float mMax; 
-1.0 => float mMin; 
-
-//<<<wa.wallLossCoeff>>>;
-
-
-//(1/(33.5070*25.1703)) => hpOut.gain; 
-
-hadrosaur(); 
-mouseEventLoopControllingAirPressure();
-
-/*
-
-5::second => now; 
-now => time start;
- while(now - start < 0.05::second)
- {
-     
-hpOut.last() => float trachP1; 
-delay.last() => float returnTrachp1;
-//wa.last() => float afterWA; 
-0.0 => float afterWA; 
-
-loop.last() => float afterLP; 
-p1.last() => float adderOut; 
-bronch1Back.last() => float beforeAdd;  
-
-     
-      <<<"adderOut: " +  adderOut + " afterLP: " + afterLP + " afterWA: " + afterWA + " returnTrachp1: " + returnTrachp1 + " trachP1:" + trachP1 + " z0: "+ mem.z0 +" dp0:" + mem.dp0 +" p0:" + mem.p0 +" d2x[0]:" + mem.d2x[0] + " dU: " + mem.dU + "  U: " + mem.U + " p1-in: " +  mem.inP1 + " x: " + mem.totalX  +  " p1-out:" + mem.p1  >>> ;
-      mem.p0 + "," + mem.U + "," + mem.totalX + "," + mem.inP1 + "," + mem.dp0 + "," + mem.dU + "," + mem.d2x[0] + "," + mem.d2x[1] + "," + mem.p1 + "\n"  => string output; 
       
-      
-   //    <<<"adderOut: " +  adderOut + " afterLP: " + afterLP + " afterWA: " + afterWA + " returnTrachp1: " + returnTrachp1 
-   //    + " trachP1:" + trachP1 + " beforeAdd " + beforeAdd + " p1-in: " +  mem.inP1 +" p1-out:" + mem.p1  >>> ;
-   //    mem.p0 + "," + mem.U + "," + mem.totalX + "," + mem.inP1  => string output;       
+hadrosaur(); //init for hadrosaur parameters
+mouseEventLoopControllingAirPressure(); //MAIN UPDATE LOOP!!!
 
-
-      //<<<"  p0:" + mem.p0+ "  dU: " + mem.dU + "  U: " + mem.U + "  x: " + mem.totalX + " in-p1:" + mem.inP1 + " p1:" + mem.p1 + " trachP1: " + trachP1 + " returnTrachp1: " + returnTrachp1  >>> ;
-
-   // <<< "#2 ==> F: " + mem.F + " m[0]: " + mem.m[0] + " x[0]: " + mem.x[0] + " dx[0]: " + mem.dx[0] + " d2x[0]: " + mem.d2x[0]  +" x[1]: " + mem.x[1] + " dx[1]" + mem.dx[1] + " d2x[1]: " + mem.d2x[1]  + "  x: " + mem.totalX  >>> ;
-
-    //<<< "forceComponant: " + mem.forceComponent + " stiffness: " + mem.stiffness + " moreDrag: " + mem.moreDrag >>>;
-
-     fout.write( output ); 
-     
-     Math.max(mMax, mem.totalX) => mMax;
-     Math.min(mMin, mem.totalX) => mMin;
-     
-     Math.max(hMax, trachP1) => hMax;
-     Math.min(hMin, trachP1) => hMin;
-
-1::samp => now;   
- }  
-*/
- 
- <<< "mMax: " + mMax>>>;
-  <<< "mMin: " + mMin>>>;
-  
-   <<< "hMax: " + hMax>>>;
-  <<< "hMin: " + hMin>>>;
-
- 
- // close the thing
-fout.close();
 
 //--2/21 1p fixed reflection filter
  function void setParamsForReflectionFilter()
@@ -704,23 +750,24 @@ fout.close();
      (1 + a1 ) / 2 => float b0; 
      
      //using my own filter code for absolute clarity 
-     //for the low-pass reflector
+     //for the low-pass reflector -- birdtracheafilter class
      a1 => loop.a1;
      b0 => loop.b0; 
      
-     //for the highpass output, from Smyth, again
+     //for the highpass output, from Smyth, again -- HPFilter class
      a1 => hpOut.a1; 
      b0 => hpOut.b0; 
+     
+          <<<"*************">>>;
      
      <<<"a:"+a>>>;
      <<<"oT:" + oT + " wT:" + wT>>>;
      <<<"a1:"+a1 + "   b0:"+b0>>>;
      
-     <<<"*************">>>;
 
 
-     
-     //<<< "wT: " + wT + " oT: " + oT + " a1: "+ a1 + " b0: " + b0 >>>;
+     <<< "wT: " + wT + " oT: " + oT + " a1: "+ a1 + " b0: " + b0 >>>;
+          <<<"*************">>>;
  }
  
  function float logScale(float in, float min, float max)
@@ -730,11 +777,22 @@ fout.close();
      return a * Math.exp ( b*in );     
  }
  
+ function float expScale(float in, float min, float max)
+ {
+     //following, y = c*z^10
+     // y = c* z^x
+     Math.pow(max / min, (1.0/9.0)) => float z;
+     min/z => float c;     
+     c*(Math.pow(z, in)) => float res;
+     return res; 
+ }
+ 
  function void smallBird()
  {
      //set for a small bird
      //something is wrong with the reflection filter, there is a weird hole around 0.19 -- is it too small for the cutoff?
-     //or the cutoff frequency doesn't hold for such small radii 
+     //or the cutoff frequency doesn't hold for such small radii -- FIXED used the standard waveguide cutoff equation instead of Smyth's constant for ka... 
+     //still -- merits further investigation.
      //0.19 => a; 
      //0.19 => h; 
      0.19 => a; 
@@ -771,14 +829,15 @@ fout.close();
  {
      4.5 => a; 
      4.5 => h; 
-     113.0 => L; //~153.7 Hz - resonance    
-     1000.0 => d;  
-     
-     10.0 => hpOut.gain; 
-     100.0 => mem.modT; 
-     100.0 => mem.modPG; 
-     100.0 => mem2.modT; 
-     100.0 => mem2.modPG; 
+     116.0 => L; //~153.7 Hz - resonance    
+     //0.1285714285714286 => d;  
+     5.0 => d;  
+
+     0.01 => hpOut.gain; 
+     1000.0 => mem.modT; 
+     100 => mem.modPG; //was 100
+     1000.0 => mem2.modT; 
+     100 => mem2.modPG; 
      
      initGlobals(); 
  }
@@ -795,22 +854,25 @@ fout.close();
      L => mem2.L; 
      h => mem2.h;
      d => mem2.d;
-
      
+     mem.initTension();
+     mem2.initTension();
+     mem.initZ0(); 
+     mem2.initZ0(); 
+     junction.updateZ0(mem.z0); 
+
      a => waBronchBack.a;
      L*2.0 => waBronchBack.L; //change for when trachea and brochus are different
      
      a => waBronch2Back.a;
      L*2.0 => waBronch2Back.L; //change for when trachea and brochus are different
-     
-     setParamsForReflectionFilter(); 
-     
+          
      waBronch2Back.calcConstants();  
      waBronchBack.calcConstants();  
 
      34740 => float c; // in m/s
      c/(2.0*L) => float LFreq; // -- the resonant freq. of the tube (?? need to look at this)
-     ( (0.5*second / samp) / (LFreq) - 1) => period; //* 0.5 in the STK for the clarinet model... clarinet.cpp hmmm
+     ( (0.5*second / samp) / (LFreq) - 1) => period; 
      
      period::samp => delay.delay;
      period::samp => delayMem2.delay;
@@ -818,6 +880,8 @@ fout.close();
      period::samp => tracheaBack.delay;
      period::samp => bronch2Back.delay;
      period::samp => bronch1Back.delay;
+     
+     setParamsForReflectionFilter(); 
  }
 
 //mouse event loop controlling air pressure
@@ -840,13 +904,24 @@ function void mouseEventLoopControllingAirPressure()
     0 => int whichBird; 
     
     // infinite event loop
+    0 => float max1; 
     while( true )
-    {
-        // wait on HidIn as event
-        hi => now;
+    { 
+               
+        1::ms => now; 
+        envF_breath.last() => float ctrlValue;
+        //Math.fabs(breath_env_lp.last()) => float ctrlValue;
+
+        float pG1; 
+        msg.scaledCursorX * 300000 => pG1;
+        //ctrlValue * 250000 => pG1;
+        Math.min(pG1, 300000) => pG1;
+        mem.changePG(pG1); 
+        mem2.changePG(pG1);
+        <<<mem.pG + "   tens: " + mem.curT>>>;
         
         // messages received
-        while( hi.recv( msg ) )
+        if( hi.recv( msg ) )
         {
             // mouse motion
             if( msg.isMouseMotion() )
@@ -859,117 +934,17 @@ function void mouseEventLoopControllingAirPressure()
                 val / 42 => float totVal; 
                 
                 float maxPG;
-                if(whichBird < 2)
+                if(whichBird > 0)
                     60 => maxPG; //before was 60 -- let's see
                 else
-                    60*17.5 => maxPG;
-                //msg.scaledCursorY * maxPG => mem.pG;
-                // <<< "totVal b4 scale:", totVal >>>;
+                    2000 => maxPG;
                 
-                totVal * maxPG => float pG; 
-                //logScale(totVal, 0.0000001, maxPG ) => totVal; 
-
-                mem.changePG(pG); 
-                mem2.changePG(pG); 
-
-                //<<< "max delta:", max >>>;
-                 //<<< "pG:", mem.pG >>>; //turn this back on
-                // <<< "totVal:", totVal >>>;
+                mem.initT*0.5 + (1.0-msg.scaledCursorY)*mem.initT*5.0 => float t;
                 
-                logScale( msg.scaledCursorX, 0.0000001, 1.0 ) => float scaledX; 
-                
-                
-                //we'll say default tension until 3pg
-                if(pG < 3.059)
-                {  
-                    mem.changeTension(mem.initT); 
-                    mem2.changeTension(mem2.initT); 
+                mem.changeTension(t);
+                mem2.changeTension(t); 
 
-                }
-                else
-                {
-                    /*  Duck-like settings
-                    
-                    //correlate pG with tension
-                    mem.initT => float t;
-                    900.0-mem.initT => float scale;
-                    msg.scaledCursorY-(3.059/maxPG) => float mult; 
-                    
-                    //add up to 200 n/cm3 according to x
-                    scaledX * 1000.0 => float Tadd;
-                    
-                    //Tadd => t;
-                    t + mult*scale + Tadd => t; 
-                    //t + mult*scale => t; 
-                    
-                    mem.changeTension(t); 
-                    <<< "tension:", t >>>;
-                    
-                    */
-                    
-                    //correlate pG with tension
-                    mem.initT => float t;
-                    1500.0-mem.initT => float scale;
-                    msg.scaledCursorY-(3.059/maxPG) => float mult; 
-                    
-                    //add up to 200 n/cm3 according to x
-                    scaledX * 3000.0 => float Tadd;
-                    
-                    //Tadd => t;
-                    if(whichBird < 2)
-                        t + mult*scale + Tadd => t; 
-                    else {
-                        5000.0-mem.initT =>  scale;
-                        t + mult*scale + scaledX * 100.0 => t; 
-                    }
-
-                    //t + Tadd => t; 
-                    
-                    mem.changeTension(t);
-                    mem2.changeTension(t); 
-
-                    // <<< "tension:", t >>>; --> change the tension
-                    hpOut.last() => float trachP1; 
-                    Math.max(trachP1, max) => max;
-                    //<<< "outAmp: "+ max >>>;
-                    
-                    
-                }
             }
-            else if( msg.isButtonDown() )
-            {
-                //<<< "down:", msg.which, "(code)", msg.key, "(usb key)", msg.ascii, "(ascii)" >>>;
-                //change which model 
-                if( whichBird == 0)
-                {
-                    whichBird++; 
-                    smallBird();
-                } 
-                else if( whichBird == 1)
-                {
-                    whichBird++; 
-                    duck();
-                } 
-                else 
-                {
-                    0 => whichBird;
-                    hadrosaur(); 
-                }
-            }    
-            
         }  
     }  
 }
- 
- 
- /*
- 
- Questions: 
-1. It is now the correct frequency, but still not sure why 300pa = 3.09etc.g/cm^3 doesn't seem to do anything
-
-2. No one mentions clamping the U to 0 if U<0 but it stabilized EVERYTHING & it still seems like it should rise quite a bit -- when/if I implement the full model, will it? or 
-is something still wrong with the waveguide/filter parts? (eg. p1 is wrong?) conversely my equation for force when x < 0 could be mistaken, though fiddling with that yeilds nothing 
-
-3. In the reflection filter -- it is not clear how 13.187 kHz is wT given the equations in the Smyth diss. -- am I missing something?
-
- */

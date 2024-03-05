@@ -85,9 +85,15 @@ class SyrinxMembrane extends Chugen
 
     //biological parameters *******
     1.0 => float V; //volume of the bronchius - in cm^3
-    [150.0*2.0*pi, 250.0*2.0*pi] @=> float w[]; //radian freq of mode n, freq. of membranes: 1, 1.6, 2 & higher order modes are not needed Fletcher, Smyth
+    //[150.0*2.0*pi, 250.0*2.0*pi] @=> float w[]; //radian freq of mode n, freq. of membranes: 1, 1.6, 2 & higher order modes are not needed Fletcher, Smyth
     
-    //coefficsents for d2x updates
+    //this one worked for a dino-like sound
+    [200*2.0*pi, 1.6*200*pi] @=> float w[]; //radian freq of mode n, freq. of membranes: 1, 1.6, 2 & higher order modes are not needed Fletcher, Smyth
+   
+     //  [500*2.0*pi, 1.6*500*pi] @=> float w[]; //radian freq of mode n, freq. of membranes: 1, 1.6, 2 & higher order modes are not needed Fletcher, Smyth
+
+
+    //coefficients for d2x updates
     2.0 => float q1; 
     w[1]/(q1*2.0) => float k; //damping coeff. -- k = w1/2*Q1
     //300 => float k; //damping coeff. -- k = w1/2*Q1
@@ -119,6 +125,7 @@ class SyrinxMembrane extends Chugen
     //***** end biological parameters
     
     //tension
+    //217.6247770440203 => float initT; //this is the tension to produce 150Hz, the example w in the research articles
     217.6247770440203 => float initT; //this is the tension to produce 150Hz, the example w in the research articles
     initT => float curT; //tension to produce the default, in N/cm^3
     0.0 => float goalT;//the tension to increase or decrease to    
@@ -221,10 +228,9 @@ class SyrinxMembrane extends Chugen
             0.0 => U;          
         }
         
-        //is this a fudge, or is this real?
         if ( U < 0 )
         {
-            0.0 => U;             
+            0.0 => U;  //air flow can't be less than zerp           
         }
 
 
@@ -310,7 +316,7 @@ class SyrinxMembrane extends Chugen
         updateP1(); 
         
         //user changing parameters
-        updateTensionAndW(); 
+        //updateTensionAndW(); 
         updatePG();
         
         return p1;
@@ -329,10 +335,13 @@ class SyrinxMembrane extends Chugen
         curT + dT => curT; 
         
         Math.sqrt( (5*curT) / (pM*a*h*d) ) => w[0]; //Smyth diss.
-        w[0]*1.6 => w[1]; //Fletcher1988         
+       // w[0]*1.6 => w[1]; //Fletcher1988     
+       w[0]*0.8 => w[1]; //this is essentially the same thing, but nevertheless, as this is how I discovered frequencies that 
+       //better fit the dimensions       
+    
     }
     
-    //changes the airc flow
+    //changes the air flow
     fun void changePG(float tens)
     {
         tens => goalPG; 
@@ -369,27 +378,19 @@ class WallLossAttenuation extends Chugen
         wFromFreq(freq) => w;
         calcPropogationAttenuationCoeff() => propogationAttenuationCoeff;
         calcWallLossCoeff() => wallLossCoeff;
-        
-/*
-        <<< "******* START WALL LOSS ******" >>>;
-        <<< "a:"+a >>>;
-        <<< "w:"+w >>>;
-        <<< "wallLossCoeff:"+wallLossCoeff >>>;
-        <<< "L:"+L >>>;
-        <<< "******* END WALL LOSS ******" >>>;
-*/
-
     } 
     
     fun float calcWallLossCoeff()
     {
-        //return 1.0 - (1.2*propogationAttenuationCoeff*L);
         return 1.0 - (2.0*propogationAttenuationCoeff*L);
     }
     
     fun float calcPropogationAttenuationCoeff()
     {
-        return (2*Math.pow(10, -5)*Math.sqrt(w)) / a; 
+        if (L <= 15)
+            return (2*Math.pow(10, -5)*Math.sqrt(w)) / a; 
+        else return (5*Math.pow(10, -5)*Math.sqrt(w)) / a; //changed the constant for more loss, was 2.0, intuitive tuning, TODO: implement cascade filters, or look at how to adjust constant
+
     }
     
     fun float wFromFreq(float frq)
@@ -496,6 +497,7 @@ class BirdTracheaFilter extends Chugen
 //this needs to be checked again
 //the h(z) to this is a bit unclear for me (checked again seems correct)
 //need to test freq response
+//this filter is the sound that radiates out from the trachea
 class HPFilter extends Chugen
 {
     1.0 => float a1;
@@ -582,88 +584,9 @@ initGlobals();
 
 //approximating from Smyth diss. 
 setParamsForReflectionFilter();
-       
-
-FileIO fout;
-
-// open for write
-fout.open( "/Users/courtney/Programs/physically_based_modeling_synthesis/out2.txt", FileIO.WRITE );
-
-// test
-if( !fout.good() )
-{
-    cherr <= "can't open file for writing..." <= IO.newline();
-    me.exit();
-}
-
-
--326.3054 => float hMax; 
-50.0 => float hMin; 
-
-0.0 => float mMax; 
-1.0 => float mMin; 
-
-//<<<wa.wallLossCoeff>>>;
-
-
-//(1/(33.5070*25.1703)) => hpOut.gain; 
 
 hadrosaur(); 
 mouseEventLoopControllingAirPressure();
-
-/*
-
-5::second => now; 
-now => time start;
- while(now - start < 0.05::second)
- {
-     
-hpOut.last() => float trachP1; 
-delay.last() => float returnTrachp1;
-//wa.last() => float afterWA; 
-0.0 => float afterWA; 
-
-loop.last() => float afterLP; 
-p1.last() => float adderOut; 
-bronch1Back.last() => float beforeAdd;  
-
-     
-      <<<"adderOut: " +  adderOut + " afterLP: " + afterLP + " afterWA: " + afterWA + " returnTrachp1: " + returnTrachp1 + " trachP1:" + trachP1 + " z0: "+ mem.z0 +" dp0:" + mem.dp0 +" p0:" + mem.p0 +" d2x[0]:" + mem.d2x[0] + " dU: " + mem.dU + "  U: " + mem.U + " p1-in: " +  mem.inP1 + " x: " + mem.totalX  +  " p1-out:" + mem.p1  >>> ;
-      mem.p0 + "," + mem.U + "," + mem.totalX + "," + mem.inP1 + "," + mem.dp0 + "," + mem.dU + "," + mem.d2x[0] + "," + mem.d2x[1] + "," + mem.p1 + "\n"  => string output; 
-      
-      
-   //    <<<"adderOut: " +  adderOut + " afterLP: " + afterLP + " afterWA: " + afterWA + " returnTrachp1: " + returnTrachp1 
-   //    + " trachP1:" + trachP1 + " beforeAdd " + beforeAdd + " p1-in: " +  mem.inP1 +" p1-out:" + mem.p1  >>> ;
-   //    mem.p0 + "," + mem.U + "," + mem.totalX + "," + mem.inP1  => string output;       
-
-
-      //<<<"  p0:" + mem.p0+ "  dU: " + mem.dU + "  U: " + mem.U + "  x: " + mem.totalX + " in-p1:" + mem.inP1 + " p1:" + mem.p1 + " trachP1: " + trachP1 + " returnTrachp1: " + returnTrachp1  >>> ;
-
-   // <<< "#2 ==> F: " + mem.F + " m[0]: " + mem.m[0] + " x[0]: " + mem.x[0] + " dx[0]: " + mem.dx[0] + " d2x[0]: " + mem.d2x[0]  +" x[1]: " + mem.x[1] + " dx[1]" + mem.dx[1] + " d2x[1]: " + mem.d2x[1]  + "  x: " + mem.totalX  >>> ;
-
-    //<<< "forceComponant: " + mem.forceComponent + " stiffness: " + mem.stiffness + " moreDrag: " + mem.moreDrag >>>;
-
-     fout.write( output ); 
-     
-     Math.max(mMax, mem.totalX) => mMax;
-     Math.min(mMin, mem.totalX) => mMin;
-     
-     Math.max(hMax, trachP1) => hMax;
-     Math.min(hMin, trachP1) => hMin;
-
-1::samp => now;   
- }  
-*/
- 
- <<< "mMax: " + mMax>>>;
-  <<< "mMin: " + mMin>>>;
-  
-   <<< "hMax: " + hMax>>>;
-  <<< "hMin: " + hMin>>>;
-
- 
- // close the thing
-fout.close();
 
 //--2/21 1p fixed reflection filter
  function void setParamsForReflectionFilter()
@@ -686,9 +609,11 @@ fout.close();
      //0.11*mem.c/(2*Math.PI*a) => float cutOffFreq;
 
      1.8412  => float ka; //the suggested value of 0.5 by Smyth by ka & cutoff does not seem to work with given values (eg. for smaller a given) & does not produce 
+     //0.5  => float ka; //the suggested value of 0.5 by Smyth by ka & cutoff does not seem to work with given values (eg. for smaller a given) & does not produce 
+
      //expected results -- eg. the wT frequency equation as given does not match the example 4.13(?), but the standard cutoff for metal waveguides does fine 
      //need to triple-check calculations, perhaps send an email to her.
-     ka*(mem.c/a)*mem.T => float wT; //transition frequency wT
+     ka*(mem.c/mem.a)*mem.T => float wT; //transition frequency wT
      //https://www.phys.unsw.edu.au/jw/cutoff.html#cutoff -- cut off of instrument with tone holes
      //https://hal.science/hal-02188757/document
           
@@ -772,12 +697,14 @@ fout.close();
      4.5 => a; 
      4.5 => h; 
      113.0 => L; //~153.7 Hz - resonance    
-     1000.0 => d;  
+     //0.1285714285714286 => d;  
+     5.0 => d;  
+
      
-     10.0 => hpOut.gain; 
-     100.0 => mem.modT; 
-     100.0 => mem.modPG; 
-     100.0 => mem2.modT; 
+     1.0 => hpOut.gain; 
+     1.0 => mem.modT; 
+     80.0 => mem.modPG; 
+     1.0 => mem2.modT; 
      100.0 => mem2.modPG; 
      
      initGlobals(); 
@@ -851,35 +778,21 @@ function void mouseEventLoopControllingAirPressure()
             // mouse motion
             if( msg.isMouseMotion() )
             {
-                // get the normalized X-Y screen cursor pofaition
-                // <<< "mouse normalized position --",
-                // "x:", msg.scaledCursorX, "y:", msg.scaledCursorY >>>;
-                Math.sqrt(msg.deltaY*msg.deltaY + msg.deltaX*msg.deltaX) => float val;
-                // Math.max(max, val) => max; 
+
+                //mouse velocity
+                Math.sqrt(msg.deltaY*msg.deltaY + msg.deltaX*msg.deltaX) => float val; 
                 val / 42 => float totVal; 
                 
-                float maxPG;
-                if(whichBird < 2)
-                    60 => maxPG; //before was 60 -- let's see
-                else
-                    60*17.5 => maxPG;
-                //msg.scaledCursorY * maxPG => mem.pG;
-                // <<< "totVal b4 scale:", totVal >>>;
+                //create log scale of x
+                logScale(msg.scaledCursorX, 0.0000001, 1.0 ) => float scaledX; 
                 
+                //set pG using mouse velocity
+                60 => float maxPG;
                 totVal * maxPG => float pG; 
-                //logScale(totVal, 0.0000001, maxPG ) => totVal; 
-
                 mem.changePG(pG); 
-                mem2.changePG(pG); 
+                mem2.changePG(pG);
 
-                //<<< "max delta:", max >>>;
-                 //<<< "pG:", mem.pG >>>; //turn this back on
-                // <<< "totVal:", totVal >>>;
-                
-                logScale( msg.scaledCursorX, 0.0000001, 1.0 ) => float scaledX; 
-                
-                
-                //we'll say default tension until 3pg
+                //scale tension based on PG and which type of dinosaur/bird
                 if(pG < 3.059)
                 {  
                     mem.changeTension(mem.initT); 
@@ -888,53 +801,20 @@ function void mouseEventLoopControllingAirPressure()
                 }
                 else
                 {
-                    /*  Duck-like settings
-                    
-                    //correlate pG with tension
-                    mem.initT => float t;
-                    900.0-mem.initT => float scale;
-                    msg.scaledCursorY-(3.059/maxPG) => float mult; 
-                    
-                    //add up to 200 n/cm3 according to x
-                    scaledX * 1000.0 => float Tadd;
-                    
-                    //Tadd => t;
-                    t + mult*scale + Tadd => t; 
-                    //t + mult*scale => t; 
-                    
-                    mem.changeTension(t); 
-                    <<< "tension:", t >>>;
-                    
-                    */
-                    
-                    //correlate pG with tension
-                    mem.initT => float t;
-                    1500.0-mem.initT => float scale;
-                    msg.scaledCursorY-(3.059/maxPG) => float mult; 
-                    
-                    //add up to 200 n/cm3 according to x
-                    scaledX * 3000.0 => float Tadd;
-                    
-                    //Tadd => t;
-                    if(whichBird < 2)
-                        t + mult*scale + Tadd => t; 
-                    else {
-                        5000.0-mem.initT =>  scale;
-                        t + mult*scale + scaledX * 100.0 => t; 
+                    if(whichBird > 1)
+                    {
+                        dinosaurScaling(msg.scaledCursorX, scaledX, msg.scaledCursorY, maxPG);
                     }
+                    else if(whichBird == 1)
+                    {
+                        duckScaling(msg.scaledCursorX, scaledX, msg.scaledCursorY, maxPG);
+                    }
+                    else
+                    {
 
-                    //t + Tadd => t; 
-                    
-                    mem.changeTension(t);
-                    mem2.changeTension(t); 
-
-                    // <<< "tension:", t >>>; --> change the tension
-                    hpOut.last() => float trachP1; 
-                    Math.max(trachP1, max) => max;
-                    //<<< "outAmp: "+ max >>>;
-                    
-                    
+                    }
                 }
+
             }
             else if( msg.isButtonDown() )
             {
@@ -956,12 +836,92 @@ function void mouseEventLoopControllingAirPressure()
                     hadrosaur(); 
                 }
             }    
-            
         }  
     }  
 }
- 
- 
+
+fun void dinosaurScaling(float x, float scaledX, float y,float maxPG)
+{    
+    
+    //correlate pG with tension
+    mem.initT => float t;
+    1500.0-mem.initT => float scale;
+    y -(3.059/maxPG) => float mult; 
+    
+    //add up to 200 n/cm3 according to x
+    scaledX * 3000.0 => float Tadd;
+    
+    //hadrosaur
+    mem.initT + x*mem.initT*2.0 => t; 
+    mem.changeTension(t);
+    mem2.changeTension(t);
+}
+
+fun void duckScaling(float x, float scaledX, float y, float maxPG)
+{
+     
+    //correlate pG with tension
+    mem.initT => float t;
+    900.0-mem.initT => float scale;
+    y-(3.059/maxPG) => float mult; 
+                        
+    //add up to 200 n/cm3 according to x
+    scaledX * 1000.0 => float Tadd;
+                        
+    t + mult*scale + Tadd => t; 
+    
+    mem.changeTension(t); 
+    mem2.changeTension(t); 
+}
+
+fun void smallBirdScaling(float x, float scaledX, float y, float maxPG)
+{
+    //correlate pG with tension
+    mem.initT => float t;
+    1500.0-mem.initT => float scale;
+    y-(3.059/maxPG) => float mult; 
+    
+    //add up to 200 n/cm3 according to x
+    scaledX * 3000.0 => float Tadd;
+    
+    t + mult*scale + Tadd => t; 
+    
+    mem.changeTension(t); 
+    mem2.changeTension(t);  
+}
+
+fun void hadrosaurTensionScalingXLateFromWeb(float x, float y)
+{
+    0 => float tens;
+    808510292 => float maxTens;
+    16615563 => float maxTens2;
+        
+    tens = ((y) * (maxTens2- 156080)) + 156080;
+    
+    //add or minus a certain amt.
+    tens + scaledX * (10000 * m.y) => tens; //have what the area adds be a percentage of the wideness.
+    Math.max(156080, tens) => tens;
+        
+    return tens;
+}
+
+/*
+fun void fun void hadrosaurPGScalingXLateFromWeb(float x, float y)
+{
+    0 => float tens;
+    808510292 => float maxTens;
+    16615563 => float maxTens2;
+        
+    tens = ((y) * (maxTens2- 156080)) + 156080;
+    
+    //add or minus a certain amt.
+    tens + scaledX * (10000 * m.y) => tens; //have what the area adds be a percentage of the wideness.
+    Math.max(156080, tens) => tens;
+        
+    return tens;
+}*/
+
+
  /*
  
  Questions: 

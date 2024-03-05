@@ -348,8 +348,8 @@ class SyrinxMembrane extends Chugen
         goalT - curT => diff; 
         if(diff != 0)
         {            
-            //(dT + diff)*T*modT => dT ; 
-            //curT + dT => curT; 
+            (dT + diff)*T*modT => dT ; 
+            curT + dT => curT; 
         
             Math.sqrt( (5*curT) / (pM*a*h*d) ) => w[0]; //Smyth diss.
             // w[0]*1.6 => w[1]; //Fletcher1988     
@@ -401,7 +401,7 @@ class WallLossAttenuation extends Chugen
     0.0 => float out;           
                  
     
-    fun float calcConstants()
+    fun void calcConstants()
     {
         c/(2*L) => freq;
         wFromFreq(freq) => w;
@@ -910,28 +910,12 @@ function void mouseEventLoopControllingAirPressure()
         
         1::ms => now; 
         envF_breath.last() => float ctrlValue;
-        //<<< ctrlValue >>>;
-
-        //<<<max1>>>;
-        //if(whichBird == 0)
-        //{
-            float p;
-            float pG1; 
-            float tot; 
-            if (ctrlValue!=0)
-            {
-                ctrlValue*1000.0 => tot;
-                expScale(tot, 1.0, 10.0 ) => p;
-                p-0.8=>p; 
-                Math.max(p, 0) =>p; 
-                //ctrlValue/10.0 => totVal;
-                
-            }
-            p * 100000000.0 => pG1;
-            Math.min(pG1, 250000) => pG1;
-            mem.changePG(pG1); 
-            mem2.changePG(pG1);
-            Math.max(max1, p) => max1;
+        
+        ctrlValue * 250000 => pG1;
+        Math.min(pG1, 250000) => pG1;
+        mem.changePG(pG1); 
+        mem2.changePG(pG1);
+        Math.max(max1, p) => max1;
             //<<<"p: " + p +" ctrlValue: " + ctrlValue>>>;
         //}
 
@@ -973,14 +957,6 @@ function void mouseEventLoopControllingAirPressure()
                     Math.min(pG, 200000) => pG;
                     <<<mem.pG + "   tens: " + mem.curT>>>;
                 }
-/*
-                mem.changePG(pG); 
-                mem2.changePG(pG); 
-*/
-
-                //<<< "max delta:", max >>>;
-                //<<< "pG:", mem.pG >>>; //turn this back on
-                // <<< "totVal:", totVal >>>;
                 
                 logScale( msg.scaledCursorX, 0.0000001, 1.0 ) => float scaledX; 
                 logScale( msg.scaledCursorY, 0.0000001, 1.0 ) => float scaledY; 
@@ -996,24 +972,6 @@ function void mouseEventLoopControllingAirPressure()
                 }
                 else
                 {
-                    /*  Duck-like settings
-                    
-                    //correlate pG with tension
-                    mem.initT => float t;
-                    900.0-mem.initT => float scale;
-                    msg.scaledCursorY-(3.059/maxPG) => float mult; 
-                    
-                    //add up to 200 n/cm3 according to x
-                    scaledX * 1000.0 => float Tadd;
-                    
-                    //Tadd => t;
-                    t + mult*scale + Tadd => t; 
-                    //t + mult*scale => t; 
-                    
-                    mem.changeTension(t); 
-                    <<< "tension:", t >>>;
-                    
-                    */
                     
                     //correlate pG with tension
                     mem.initT => float t;
@@ -1029,25 +987,13 @@ function void mouseEventLoopControllingAirPressure()
 
                     }
                     else { //hadrosaur
-                        mem.initT*0.5 + msg.scaledCursorY*mem.initT*5.0 => t;
-                        //<<<"tension: " + t>>>;
-                        //msg.deltaX
-                        //t + mult*scale + Tadd => t; 
-                        //mem.initT => t; 
-                        //<<<"not changing tension">>>;
+                        mem.initT*0.5 + (1.0-msg.scaledCursorY)*mem.initT*5.0 => t;
                     }
 
                     //t + Tadd => t; 
                     
                     mem.changeTension(t);
-                    mem.updateTensionAndW(); 
                     mem2.changeTension(t); 
-                    mem2.updateTensionAndW(); 
-                    
-                    (mem.dT + mem.diff)*mem.T*mem.modT  => mem.dT; 
-                  (mem.dT + mem.diff)*mem.T*mem.modT  => mem2.dT; 
-                  mem.curT + mem.dT => mem.curT;
-                  mem.curT + mem.dT => mem2.curT;
 
                   
  // <<< "dT: "+mem.dT + "diff: " + mem.diff +   " dT: " + mem.dT +" goalT: " + mem.goalT + " curT:"+ mem.curT+ " t: " + Math.sqrt( (5*t) / (mem.pM*mem.a*mem.h*mem.d) )  + " freq:", mem.w[0]/(2*pi) + " freq2:", mem.w[1]/(2*pi) >>>; //--> change the tension

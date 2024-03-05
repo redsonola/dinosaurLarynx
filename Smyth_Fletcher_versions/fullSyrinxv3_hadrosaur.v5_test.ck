@@ -228,10 +228,9 @@ class SyrinxMembrane extends Chugen
             0.0 => U;          
         }
         
-        //is this a fudge, or is this real?
         if ( U < 0 )
         {
-            0.0 => U;             
+            0.0 => U;  //air flow can't be less than zerp           
         }
 
 
@@ -373,7 +372,7 @@ class WallLossAttenuation extends Chugen
     0.0 => float out;           
                  
     
-    fun float calcConstants()
+    fun void calcConstants()
     {
         c/(2*L) => freq;
         wFromFreq(freq) => w;
