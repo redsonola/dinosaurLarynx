@@ -738,14 +738,6 @@ Gain p1;
 wa2 => p1; 
 wa2 => tracheaForward => blackhole;  
 p1 =>  coupler => blackhole; //the reflection also is considered in the pressure output of the syrinx, unlike Fletcher/Smyth, I don't add at this step but use the Lous, et. al. (1998) equation to combine inside the plug-in
-  
-
-//**Write sound output of the shred to file
-dac => WvOut2 writer => blackhole; //record to file
-writer.wavFilename("/tmp/testDoveSounds.wav");
-// temporary workaround to automatically close file on remove-shred -- is it temporary??
-null @=> writer;
-//** END File writing
 
 //** Setting filter parameters
 11.0 => float L;  //in centimenters, from here: https://www.researchgate.net/publication/308389527_On_the_Morphological_Description_of_Tracheal_and_Esophageal_Displacement_and_Its_Phylogenetic_Distribution_in_Avialae/download?_tp=eyJjb250ZXh0Ijp7ImZpcnN0UGFnZSI6Il9kaXJlY3QiLCJwYWdlIjoiX2RpcmVjdCJ9fQ
