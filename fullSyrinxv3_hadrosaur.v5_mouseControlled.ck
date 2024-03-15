@@ -908,17 +908,17 @@ function void mouseEventLoopControllingAirPressure()
     while( true )
     { 
                
-        1::ms => now; 
+        1::samp => now; 
         envF_breath.last() => float ctrlValue;
         //Math.fabs(breath_env_lp.last()) => float ctrlValue;
 
         float pG1; 
-        msg.scaledCursorX * 300000 => pG1;
+        msg.scaledCursorX * 30000 => pG1;
         //ctrlValue * 250000 => pG1;
         Math.min(pG1, 300000) => pG1;
         mem.changePG(pG1); 
         mem2.changePG(pG1);
-        <<<mem.pG + "   tens: " + mem.curT>>>;
+        //<<<mem.pG + "   tens: " + mem.curT>>>;
         
         // messages received
         if( hi.recv( msg ) )
@@ -926,19 +926,7 @@ function void mouseEventLoopControllingAirPressure()
             // mouse motion
             if( msg.isMouseMotion() )
             {
-                // get the normalized X-Y screen cursor pofaition
-                // <<< "mouse normalized position --",
-                // "x:", msg.scaledCursorX, "y:", msg.scaledCursorY >>>;
-                Math.sqrt(msg.deltaY*msg.deltaY + msg.deltaX*msg.deltaX) => float val;
-                // Math.max(max, val) => max; 
-                val / 42 => float totVal; 
-                
-                float maxPG;
-                if(whichBird > 0)
-                    60 => maxPG; //before was 60 -- let's see
-                else
-                    2000 => maxPG;
-                
+          
                 mem.initT*0.5 + (1.0-msg.scaledCursorY)*mem.initT*5.0 => float t;
                 
                 mem.changeTension(t);

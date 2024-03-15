@@ -6,6 +6,7 @@
 //*************
 HadrosaurSyrinx syrinx => dac; 
 syrinx.init();
+20 => syrinx.limiter.gain;
 
 /* Uncomment to save results to file
 dac => WvOut2 writer => blackhole; //record to file
@@ -20,7 +21,7 @@ WvIn audioFile => dac;
 */
 
 //uncomment to use mouse to control -- this blocks the rest of the file from running
-//syrinx.runWithMouse();
+syrinx.runWithMouse();
 
 /*
 MultiPointEnvelope pressure => blackhole;

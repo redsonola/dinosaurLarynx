@@ -8,18 +8,19 @@
 DoveSyrinx syrinx => dac; 
 syrinx.init();
 
-/* Uncomment to save results to file
-dac => WvOut2 writer => blackhole; //record to file
-writer.wavFilename("hadrosaurSounds.wav"); //set file name
-null @=> writer; //automatically close file on remove-shred -- is it temporary??
+///* Uncomment to save results to file
+//dac => WvOut2 writer => blackhole; //record to file
+//writer.wavFilename("hadrosaurSounds.wav"); //set file name
+//null @=> writer; //automatically close file on remove-shred -- is it temporary??
 
 //note-- use WvIn to play a file --> https://chuck.stanford.edu/doc/program/ugen_full.html#WvIn
-*/
 
 //uncomment to use mouse to control -- this blocks the rest of the file from running
 //syrinx.runWithMouse();
 
 //* uncomment to create a "note" onset of a coo sound.
+/*
+
 MultiPointEnvelope air => blackhole;
 MultiPointEnvelope muscle => blackhole; 
 
