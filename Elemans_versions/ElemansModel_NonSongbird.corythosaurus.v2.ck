@@ -162,7 +162,7 @@ class RingDoveSyrinxLTM extends Chugen
     
     //time-varying (input control) parameters Q, which reflect sum of syringeal pressures & resulting quality factor impacting oscillation eq. in updateX()
     0.2 => float Qmin; //0.8 for dove
-    4 => float Qmax; //1.2 for dove
+    3 => float Qmax; //1.2 for dove
     Qmin => float Q; //F(t) = Q(t)F0
     -0.3 => float Pt; //-1 to 0.5 using CTAS, normalized to 1, max but usually around 0.5 max -- from graph on p. 70, Pt = PICAS - PCTAS (max 3.5), 
     Pt + Ptl => float Psum;
@@ -234,23 +234,27 @@ class RingDoveSyrinxLTM extends Chugen
     fun void updateU(float Ps)
     {
         //find du
-        if(aMin > 0)
+        if(aMin > 0) //note: in some circumstances Ps can be less than zero due to reflections, for now just count as closed membrane...
         {
+            Math.fabs(Ps) => Ps; //disregard direction when calculating overall pressure -- try
+            
             //breaking up the equation so I can easily see order of operations is correct
             2*l*Math.sqrt((2*Ps)/p) => float firstMult;
             heaveisideA(a2-a1, a1)*dx[0] => float firstAdd; 
             heaveisideA(a1-a2, a2)*dx[1]=> float secondAdd;
             
             firstMult*(firstAdd + secondAdd) => dU;
+            
+            //find U for vocal tract coupling -- more precise than integrating
+            (2*Ps)/p => float inside;
+            Math.sqrt(inside) => float sq; 
+            sq*aMin*heaveiside(aMin) => U;
         }
         else
         {
            0 => dU; //current dU is 0, then have to smooth for integration just showing that in the code
-        }     
-        
-        //find U for vocal tract coupling -- more precise than integrating
-        Math.sqrt((2*Ps)/p) => float sq; 
-        sq*aMin*heaveiside(aMin) => U;           
+           0 => U;
+        }                
     }
     
     //couple the input pressue to this syrinx membrane model
@@ -565,6 +569,10 @@ fun float syringealArea(float z)
         if(Math.isnan(inputP))
         {
             0 => inputP; //stop overflow
+            <<<"**********************NAN********************** U: " +U>>>;
+            <<<"**********************NAN********************** dU: " + dU>>>;
+            <<<"**********************NAN********************** Ps: " + Ps>>>;
+            <<<"**********************NAN**********************">>>;
         }
         
         updateX();
@@ -760,6 +768,10 @@ lp => wa => delay => LPF lpf => Dyno limiter => dac;
 10 => lpf.Q;
 200 => lpf.freq; //arbitrary, by ear after testing. 
 
+//I want to just see what the frequency is
+dac => PitchTrack pitch => blackhole;
+
+
 //limit output from trachea, just in case things get out of control.
 limiter.limit();
 1 => limiter.gain;
@@ -886,7 +898,7 @@ function void mouseEventLoopControllingAirPressure()
                Math.max(audioMax, limiter.last()) => audioMax; 
                Math.min(audioMin, limiter.last()) => audioMin; 
                
-               <<<ltm.last() + ","+ ltm.inputP>>>;
+               <<< ltm.last() + ","+ ltm.inputP + "," + p1.last() + "," + ltm.U + " pitch: "+pitch.get() + "Hz" >>>;
 
                
                //<<<ltm.Ps+"," + ltm.Ptl+ "," + ltm.Pt + "," + limiter.last() + " ," +audioMin + "," + audioMax >>>;
