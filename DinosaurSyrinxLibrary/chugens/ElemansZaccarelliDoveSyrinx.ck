@@ -150,10 +150,16 @@ public class ElemansZaccarelliDoveSyrinx extends Chugen
     //update the air flow in the syrinx membrane, ie, the U
     //dU, 1st derivative of U, is used as the audio output variable
     fun void updateU(float Ps)
-    {
+    {    
         //find du
         if(aMin > 0)
-        {
+        {            
+            Math.fabs(Ps) => Ps;
+            
+            //find U for vocal tract coupling -- more precise than integrating
+            Math.sqrt((2*Ps)/p) => float sq; 
+            sq*aMin*heaveiside(aMin) => U;  
+            
             //breaking up the equation so I can easily see order of operations is correct
             2*l*Math.sqrt((2*Ps)/p) => float firstMult;
             heaveisideA(a2-a1, a1)*dx[0] => float firstAdd; 
@@ -165,10 +171,33 @@ public class ElemansZaccarelliDoveSyrinx extends Chugen
         {
             0 => dU; //current dU is 0, then have to smooth for integration just showing that in the code
         }     
+         
+    }
     
-        //find U for vocal tract coupling -- more precise than integrating
-        Math.sqrt((2*Ps)/p) => float sq; 
-        sq*aMin*heaveiside(aMin) => U;           
+    //reset all the non-constant, non-user controlled variables 
+    function void reset()
+    {
+        //membrane displacement
+        [0.0, 0.0] @=> x; 
+        [0.0, 0.0] @=> dx; 
+        [0.0, 0.0] @=> d2x; 
+        [0.0, 0.0] @=> F; //force  
+        [0.0, 0.0] @=> I; //collsion  
+        0.0 => dU;
+        0.0 => U; 
+        0.0 => minCPO; //min. collision point ordinate -- cpo
+        0.0 => cpo1; 
+        0.0 => cpo2; 
+        0.0 => cpo3; 
+        
+        //geometries (ie, areas) found in order to calculate syrinx opening and closing forces
+        0.0 =>  a1; 
+        0.0 =>  a2; 
+        0.0 =>  aMin;
+        0.0 =>  zAMin; 
+        0.0 =>  aM;  
+        0.0 =>  a3; 
+        0.0 => inputP;
     }
 
     //couple the input pressue to this syrinx membrane model
@@ -471,6 +500,11 @@ fun float syringealArea(float z)
     //Main processing function of the chugen (plug-in). Everything that does stuff is called from here
     function float tick(float inP) //with trachea, inP is the input pressure from waveguide / tube / trachea modeling... 
     {
+        if(Math.isnan(inputP))
+        {
+            0 => inputP; 
+        }
+        
         updateX();
         updateForce(); //update the Ps with the inputP here
         updateCollisions();

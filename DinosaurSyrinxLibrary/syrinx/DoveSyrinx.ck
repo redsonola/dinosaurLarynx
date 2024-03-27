@@ -11,7 +11,7 @@ public class DoveSyrinx extends Chugraph
      BirdTracheaFilter lp, lp2; 
      WallLossAttenuation wa, wa2;
      HPFilter hpOut;
-     Flip flip, flip2; //just to scale by -1
+     Gain flip, flip2; //just to scale by -1
      DelayA delay, tracheaForward; //delays for pressure reflection
      DelayA delay2, tracheaBack; //delays for pressure reflection
      Gain p1; //reflected pressure
@@ -20,9 +20,17 @@ public class DoveSyrinx extends Chugraph
      float L; //full trachea length to mouth
      Dyno limiter;
      LPF lpf; //low-pass filter, for closed mouth
+     
+     0 => int whichDinosaur;
+     1 => int corythosaurus;
+     0 => int dove;
     
     function void init()
     {
+        -1 => flip.gain;
+        -1 => flip2.gain;
+        
+        
         //**SOUND of syrinx membrane through vocal tract
         //run it through the throat, etc. for the audio out
         membrane => delay => lp => blackhole;
@@ -84,18 +92,34 @@ public class DoveSyrinx extends Chugraph
     //0-1 -- input pressure to control via other ways than mouse
     function updateInputPressure(float inPs)
     {
-        //input air pressure changes based on x screen position
-        //Ranges determined by Zaccarelli(2009) p. 73, Fig. 4.3, lower end increased for mouse playability 
-        membrane.changePs(inPs*0.037 + 0.001); //go up to 0.0692
+        if(whichDinosaur == dove)
+        {
+            //input air pressure changes based on x screen position
+            //Ranges determined by Zaccarelli(2009) p. 73, Fig. 4.3, lower end increased for mouse playability 
+            membrane.changePs(inPs*0.037 + 0.001); //go up to 0.0692
+        }
+        else
+        {
+            membrane.changePs(inPs*0.05);     
+        }
     }
     
     //0-1 -- input to control via other ways via other ways than mouse
     function updateInputMusclePressure(float inPressure)
     {
-        //Ranges from same set of figures on p. 73 illustrating muscle pressures for coo sound
-        inPressure * 15 + 5 => float Ptl;
-        membrane.changePtl(Ptl); 
-        membrane.changePt(((1.0-inPressure)*2)  - 1.0);
+        if(whichDinosaur == dove)
+        {
+            //Ranges from same set of figures on p. 73 illustrating muscle pressures for coo sound
+            inPressure * 15 + 5 => float Ptl;
+            membrane.changePtl(Ptl); 
+            membrane.changePt(((1.0-inPressure)*2)  - 1.0);
+        }
+        else
+        {
+            inPressure * 40 => float Ptl;
+            membrane.changePtl(Ptl);
+            membrane.changePt((((1.0-inPressure)*2)  - 1.0)*2.0); //Pt is generally inverse of Ptl during dove calls -- well to the limited extent of the paper
+        }
     } 
     
     //mouse event loop controlling air pressure & muscle pressure
@@ -115,11 +139,6 @@ public class DoveSyrinx extends Chugraph
         <<< "mouse '" + hi.name() + "' ready", "" >>>;
         0.0 => float max;
         
-        0 => int whichBird; //will use in future
-        
-        -10 => float audioMax;
-        10 => float audioMin;
-        
         // infinite event loop
         while( true )
         {
@@ -132,30 +151,39 @@ public class DoveSyrinx extends Chugraph
                 // mouse motion
                 if( msg.isMouseMotion() )
                 {                
-                    // get the normalized X-Y screen cursor 
-                    // <<< "mouse normalized position --",
-                    // "x:", msg.scaledCursorX, "y:", msg.scaledCursorY >>>;
-                    Math.sqrt(msg.deltaY*msg.deltaY + msg.deltaX*msg.deltaX) => float val;
-                    val / 42 => float totVal; 
+                    if(whichDinosaur == dove)
+                    {
+                        //input air pressure changes based on x screen position
+                        //Ranges determined by Zaccarelli(2009) p. 73, Fig. 4.3, lower end increased for mouse playability 
+                        membrane.changePs((msg.scaledCursorX)*0.037 + 0.001); //go up to 0.0692
                     
-                    //create a version in logarithmic scale, could be useful, but not so far
-                    logScale( msg.scaledCursorX, 0.000000001, 1.0 ) => float scaledX; 
-                    logScale( msg.scaledCursorY, 0.000000001, 1.0 ) => float scaledY;
-                    
-                    //input air pressure changes based on x screen position
-                    //Ranges determined by Zaccarelli(2009) p. 73, Fig. 4.3, lower end increased for mouse playability 
-                    membrane.changePs((msg.scaledCursorX)*0.037 + 0.001); //go up to 0.0692
-                    
-                    //Ranges from same set of figures on p. 73 illustrating muscle pressures for coo sound
-                    msg.scaledCursorY * 15 + 5 => float Ptl;
-                    membrane.changePtl(Ptl);
-                    membrane.changePt(((1.0-msg.scaledCursorY)*2)  - 1.0);
-                    
-                    //Just some useful code for caw.
-                    Math.max(audioMax, limiter.last()) => audioMax; 
-                    Math.min(audioMin, limiter.last()) => audioMin; 
-                    
-                    //<<<ltm.Ps+"," + ltm.Ptl+ "," + ltm.Pt + "," + limiter.last() + " ," +audioMin + "," + audioMax >>>;
+                        //Ranges from same set of figures on p. 73 illustrating muscle pressures for coo sound
+                        msg.scaledCursorY * 15 + 5 => float Ptl;
+                        membrane.changePtl(Ptl);
+                        membrane.changePt(((1.0-msg.scaledCursorY)*2)  - 1.0);
+                    }
+                    else
+                    {
+                        //input air pressure changes based on x screen position
+                        //Ranges determined by other vocal pressures -- so far this does not seem to change much
+                        //need to do more research. Higher pressures lead to instabilities tho anyways, so if 
+                        //higher pressures are used, then likely other params (eg. stiffness, etc.) need to change
+                        membrane.changePs((msg.scaledCursorX)*0.05 + 0.001); //go up to 0.0692
+                        
+                        msg.scaledCursorY * 40 => float Ptl;
+                        membrane.changePtl(Ptl);
+                        membrane.changePt((((1.0-msg.scaledCursorY)*2)  - 1.0)*2.0);
+                        
+                        //incase of blow up
+                        if( membrane.inputP > 3.0 )
+                        {
+                            delay.clear();
+                            delay2.clear();
+                            tracheaForward.clear();
+                            tracheaBack.clear();                   
+                            membrane.reset();                   
+                        }                       
+                    }
                 }
                 
             }  
@@ -222,6 +250,122 @@ public class DoveSyrinx extends Chugraph
     
 
 
+    function void makeCorythosaurus()
+    {
+        corythosaurus => whichDinosaur;
+        
+        //difference in scale btw dove and dinosaur 
+        4.5/0.15 => float dinoScale; //based on trachea width
+
+
+        //********* constants that change during modeling the coo!!! 2/2024 Table C.1 p. 134 ************ NOW CORYTHOSAURUS - 3/2024 *************
+        0.0017 * dinoScale =>  membrane.m; //mass, table C.1
+        0.022 => membrane.k; //stiffness -- orig. 0.02 in fig. 3.2 zaccharelli -- now back to original-ish? table C.1
+        0.006 => membrane.kc; //coupling constant, table C.1 (before, 0.005)
+        0.1 * Math.sqrt(membrane.m*membrane.k)  => membrane.r; //damping, table C.1 // 0.0012 => float r; --> moved it back to human, previously 0.001 for dove
+    
+    //biological parameters of ring dove syrinx, in cm -- ***change during coo! Table 4.1, p76
+    
+    //ALLIGATORS
+    //https://cob.silverchair-cdn.com/cob/content_public/journal/jeb/214/18/10.1242_jeb.051110/3/3082.pdf?Expires=1713477414&Signature=ZRQGYrOxeB9ylwkicgM~-H5G~wPwGVuW8fAnptV4JBdqWiercZWPmTVWFxPmGD~EAt-GG6S4UYN7NdoozOv51hdAO9e4mL6SmiXGoWi3hxlImvWm9psd~NCqliAGftDIn~o9tHncPuiyCbixzDYiQZx0-iiAGlF0AG2d~gLL0nI7DS6i7ZV6qVopaEqnQHNfNDVkutzz4lZvr~8vPeNYT0TN8MDZ8Fm8oohlLtkKwRaWWr3ZLNLYA5AKQJNMLbirENTlsGsB4xJzWQyUYigSRZzkEAQFnSb304m8WrLSLJsB-wJyFSJk7bvkMdCEc-3KdhACupRMNK4qkvoP~pdfvg__&Key-Pair-Id=APKAIE5G5CRDK6RD3PGA
+    //m1=0.125 g, m2=0.025 g,
+    //k1=80,000 g s^-2, k2=8000 g s^-2, kc=25,000g s^2, r = 
+    //in model units: k1 = 0.08, k2 = 0.008, kc = 0.025
+    
+    //c1=3k1, c2=3k2 --> same values as here, except for asymmetrical model
+    
+    //d1 = 0.25cm, d2=0.05cm, l=1.4cm and while the
+    //damping constants were set as r= 2cpo(mi*ki)^1/2, cpo = 0.05
+    //r1 = 2*0.05* (m1*k1)^1/2 = 0.1*
+    
+//ALLIGATOR PAPER
+//Vocal fold length is positively correlated with body mass (Fig.3).
+//A scaling factor of 0.35 (r2= 0.98; Fig.3), suggests that vocal fold
+//length scales with body size almost with geometric similarity.
+//they used alligators 31-37cm in length, 0.9 and 1.4kg body mass
+    
+        4.5 => membrane.w;//1/2 trachea width -- Corythosaurus
+        2*membrane.w => membrane.a;//full trachea width
+        21.6 => membrane.l; //length of the trachea, 4.1 table, 0.32 **changed, 8.9-14in. med. 11.45", 31-37" (nose to end of body, not tail) alligator is 1.2cm, 3-4x that of a dove, 18x that for Corythosaurus (est. 6m nose to end of body not tail)?? 24-32.4
+    
+        //some wild speculation
+        0.003 * 18 => membrane.a01; //lower rest area
+        0.003 * 17 => membrane.a02; //upper rest area, testing a02/a01 = 0.8, testing a convergent syrinx
+
+        //heights -- alligator was not much changed from dove (although one is syrinx & one is larynx, hard to measure) humans were less than 2x alligator although much bigger, dunno
+        //it does not seem like these heights scale up a lot with size
+        //I need to do more research. I've chosen a really conservative number
+        0.04 * 3 => membrane.d1; //1st mass height -- alligator is: d1=0.25, d2=0.05cm -- perhaps this actually doesn't scale up that much? leave alone for now.
+        (0.24 - membrane.d1)* 3  => membrane.d2; //2nd mass displacement from first
+        (0.28 - (membrane.d1+membrane.d2))* 3  => membrane.d3; //3rd mass displacement from 2nd
+            
+        //double that of dove but?
+        40.0 => membrane.maxPtl; 
+    
+        //more time-varying parameters -- vary with different muscle tension values
+        -0.03 * dinoScale => membrane.a0min; 
+        0.01 * dinoScale => membrane.a0max; 
+        membrane.a0max - membrane.a0min => membrane.a0Change; 
+    
+        //time-varying (input control) parameters Q, which reflect sum of syringeal pressures & resulting quality factor impacting oscillation eq. in updateX()
+        0.5 => membrane.Qmin; //0.8 for dove
+        3 => membrane.Qmax; //1.2 for dove
+        membrane.Qmin => membrane.Q; //F(t) = Q(t)F0
+        -0.3 => membrane.Pt; //-1 to 0.5 using CTAS, normalized to 1, max but usually around 0.5 max -- from graph on p. 70, Pt = PICAS - PCTAS (max 3.5), 
+        membrane.Pt + membrane.Ptl => membrane.Psum;
+        0.0 => membrane.minPsum; 
+        40.0 => membrane.maxPsum;  
+        membrane.Qmax - membrane.Qmin =>  membrane.Qchange;
+    
+        //area of opening of syrinx at rest -- need to re-calculate
+        2.0*membrane.l*membrane.w => membrane.a0; //a0 is the same for both masses since a01 == a02
+
+        //recalc geometry
+        membrane.d1 + (membrane.d2/2) => membrane.dM; //imaginary horizontal midline -- above act on upper mass, below on lower
+
+         //***adding the input pressure to the force -- 2/29/2024
+        //**********from the Fletcher model, adding back vocal tract effects
+        0 => membrane.inputP; //this is reflection from vocal tract
+        (membrane.p*membrane.c*100)/(pi*membrane.a*membrane.a) => membrane.z0; //impedence of brochus --small compared to trachea, trying this dummy value until more info 
+        membrane.z0/6   => membrane.zG; //NOT USED erase --> an arbitrary impedance smaller than z0, Fletcher
+        0.0 => membrane.pAC; //reflected pressure from the vocal tract after coupling - incl. impedence, etc.
+
+        //Steineke & Herzel, 1994  --this part was not clear there but--->
+        //confirmed! Herzel, H., Berry, D., Titze, I., & Steinecke, I. (1995). Nonlinear dynamics of the voice: Signal analysis and biomechanical modeling. Chaos (Woodbury, N.Y.), 5(1), 30?34. 
+        //https://doi.org/10.1063/1.166078
+        //confirmed in Herzel & Steineke 1995 Bifurcations in an asymmetric vocal-fold model
+        //c1 & c2 are constants used in the collision force equations  related to damping/stiffness/materiality
+        3.0 * membrane.k => membrane.c1; 
+        3.0 * membrane.k => membrane.c2;       
+        
+        //reinit -- this needs to be refactored
+        116 => L;
+        membrane.a => a;
+        membrane.a => h; 
+        L => wa.L;
+        a => wa.a;
+        L => wa2.L;
+        a => wa2.a;
+        wa.calcConstants();
+        wa2.calcConstants();
+        setParamsForReflectionFilter(lp);
+        setParamsForReflectionFilter(lp2);
+        
+        //347.4 => float c; // in m/s 
+        membrane.c/(2*(L/100.0)) => float LFreq; //speed of sound - c - is in meters, so convert L (in cm) to meters here.
+    
+        //I didn't *2 the frequency since there is no flip - 3/1/2024
+        ( (second / samp) / (LFreq) - 1) => float period; //* 0.5 in the STK for the clarinet model... clarinet.cpp hmmm
+        //( (second / samp) / (2*LFreq) - 1) => float period; //* 0.5 in the STK for the clarinet model... clarinet.cpp hmmm
+    
+        period::samp => delay.delay; //for sound
+        period::samp => tracheaForward.delay; //reflection back into the model
+        period::samp => tracheaBack.delay; ///for reflection back into the model 
+        
+        10 => lpf.Q;
+        200 => lpf.freq; //arbitrary, by ear after testing. 
+
+    }
 
 
 }

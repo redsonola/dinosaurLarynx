@@ -161,7 +161,7 @@ class RingDoveSyrinxLTM extends Chugen
     a0max - a0min => float a0Change; 
     
     //time-varying (input control) parameters Q, which reflect sum of syringeal pressures & resulting quality factor impacting oscillation eq. in updateX()
-    0.2 => float Qmin; //0.8 for dove
+    0.5 => float Qmin; //0.8 for dove
     3 => float Qmax; //1.2 for dove
     Qmin => float Q; //F(t) = Q(t)F0
     -0.3 => float Pt; //-1 to 0.5 using CTAS, normalized to 1, max but usually around 0.5 max -- from graph on p. 70, Pt = PICAS - PCTAS (max 3.5), 
@@ -228,6 +228,31 @@ class RingDoveSyrinxLTM extends Chugen
     //c1 & c2 are constants used in the collision force equations  related to damping/stiffness/materiality
     3.0 * k => float c1; 
     3.0 * k => float c2; 
+    
+    function void reset()
+    {
+        //membrane displacement
+        [0.0, 0.0] @=> x; 
+        [0.0, 0.0] @=> dx; 
+        [0.0, 0.0] @=> d2x; 
+        [0.0, 0.0] @=> F; //force  
+        [0.0, 0.0] @=> I; //collsion  
+        0.0 => dU;
+        0.0 => U; 
+        0.0 => minCPO; //min. collision point ordinate -- cpo
+        0.0 => cpo1; 
+        0.0 => cpo2; 
+        0.0 => cpo3; 
+       
+        //geometries (ie, areas) found in order to calculate syrinx opening and closing forces
+        0.0 =>  a1; 
+        0.0 =>  a2; 
+        0.0 =>  aMin;
+        0.0 =>  zAMin; 
+        0.0 =>  aM;  
+        0.0 =>  a3; 
+        0.0 => inputP;
+    }
 
     //update the air flow in the syrinx membrane, ie, the U
     //dU, 1st derivative of U, is used as the audio output variable
@@ -619,6 +644,13 @@ class CoupleLTMwithTract extends Chugen
     fun float tick(float in){        
         //-- this is seconds, but I want to xlate to samples
         //does this make sense? look at parameters for airflow, too
+        
+        //prevent blowups
+        if (in > 3.0)
+        {
+            0 => in;
+        }
+        
         lvm.z0/lvm.SRATE * lvm.U => p1; //outgoing pressure value into the vocal tract
         
         in*2 + p1 => lvm.inputP; 
@@ -769,8 +801,7 @@ lp => wa => delay => LPF lpf => Dyno limiter => dac;
 200 => lpf.freq; //arbitrary, by ear after testing. 
 
 //I want to just see what the frequency is
-dac => PitchTrack pitch => blackhole;
-
+limiter => PitchTrack pitch => blackhole;
 
 //limit output from trachea, just in case things get out of control.
 limiter.limit();
@@ -887,7 +918,7 @@ function void mouseEventLoopControllingAirPressure()
                 
                //input air pressure changes based on x screen position
                //Ranges determined by Zaccarelli(2009) p. 73, Fig. 4.3, lower end increased for mouse playability 
-               ltm.changePs((msg.scaledCursorX)*0.04); //go up to 0.0692
+               ltm.changePs((msg.scaledCursorX)*0.05); //go up to 0.0692
                
                //Ranges from same set of figures on p. 73 illustrating muscle pressures for coo sound
                msg.scaledCursorY * 40 => float Ptl;
@@ -898,10 +929,18 @@ function void mouseEventLoopControllingAirPressure()
                Math.max(audioMax, limiter.last()) => audioMax; 
                Math.min(audioMin, limiter.last()) => audioMin; 
                
-               <<< ltm.last() + ","+ ltm.inputP + "," + p1.last() + "," + ltm.U + " pitch: "+pitch.get() + "Hz" >>>;
+               if( ltm.inputP > 3.0 )
+               {
+                   <<< ltm.last() + ","+ ltm.inputP + "," + p1.last() + "," + ltm.U + " pitch: "+pitch.get() + "Hz" >>>;
+                   <<<"Ps: " + ltm.Ps+"," + "Ptl: " + ltm.Ptl+ ","  + "Pt: "  + ltm.Pt + "," + limiter.last() + " ," +audioMin + "," + audioMax >>>;
 
-               
-               //<<<ltm.Ps+"," + ltm.Ptl+ "," + ltm.Pt + "," + limiter.last() + " ," +audioMin + "," + audioMax >>>;
+                   delay.clear();
+                   delay2.clear();
+                   tracheaForward.clear();
+                   tracheaBack.clear();                   
+                   ltm.reset();                   
+               }
+
             }
             /*
             if( msg.isButtonUp() )

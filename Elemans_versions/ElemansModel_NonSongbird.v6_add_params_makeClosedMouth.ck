@@ -721,12 +721,12 @@ RingDoveSyrinxLTM ltm => delay => lp => blackhole;
 lp => wa => delay => LPF lpf => Dyno limiter => dac;
 //1 => lpf.Q;
 700 => lpf.freq; //arbitrary, by ear after testing. 
+dac => PitchTrack pitch => blackhole;
 
 //limit output from trachea, just in case things get out of control.
 limiter.limit();
 
 //***END SOUND CIRCUIT
-
 
 //**COUPLING and modeling the returning pressure reflection to the syrinx model
 CoupleLTMwithTract coupler; //this waveguide is for pressure reflection for interaction with larynx, does not have an audio out.
@@ -836,7 +836,7 @@ function void mouseEventLoopControllingAirPressure()
                Math.max(audioMax, limiter.last()) => audioMax; 
                Math.min(audioMin, limiter.last()) => audioMin; 
                
-               //<<<ltm.Ps+"," + ltm.Ptl+ "," + ltm.Pt + "," + limiter.last() + " ," +audioMin + "," + audioMax >>>;
+               <<< ltm.last() + ","+ ltm.inputP + "," + p1.last() + "," + ltm.U + " pitch: "+pitch.get() + "Hz" >>>;
             }
 
         }  

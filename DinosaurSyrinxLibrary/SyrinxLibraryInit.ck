@@ -9,7 +9,7 @@
 Machine.add("chugens/FletcherSmythSyrinxMembrane.ck");
 Machine.add("chugens/ElemansZaccarelliDoveSyrinx.ck");  
 Machine.add("chugens/WallLoss.ck"); 
-Machine.add("chugens/Flip.ck"); 
+//Machine.add("chugens/Flip.ck"); 
 Machine.add("chugens/EnvelopeFollower.ck"); 
 Machine.add("chugens/ScatteringJunction.ck"); 
 Machine.add("chugens/BirdTracheaFilter.ck"); 

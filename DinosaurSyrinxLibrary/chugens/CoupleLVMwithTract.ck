@@ -14,7 +14,7 @@ public class CoupleLVMwithTract extends Chugen
     fun float tick(float in){        
         //-- this is seconds, but I want to xlate to samples
         //does this make sense? look at parameters for airflow, too
-        lvm.z0/(second/samp) * lvm.U => p1; //outgoing pressure value into the vocal tract
+        lvm.z0/lvm.SRATE * lvm.U => p1; //outgoing pressure value into the vocal tract
         
         in*2 + p1 => lvm.inputP; //put the input reflected pressure back in syrinx lvm
         return p1; //output pressure
