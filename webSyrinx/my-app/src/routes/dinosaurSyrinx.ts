@@ -266,6 +266,7 @@ function expScale(input: number, min : number, max : number)
 }
 
 let lastMaxPG = 400; 
+export var noiseFloor: number = 0.18;
 function scalePGValues(micIn : number, tens: number, ctrlValue : number) : number
 {
         //pG is based on the tension
@@ -305,12 +306,20 @@ function scalePGValues(micIn : number, tens: number, ctrlValue : number) : numbe
         //put 0 at the center
         let scaledX = m.x - 0.5; 
 
+
+
         //add or minus a certain amt.
         pG += scaledX*(500*m.y) ;
         pG = Math.max(pG, 0);
 
-        //console.log(pG, tens, maxPG);
-        return pG;
+    //add in a mic noise floor -- production code now. 1/13/24
+    if( micIn < noiseFloor)
+    {
+        pG = 0;
+    }
+
+    //console.log(pG, tens, maxPG);
+    return pG;
 }
 
 function scaleTension(ctrlValue : number) : number
