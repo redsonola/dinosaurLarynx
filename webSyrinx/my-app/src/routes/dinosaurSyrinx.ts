@@ -381,17 +381,17 @@ function scalePGValuesLow(micIn: number, tens: number, ctrlValue: number): numbe
     }
     else if (tens < 6015563) {   //5675073.28 8027448.10
         floorPG = 20; //changed from 400
-        maxMaxPG = 200;
+        maxMaxPG = 100;
     }
     else if (tens<7015563) { 
 
         floorPG = 90;
-        maxMaxPG = 300;
+        maxMaxPG = 150;
     }
     else 
     {
         floorPG = 20;
-        maxMaxPG = 500;
+        maxMaxPG = 200;
     }
 
     let maxPG = maxMaxPG;// (ctrlValue * (maxMaxPG - floorPG)) + floorPG;
