@@ -325,7 +325,7 @@ function scalePGValues(micIn : number, tens: number, ctrlValue : number) : numbe
 function scaleTensionLow(ctrlValue: number, xctrl: number): number {
     let tens = 0;
     let maxTens = 808510292;
-    let maxTens2 = 26615563;
+    let maxTens2 = 18615563;
     // if (m.y < 0.75) {
     //     tens = ((ctrlValue) * (9890243.3116 - 2083941)) + 2083941;
     // }
@@ -345,6 +345,7 @@ function scaleTensionLow(ctrlValue: number, xctrl: number): number {
     tens += scaledX * (10000 * m.y); //have what the area adds be a percentage of the wideness.
     tens = Math.max(156080, tens);
     //tens = Math.min(maxTens, tens);
+    console.log( tens );
 
     return tens;
 }
@@ -370,7 +371,7 @@ function scalePGValuesLow(micIn: number, tens: number, ctrlValue: number): numbe
     else if (tens < 656080) {
         maxMaxPG = 25;
     }
-    else if (tens < 1656080) {
+    else if (tens < 1656080) { //12547837.826411683
         maxMaxPG = 50;
     }
     else if (tens < 3015563) {
@@ -388,10 +389,20 @@ function scalePGValuesLow(micIn: number, tens: number, ctrlValue: number): numbe
         floorPG = 90;
         maxMaxPG = 150;
     }
-    else 
-    {
+    else if (tens < 8015563) {
+    
         floorPG = 20;
         maxMaxPG = 200;
+    }
+    else if (tens < 10015563) {
+
+        floorPG = 20;
+        maxMaxPG = 250;
+    }
+    else
+    {
+        floorPG = 20;
+        maxMaxPG = 300;
     }
 
     let maxPG = maxMaxPG;// (ctrlValue * (maxMaxPG - floorPG)) + floorPG;
@@ -526,8 +537,6 @@ function handleMousemove(event) {
     {
         console.log("mouse is NAN!!");
     }
-    console.log("x: ",m.x, "y: ",m.y, "cx: ",event.screenX, "cy: ",event.screenY);
-    console.log("clientWidth: ",screen.width, "clientHeight: ",screen.height);
 });
 
 document.body.addEventListener('touchmove', 
