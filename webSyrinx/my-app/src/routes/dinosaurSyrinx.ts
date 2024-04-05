@@ -325,7 +325,7 @@ function scalePGValues(micIn : number, tens: number, ctrlValue : number) : numbe
 function scaleTensionLow(ctrlValue: number, xctrl: number): number {
     let tens = 0;
     let maxTens = 808510292;
-    let maxTens2 = 18615563;
+    let maxTens2 = 10615563;
     // if (m.y < 0.75) {
     //     tens = ((ctrlValue) * (9890243.3116 - 2083941)) + 2083941;
     // }
