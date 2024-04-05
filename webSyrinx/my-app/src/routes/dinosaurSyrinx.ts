@@ -403,15 +403,16 @@ export function trachealSyrinx()
 let m = { x: 0, y: 0 };
 document.body.addEventListener('mousemove', 
 function handleMousemove(event) {
-    m.x = event.clientX / document.body.clientWidth;
-    m.y = event.clientY / document.body.clientHeight;
+    m.x = event.screenX / screen.width;
+    m.y = event.screenY / screen.height;
     m.y = 1.0 - m.y; //flip so lower is lower pitched and vice versa
 
     if (Number.isNaN(m.x) || Number.isNaN(m.y) ) 
     {
         console.log("mouse is NAN!!");
     }
-    console.log(m.x, m.y);
+    console.log("x: ",m.x, "y: ",m.y, "cx: ",event.screenX, "cy: ",event.screenY);
+    console.log("clientWidth: ",screen.width, "clientHeight: ",screen.height);
 });
 
 document.body.addEventListener('touchmove', 
