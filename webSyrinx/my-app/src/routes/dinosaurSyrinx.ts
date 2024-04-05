@@ -322,6 +322,112 @@ function scalePGValues(micIn : number, tens: number, ctrlValue : number) : numbe
     return pG;
 }
 
+function scaleTensionLow(ctrlValue: number, xctrl: number): number {
+    let tens = 0;
+    let maxTens = 808510292;
+    let maxTens2 = 26615563;
+    // if (m.y < 0.75) {
+    //     tens = ((ctrlValue) * (9890243.3116 - 2083941)) + 2083941;
+    // }
+    // else {
+    //     let addOn = ((0.75) * (9890243.3116 - 2083941)) + 2083941;
+    //     tens = ((ctrlValue) * (98989831.3116 - addOn)) + addOn;
+    // }
+
+    tens = ((ctrlValue) * (maxTens2- 156080)) + 156080;
+
+    //add something from the x value
+
+    //put 0 at the center
+    let scaledX = m.x ; //take out this for mouth -- have it only add.
+
+    //add or minus a certain amt.
+    tens += scaledX * (10000 * m.y); //have what the area adds be a percentage of the wideness.
+    tens = Math.max(156080, tens);
+    //tens = Math.min(maxTens, tens);
+
+    return tens;
+}
+
+function scalePGValuesLow(micIn: number, tens: number, ctrlValue: number): number {
+    //pG is based on the tension
+
+    let maxMaxPG = 400; //656080.2213529117
+
+    let floorPG = 20;
+    if (tens < 256080) {  
+        maxMaxPG = 8;
+    }
+    else if (tens < 356080) {
+        maxMaxPG = 9;
+    }
+    else if (tens < 400800) {
+        maxMaxPG = 10;
+    }
+    else if (tens < 456080) {
+        maxMaxPG = 20;
+    }
+    else if (tens < 656080) {
+        maxMaxPG = 25;
+    }
+    else if (tens < 1656080) {
+        maxMaxPG = 50;
+    }
+    else if (tens < 3015563) {
+        maxMaxPG = 75;
+    }
+    else if (tens < 4515563) {
+        maxMaxPG = 90;
+    }
+    else if (tens < 6015563) {   //5675073.28 8027448.10
+        floorPG = 20; //changed from 400
+        maxMaxPG = 200;
+    }
+    else if (tens<7015563) { 
+
+        floorPG = 90;
+        maxMaxPG = 300;
+    }
+    else 
+    {
+        floorPG = 20;
+        maxMaxPG = 500;
+    }
+
+    let maxPG = maxMaxPG;// (ctrlValue * (maxMaxPG - floorPG)) + floorPG;
+    let oldMaxPG = (ctrlValue * (maxMaxPG - floorPG)) + floorPG;
+
+    let rawMicIn = micIn;
+    //micIn = logScale(micIn, 0.0000001, 1.0) * 3.0;
+    let pG = micIn * maxPG ;
+    pG *= 3; 
+
+    //put 0 at the center
+    let scaledX = ctrlValue; //don't subtract right now.
+
+    //add or minus a certain amt.
+    
+    if (pG > 30) //don't add if pG is already super low
+        {pG += scaledX * (100 * m.y);} //note: was 500} //just adds a little
+        
+
+    //add in a mic noise floor -- production code now. 1/13/24
+    if( micIn < noiseFloor)
+    {
+        pG = 0;
+    }
+
+    pG = Math.max(pG, 0);
+    // if(rawMicIn < 0.04)
+    // {
+    //     pG=0;
+    // }
+
+    console.log(micIn.toFixed(2), pG.toFixed(2), tens.toFixed(2));
+    return pG;
+}
+
+
 function scaleTension(ctrlValue : number) : number
 {
     let tens = 0;
@@ -386,11 +492,11 @@ export function trachealSyrinx()
             setInterval(() => {
                 let num = meter.getValue();
 
-                let tens=scaleTension(m.y);
+                let tens=scaleTensionLow(m.y, m.x);
                 tension.setValueAtTime(tens, 0.0);
 
                 //pG is based on the tension
-                let pG = scalePGValues(num as number, tens, m.y)
+                let pG = scalePGValuesLow(num as number, tens, m.y)
                 pGparam.setValueAtTime(pG, 0.0);  
                 
                 //const context = Tone.getContext(); 
