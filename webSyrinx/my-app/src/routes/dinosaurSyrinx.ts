@@ -576,10 +576,11 @@ function createMicValues() : Tone.Meter
     const mic = new Tone.UserMedia();
     const meter = new Tone.Meter();
     const lp = new Tone.OnePoleFilter();
+    const notch = new Tone.Filter(250, "notch"); //get rid of dino feedback
     meter.normalRange = true;
     mic.open();
     // connect mic to the meter
-    mic.chain(lp, meter);
+    mic.chain(notch, lp, meter);
     // the current level of the mic
     //setInterval(() => console.log(meter.getValue()), 50);
 
