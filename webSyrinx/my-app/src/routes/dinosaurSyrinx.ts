@@ -266,7 +266,7 @@ function expScale(input: number, min : number, max : number)
 }
 
 let lastMaxPG = 400; 
-export var noiseFloor: number = 0.18;
+export var noiseFloor: number = 0.25;
 function scalePGValues(micIn : number, tens: number, ctrlValue : number) : number
 {
         //pG is based on the tension
