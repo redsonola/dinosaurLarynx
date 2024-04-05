@@ -411,6 +411,7 @@ function handleMousemove(event) {
     {
         console.log("mouse is NAN!!");
     }
+    console.log(m.x, m.y);
 });
 
 document.body.addEventListener('touchmove', 
