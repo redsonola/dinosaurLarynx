@@ -29,6 +29,10 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
         this.membrane = new SyrinxMembrane();
         this.membrane2 = new SyrinxMembrane(); 
 
+        this.FletcherSmyth = 0;
+        this.ElemansZacharelli = 1;
+        this.whichVocalModel = this.FletcherSmyth; //default
+
         this.lastSample = 0;
         this.lastSample2 = 0; 
         this.lastTracheaSample = 0; 
@@ -105,7 +109,8 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
         this.tracheaDelay2 = new DelayLine(this.sampleRate, this.channelCount || 2);
         
         //hadrosaur values
-        this.hadrosaurInit();
+        if( whichVocalModel == this.FletcherSmyth )
+            this.hadrosaurInit();
 
         //the reflection filters for each tube: bronchi & trachea
         this.bronch1Filter = new ReflectionFilter(this.membrane.c, this.membrane.T); 
@@ -210,12 +215,34 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
             automationRate: "k-rate"
         }, 
         {
+            name: "Ps",
+            defaultValue: 0,
+            minValue: 0,
+            maxValue: 1,
+            automationRate: "k-rate"
+        },
+        {
+            name: "ptl",
+            defaultValue: 0,
+            minValue: 0,
+            maxValue: 1,
+            automationRate: "k-rate"
+        }, 
+        {
+            name: "pt", //currently not implemented
+            defaultValue: 0,
+            minValue: 0,
+            maxValue: 1,
+            automationRate: "k-rate"
+        }, 
+        {
             name: "membraneCount",
             defaultValue: 2,
             minValue: 1,
             maxValue: 2,
             automationRate: "k-rate"
-        }];
+        } 
+        ];
     }
 
     generate(input:any, channel:any, parameters:any) {

@@ -486,7 +486,9 @@ export function trachealSyrinx()
         const limiter = new Tone.Limiter(); 
         const compressor = new Tone.Compressor();
         const gain = new Tone.Gain(10); 
-        membrane.chain(compressor, limiter, gain, Tone.Destination);  
+
+        var vol = new Tone.Volume(10);
+        membrane.chain(compressor, limiter, gain, vol, Tone.Destination);  
 
         const meter2 = new Tone.Meter();
         membrane.chain(meter2);
@@ -507,7 +509,7 @@ export function trachealSyrinx()
                 tension.setValueAtTime(tens, 0.0);
 
                 //pG is based on the tension
-                let pG = scalePGValuesLow(num as number, tens, m.y)
+                let pG = scalePGValuesLow(num as number, tens, m.y);
                 pGparam.setValueAtTime(pG, 0.0);  
                 
                 //const context = Tone.getContext(); 
