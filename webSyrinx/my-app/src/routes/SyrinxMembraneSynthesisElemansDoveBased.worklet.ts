@@ -4,7 +4,8 @@
 import { addToWorklet } from "./tonejs_fixed/WorkletLocalScope";
 import * as ts from "typescript";
 import { ScriptTarget } from "typescript";
-import "SyrinxMembraneSynthesis.worklet";
+import "./SyrinxMembraneSynthesis.worklet";
+
 
 export const syrinxDoveMembraneGenerator = /* typescript */  `class RingDoveSyrinx extends SyrinxMembrane
 {
@@ -445,17 +446,17 @@ export const syrinxDoveMembraneGenerator = /* typescript */  `class RingDoveSyri
     }
     
     //changes Ps
-    protected changePs(ps : number)
+    public changePs(ps : number) : void
     {
         this.goalPs = ps; 
     }
     
-    protected changePtl(ptl : number)
+    public changePtl(ptl : number) : void
     {
         this.goalPtl = ptl; 
     }
     
-    protected changePt(pt : number)
+    public changePt(pt : number) : void
     {
         this.goalPt = pt; 
     }

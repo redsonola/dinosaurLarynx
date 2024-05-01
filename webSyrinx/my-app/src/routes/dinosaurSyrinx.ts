@@ -345,7 +345,7 @@ function scaleTensionLow(ctrlValue: number, xctrl: number): number {
     tens += scaledX * (10000 * m.y); //have what the area adds be a percentage of the wideness.
     tens = Math.max(156080, tens);
     //tens = Math.min(maxTens, tens);
-    console.log( tens );
+    //console.log( tens );
 
     return tens;
 }
@@ -434,7 +434,7 @@ function scalePGValuesLow(micIn: number, tens: number, ctrlValue: number): numbe
     //     pG=0;
     // }
 
-    console.log(micIn.toFixed(2), pG.toFixed(2), tens.toFixed(2));
+    //console.log(micIn.toFixed(2), pG.toFixed(2), tens.toFixed(2));
     return pG;
 }
 
@@ -468,9 +468,6 @@ function scaleTension(ctrlValue : number) : number
 let alreadyPressed = false; 
 export function trachealSyrinx()
 {
-    document.documentElement.requestFullscreen();
-
-
     document.documentElement.requestFullscreen().catch((err) => {
        console.log(
              `Error attempting to enable fullscreen mode: ${err.message} (${err.name})`
@@ -482,18 +479,22 @@ export function trachealSyrinx()
     {
         console.log("syrinx code reached"); 
 
-        const membrane = new SyrinxMembraneFS({pG: 0.0});
         const limiter = new Tone.Limiter(); 
         const compressor = new Tone.Compressor();
         const gain = new Tone.Gain(10); 
 
-        var vol = new Tone.Volume(10);
-        membrane.chain(compressor, limiter, gain, vol, Tone.Destination);  
-
         const meter2 = new Tone.Meter();
+
+        var vol = new Tone.Volume(10);
+        const membrane = new SyrinxMembraneFS({pG: 0.0});
+
+        membrane.chain(compressor, limiter, gain, vol, Tone.Destination);  
         membrane.chain(meter2);
 
-    
+        console.log(membrane);
+
+
+
         const pGparam = membrane.pG; 
         const meter = createMicValues();
 
@@ -511,9 +512,10 @@ export function trachealSyrinx()
                 //pG is based on the tension
                 let pG = scalePGValuesLow(num as number, tens, m.y);
                 pGparam.setValueAtTime(pG, 0.0);  
+
+                console.log(meter2.getValue());
                 
                 //const context = Tone.getContext(); 
-                //console.log(meter2.getValue());
             },
             5);
         }

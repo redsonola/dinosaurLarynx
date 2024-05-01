@@ -2,6 +2,7 @@
 
 import "tone/build/esm/core/worklet/SingleIOProcessor.worklet";
 import "./SyrinxMembraneSynthesis.worklet";
+import "./SyrinxMembraneSynthesisElemansDoveBased.worklet";
 import "./BirdTracheaFilter.worklet"
 import "./tonejs_fixed/DelayLine.worklet";
 import "./WallLoss.worklet";
@@ -26,12 +27,12 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
 
     constructor(options : any) {
         super(options);
-        this.membrane = new SyrinxMembrane();
-        this.membrane2 = new SyrinxMembrane(); 
 
         this.FletcherSmyth = 0;
         this.ElemansZacharelli = 1;
-        this.whichVocalModel = this.FletcherSmyth; //default
+        this.whichVocalModel = this.ElemansZacharelli; //default
+
+        this.createMembrane(); //create the membrane
 
         this.lastSample = 0;
         this.lastSample2 = 0; 
@@ -86,10 +87,35 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
 
     }
 
-    protected initFunc()
+    protected setSyrinxModel(which : number) : void
     {
-        this.membrane = new SyrinxMembrane();
-        this.membrane2 = new SyrinxMembrane(); 
+        if( which != this.whichVocalModel )
+        {
+            this.whichVocalModel = which; 
+            this.initFunc(true);
+        }
+    }
+
+    protected createMembrane() : void
+    {
+        if( this.whichVocalModel == this.FletcherSmyth || this.whichVocalModel != this.ElemansZacharelli ) //if which is garbage, set to default
+        {
+            this.membrane = new SyrinxMembrane();
+            this.membrane2 = new SyrinxMembrane();
+        }
+        else
+        {
+            this.membrane = new RingDoveSyrinx();
+            this.membrane2 = new RingDoveSyrinx();
+        }
+    }
+
+    protected initFunc(createNewMembrane : boolean = true) : void
+    {
+        if( createNewMembrane )
+        {
+            this.createMembrane(this.whichVocalModel);
+        }
 
         this.lastSample = 0;
         this.lastSample2 = 0; 
@@ -109,7 +135,7 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
         this.tracheaDelay2 = new DelayLine(this.sampleRate, this.channelCount || 2);
         
         //hadrosaur values
-        if( whichVocalModel == this.FletcherSmyth )
+        if( this.whichVocalModel == this.FletcherSmyth )
             this.hadrosaurInit();
 
         //the reflection filters for each tube: bronchi & trachea
@@ -236,6 +262,13 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
             automationRate: "k-rate"
         }, 
         {
+            name: "syrinxModel", //currently not implemented
+            defaultValue: 0,
+            minValue: 0,
+            maxValue: 1,
+            automationRate: "k-rate"
+        }, 
+        {
             name: "membraneCount",
             defaultValue: 2,
             minValue: 1,
@@ -243,7 +276,7 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
             automationRate: "k-rate"
         } 
         ];
-    }
+    }npm 
 
     generate(input:any, channel:any, parameters:any) {
         return this.generateFunction(input, channel, parameters);  //default is Tracheobronchial for now
@@ -285,8 +318,16 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
         //************
 
         //**** syrinx membrane ******
-        this.membrane.changePG(parameters.pG);
-        this.membrane.changeTension(parameters.tension);
+        if ( this.whichVocalModel == this.FletcherSmyth )
+        {
+            this.membrane.changePG(parameters.pG);
+            this.membrane.changeTension(parameters.tension);
+        }
+        else if ( this.whichVocalModel == this.ElemansZacharelli )
+        {
+            this.membrane.changePs(parameters.Ps);
+            this.membrane.changePtl(parameters.ptl);
+        }
 
         // this.count++;
         // if(this.count >50)
@@ -331,11 +372,35 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
     generateTracheobronchial(input:any, channel:any, parameters:any) {
         
         //**** syrinx membrane ******
-        this.membrane.changePG(parameters.pG);
-        this.membrane.changeTension(parameters.tension);
+       // this.setSyrinxModel(parameters.syrinxModel);
+        if ( this.whichVocalModel == this.FletcherSmyth )
+        {
+            this.membrane.changePG(parameters.pG);
+            this.membrane.changeTension(parameters.tension);
 
-        this.membrane2.changePG(parameters.pG);
-        this.membrane2.changeTension(parameters.tension);
+            this.membrane2.changePG(parameters.pG);
+            this.membrane2.changeTension(parameters.tension);
+        }
+        else if ( this.whichVocalModel == this.ElemansZacharelli )
+        {
+            let mem : RingDoveSyrinx = this.membrane as RingDoveSyrinx;
+            let mem2 : RingDoveSyrinx = this.membrane2 as RingDoveSyrinx;
+
+            // this.membrane.changePs(parameters.Ps);
+            // this.membrane.changePtl(parameters.ptl);
+
+            // this.membrane2.changePs(parameters.Ps);
+            // this.membrane2.changePtl(parameters.ptl);
+            console.log("membrane", this.membrane, "this", this);
+            (this.membrane as RingDoveSyrinx).changePs(0.038); //here is the error -- this.membrane is declared as the superclass
+            (this.membrane as RingDoveSyrinx).changePtl(20);
+            (this.membrane as RingDoveSyrinx).changePt(-0.2);
+
+
+            mem2.changePs(0.038);
+            mem2.changePtl(20);
+            mem2.changePt(-0.2);
+        }       
 
         // this.count++;
         // if(this.count >50)

@@ -38,7 +38,7 @@ const syrinxMembraneSynthesis =  /* javascript */`class SyrinxMembrane
     //initialized to prevent x going to 0
     protected x : number[] = [0.0, 0.0];  //displacement of the membrane per mode
     protected totalX : number = 0.0; // all the x's added for total displacement
-    protected F : number = 0.0; //force driving fundamental mode of membrane
+    protected F : number[] = [0.0]; //force driving fundamental mode of membrane
     protected x0 : number = 0.0; //equillibrium opening, in cm -- if this is 0.3, close to a -- it does oscillate, but incorrectly
                      //if Force is not added when x is 0, then it will eventually stabilize into a high tone.
 
@@ -143,10 +143,10 @@ const syrinxMembraneSynthesis =  /* javascript */`class SyrinxMembrane
         
         if( x > 0.0 )
         {
-           this.F = this.a*this.h*(this.p0 + this.p1) - (2.0*this.p*this.U*this.U*this.h)/(7.0*Math.pow(this.a*x, 1.5)); //-- Smyth (just reduced from Fletcher)
+           this.F[0] = this.a*this.h*(this.p0 + this.p1) - (2.0*this.p*this.U*this.U*this.h)/(7.0*Math.pow(this.a*x, 1.5)); //-- Smyth (just reduced from Fletcher)
            //memArea* ( ( pressureDiff ) - ( UFactor/overArea  ) ) => F; //fletcher
          }
-         else this.F = 0.5*this.a*this.h*(this.p0 + this.p1); //not sure, but divided by 2 produced the results
+         else this.F[0] = 0.5*this.a*this.h*(this.p0 + this.p1); //not sure, but divided by 2 produced the results
          
      }
      
@@ -225,7 +225,7 @@ const syrinxMembraneSynthesis =  /* javascript */`class SyrinxMembrane
 
             //update d2x
             //epsilon is taken as unity
-            this.forceComponent  = ( this.F*this.epsilonForceCouple[i] ) / this.m[i]  ; 
+            this.forceComponent  = ( this.F[0]*this.epsilonForceCouple[i] ) / this.m[i]  ; 
             this.stiffness = ( - 2.0*modifiedK*this.dx[i]  ) ; 
             this.moreDrag = (- this.wFreq[i]*this.wFreq[i]*(this.x[i]-this.x0) ); 
            
