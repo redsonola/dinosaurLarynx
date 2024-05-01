@@ -35,8 +35,16 @@ var CHANNEL_COUNT = 2;
 export interface MembraneOptions extends EffectOptions {
 	pG: Positive;
     tension: Positive; 
+    Ps: Positive; 
+
+    //for now, not used, using inputMusclePressure instead which includes both values
+    ptl: Positive;
+    pt : number;
+
+    inputMusclePressure: NormalRange;
+    syrinxModel: Positive;
 }
-export class SyrinxMembraneFS extends Effect<MembraneOptions> {
+export class SyrinxMembraneModel extends Effect<MembraneOptions> {
 
 	readonly name: string = "SyrinxMembrane";
 
@@ -54,34 +62,93 @@ export class SyrinxMembraneFS extends Effect<MembraneOptions> {
 	 */
     readonly tension: Param<"positive">;
 
+     /**
+	 * Ps - input air pressure to Elemans / Zaccharelli model 
+	 * @min 0
+	 * @max 
+	 */
+    readonly Ps: Param<"positive">;
+
+
+    //****** don't use these for now, replacing with inputMusclePressure, a single value for all syrinx muscle pressure */
+     /**
+	 * ptl - pressure from ptl, changes pitch/timbre in Elemans / Zaccharelli model
+	 * @min 0
+	 * @max 
+	 */
+    readonly ptl: Param<"positive">;
+
+     /**
+	 * pt - transmural syrinx pressure in Elemans / Zaccharelli model -- by default, users can't modify this
+     * but I might change that.
+	 * @min 0
+	 * @max 
+	 */
+     readonly pt: Param<"number">;
+
+/****** end Do not use portion lol */
+
+
+     /**
+	 * all muscle pressure in Elemans / Zaccharelli model -- by default, users can't modify this
+     * but I might change that.
+	 * @min 0
+	 * @max 
+	 */
+     readonly inputMusclePressure: Param<"normalRange">;
+
+     /**
+	 * which syrinx model to use -- right now, Fletcher/Smyth- 0 or Elemans/Zaccharelli - 1
+     * but I might change that.
+	 * @min 0
+	 * @max 
+	 */
+     readonly syrinxModel: Param<"positive">;
+
 
 	/**
-	 * The node which does the bit crushing effect. Runs in an AudioWorklet when possible.
+	 * The node which does the syrinx membrane. Runs in an AudioWorklet when possible.
 	 */
-	private _membraneWorklet: FletcherSmythSyrinxMembraneWorklet;
+	private _membraneWorklet: SyrinxMembraneWorklet;
 
 	constructor(pG?: Positive, tension?: Positive);
 	constructor(options?: Partial<MembraneWorkletOptions>);
 	constructor() {
-		super(optionsFromArguments(SyrinxMembraneFS.getDefaults(), arguments, ["pG", "tension"]));
-		const options = optionsFromArguments(SyrinxMembraneFS.getDefaults(), arguments, ["pG", "tension"]);
+		super(optionsFromArguments(SyrinxMembraneModel.getDefaults(), arguments, ["pG", "tension", "Ps", "ptl", "pt", "inputMusclePressure", "syrinxModel"]));
+		const options = optionsFromArguments(SyrinxMembraneModel.getDefaults(), arguments, ["pG", "tension", "Ps", "ptl", "pt", "inputMusclePressure", "syrinxModel"]);
 
-		this._membraneWorklet = new FletcherSmythSyrinxMembraneWorklet({
+		this._membraneWorklet = new SyrinxMembraneWorklet({
 			context: this.context,
 			pG: options.pG,
-            tension: options.tension
+            tension: options.tension,
+            Ps : options.Ps,
+            ptl : options.ptl,
+            pt : options.pt, 
+            inputMusclePressure: options.inputMusclePressure,
+            syrinxModel: options.syrinxModel
 		});
 		// connect it up
 		this.connectEffect(this._membraneWorklet);
 
 		this.pG = this._membraneWorklet.pG;
         this.tension = this._membraneWorklet.tension; 
+        this.Ps = this._membraneWorklet.Ps; 
+        this.ptl = this._membraneWorklet.ptl;
+        this.pt = this._membraneWorklet.pt;
+        this.inputMusclePressure = this._membraneWorklet.inputMusclePressure;
+        this.syrinxModel = this._membraneWorklet.syrinxModel;
+
 	}
 
 	static getDefaults(): MembraneOptions {
 		return Object.assign(Effect.getDefaults(), {
 			pG: 0.0, 
-            tension: 2000 
+            tension: 2000, 
+            Ps: 0.0,
+            ptl: 0.0,
+            pt : 0.0, 
+            inputMusclePressure: 0.0,
+            syrinxModel: 0.0
 		});
 	}
 
@@ -95,11 +162,16 @@ export class SyrinxMembraneFS extends Effect<MembraneOptions> {
 interface MembraneWorkletOptions extends ToneAudioWorkletOptions {
 	pG: number;
     tension: number;
+    Ps: number;
+    ptl: number;
+    pt: number;
+    syrinxModel: number;
+    inputMusclePressure: number;
 }
 
 //create the Syrinx Membrane Effect -- it has to be an effect with a source, as the membrane requires an input 
 //as well
-export class FletcherSmythSyrinxMembraneWorklet extends ToneAudioWorklet<MembraneWorkletOptions> 
+export class SyrinxMembraneWorklet extends ToneAudioWorklet<MembraneWorkletOptions> 
 {
     readonly name: string = "FletcherSmythSyrinxMembrane";
     
@@ -111,14 +183,19 @@ export class FletcherSmythSyrinxMembraneWorklet extends ToneAudioWorklet<Membran
 	 */
 	readonly pG: Param<"positive">;
     readonly tension: Param<"positive">;
+    readonly Ps: Param<"positive">;
+    readonly ptl: Param<"positive">;
+    readonly pt: Param<"number">;
+    readonly inputMusclePressure: Param<"normalRange">;
+    readonly syrinxModel: Param<"positive">;
 
 
 	constructor(pG?: Positive, tension?: Positive);
 	constructor(options?: RecursivePartial<MembraneWorkletOptions>);
 	constructor() {
         addToWorklet(singleIOProcess);
-		super(optionsFromArguments(FletcherSmythSyrinxMembraneWorklet.getDefaults(), arguments));
-		const options = optionsFromArguments(FletcherSmythSyrinxMembraneWorklet.getDefaults(), arguments);
+		super(optionsFromArguments(SyrinxMembraneWorklet.getDefaults(), arguments));
+		const options = optionsFromArguments(SyrinxMembraneWorklet.getDefaults(), arguments);
 
 		this.input = new Gain({ context: this.context });
 		this.output = new Gain({ context: this.context });
@@ -142,12 +219,69 @@ export class FletcherSmythSyrinxMembraneWorklet extends ToneAudioWorklet<Membran
             param: this._dummyParam,
             swappable: true,
         });
+
+        this.Ps = new Param<"positive">({
+            context: this.context,
+            value: options.Ps,
+            units: "positive",
+            minValue: 0,
+            maxValue: 1,
+            param: this._dummyParam,
+            swappable: true,
+        });
+
+        this.ptl = new Param<"positive">({
+            context: this.context,
+            value: options.ptl,
+            units: "positive",
+            minValue: 0,
+            maxValue: 40,
+            param: this._dummyParam,
+            swappable: true,
+        });
+
+        this.pt = new Param<"number">({
+            context: this.context,
+            value: options.ptl,
+            units: "number",
+            minValue: -2,
+            maxValue: 2,
+            param: this._dummyParam,
+            swappable: true,
+        });
+
+
+        this.inputMusclePressure = new Param<"normalRange">({
+            context: this.context,
+            value: options.ptl,
+            units: "normalRange",
+            minValue: 0,
+            maxValue: 1,
+            param: this._dummyParam,
+            swappable: true,
+        });
+
+
+        this.syrinxModel = new Param<"positive">({
+            context: this.context,
+            value: options.ptl,
+            units: "positive",
+            minValue: 0,
+            maxValue: 1,
+            param: this._dummyParam,
+            swappable: true,
+        });
 	}
 
     static getDefaults(): MembraneWorkletOptions {
 		return Object.assign(ToneAudioWorklet.getDefaults(), {
 			pG: 5.0,
-            tension: 2000
+            tension: 2000,
+            Ps:0.0,
+            ptl:0.0,
+            pt:0.0, 
+            inputMusclePressure: 0.0,
+            syrinxModel: 1
 		});
 	}
 
@@ -161,6 +295,18 @@ export class FletcherSmythSyrinxMembraneWorklet extends ToneAudioWorklet<Membran
 		this.pG.setParam(pG);
         const tension = node.parameters.get("tension") as AudioParam;
 		this.tension.setParam(tension);
+
+        //Elemans / Zaccharelli model
+        const Ps = node.parameters.get("Ps") as AudioParam;
+		this.Ps.setParam(Ps);
+        const ptl = node.parameters.get("ptl") as AudioParam;
+        this.ptl.setParam(ptl);
+        const pt = node.parameters.get("pt") as AudioParam;
+        this.pt.setParam(pt);
+        const inputMusclePressure = node.parameters.get("inputMusclePressure") as AudioParam;
+        this.inputMusclePressure.setParam(inputMusclePressure);
+        const syrinxModel = node.parameters.get("syrinxModel") as AudioParam;
+        this.syrinxModel.setParam(syrinxModel);
 	}
 
     dispose(): this {
@@ -169,6 +315,13 @@ export class FletcherSmythSyrinxMembraneWorklet extends ToneAudioWorklet<Membran
 		this.output.dispose();
         this.pG.dispose(); 
         this.tension.dispose(); 
+
+        this.Ps.dispose();
+        this.ptl.dispose();
+        this.pt.dispose();
+        this.inputMusclePressure.dispose();
+        this.syrinxModel.dispose();
+
 		return this;
 	}
 } 
@@ -234,7 +387,7 @@ class WallLossAttenuation //tuned to dino
 export function createSynth()
 {
     //initialize the noise and start
-    var noise = new SyrinxMembraneFS();
+    var noise = new SyrinxMembraneModel();
 
     //make an autofilter to shape the noise
     var autoFilter = new Tone.AutoFilter(Tone.AutoFilter.getDefaults()).connect(Tone.Master);
@@ -486,7 +639,7 @@ export function trachealSyrinx()
         const meter2 = new Tone.Meter();
 
         var vol = new Tone.Volume(10);
-        const membrane = new SyrinxMembraneFS({pG: 0.0});
+        const membrane = new SyrinxMembraneModel({pG: 0.0});
 
         membrane.chain(compressor, limiter, gain, vol, Tone.Destination);  
         membrane.chain(meter2);
@@ -499,21 +652,26 @@ export function trachealSyrinx()
         const meter = createMicValues();
 
         const tension = membrane.tension;
+
+        const inputMusclePressure = membrane.inputMusclePressure;
+        const Ps = membrane.Ps;
     
         let num = meter.getValue();
+        let audioMax = 0.0;
         if (typeof num === "number")
         {
             setInterval(() => {
                 let num = meter.getValue();
 
-                let tens=scaleTensionLow(m.y, m.x);
-                tension.setValueAtTime(tens, 0.0);
+                // let tens=scaleTensionLow(m.y, m.x);
+                // tension.setValueAtTime(tens, 0.0);
 
-                //pG is based on the tension
-                let pG = scalePGValuesLow(num as number, tens, m.y);
-                pGparam.setValueAtTime(pG, 0.0);  
+                // //pG is based on the tension
+                // let pG = scalePGValuesLow(num as number, tens, m.y);
+                // pGparam.setValueAtTime(pG, 0.0);  
 
-                console.log(meter2.getValue());
+                Ps.setValueAtTime(m.x, 0.0);
+                inputMusclePressure.setValueAtTime(m.y, 0.0);
                 
                 //const context = Tone.getContext(); 
             },

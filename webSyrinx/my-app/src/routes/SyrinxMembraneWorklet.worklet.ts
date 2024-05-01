@@ -74,8 +74,8 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
 
         //the delay of comb filter for the waveguide
         //which syrinx
-        this.generateFunction = this.generateTracheobronchial;
-        this.membraneCount = 2; 
+        this.generateFunction = this.generateTrachealSyrinx;
+        this.membraneCount = 1; 
         this.setDelayTime( this.getPeriod() );
 
         this.max = 51520; //for some simple scaling into more audio-like numbers -- output from this should still be passed on to limiter
@@ -251,11 +251,18 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
             name: "ptl",
             defaultValue: 0,
             minValue: 0,
-            maxValue: 1,
+            maxValue: 40,
             automationRate: "k-rate"
         }, 
         {
             name: "pt", //currently not implemented
+            defaultValue: 0,
+            minValue: -2,
+            maxValue: 2,
+            automationRate: "k-rate"
+        }, 
+        {
+            name: "inputMusclePressure", //currently not implemented
             defaultValue: 0,
             minValue: 0,
             maxValue: 1,
@@ -263,14 +270,14 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
         }, 
         {
             name: "syrinxModel", //currently not implemented
-            defaultValue: 0,
+            defaultValue: 1, //0 for FletcherSmyth, 1 for ElemansZacharelli, default is Elemans for now
             minValue: 0,
             maxValue: 1,
             automationRate: "k-rate"
         }, 
         {
             name: "membraneCount",
-            defaultValue: 2,
+            defaultValue: 1,
             minValue: 1,
             maxValue: 2,
             automationRate: "k-rate"
@@ -325,8 +332,9 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
         }
         else if ( this.whichVocalModel == this.ElemansZacharelli )
         {
-            this.membrane.changePs(parameters.Ps);
-            this.membrane.changePtl(parameters.ptl);
+            //note: using the built-in 0-1 mapping membrane synthesis side for now.
+            this.membrane.updateInputPressure(parameters.Ps);
+            this.membrane.updateInputMusclePressure(parameters.inputMusclePressure);
         }
 
         // this.count++;
@@ -355,10 +363,10 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
 
         //test to see if I need a limiter
         this.count++;
+        this.max = Math.max(this.max, fout); 
         if(this.count >50)
         {
-            // console.log(this.membrane.pG + ", " + parameters.tension);
-            //console.log("max: "+ this.max);
+            console.log("max: "+ this.max);
 
             this.count = 0;
         }        
@@ -370,9 +378,9 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
 
     //2 membranes, as in passerines
     generateTracheobronchial(input:any, channel:any, parameters:any) {
-        
+
         //**** syrinx membrane ******
-       // this.setSyrinxModel(parameters.syrinxModel);
+        //this.setSyrinxModel(parameters.syrinxModel);
         if ( this.whichVocalModel == this.FletcherSmyth )
         {
             this.membrane.changePG(parameters.pG);
@@ -383,23 +391,12 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
         }
         else if ( this.whichVocalModel == this.ElemansZacharelli )
         {
-            let mem : RingDoveSyrinx = this.membrane as RingDoveSyrinx;
-            let mem2 : RingDoveSyrinx = this.membrane2 as RingDoveSyrinx;
+            //note: using the built-in 0-1 mapping membrane synthesis side for now.
+            this.membrane.updateInputPressure(parameters.Ps);
+            this.membrane.updateInputMusclePressure(parameters.inputMusclePressure);
 
-            // this.membrane.changePs(parameters.Ps);
-            // this.membrane.changePtl(parameters.ptl);
-
-            // this.membrane2.changePs(parameters.Ps);
-            // this.membrane2.changePtl(parameters.ptl);
-            console.log("membrane", this.membrane, "this", this);
-            (this.membrane as RingDoveSyrinx).changePs(0.038); //here is the error -- this.membrane is declared as the superclass
-            (this.membrane as RingDoveSyrinx).changePtl(20);
-            (this.membrane as RingDoveSyrinx).changePt(-0.2);
-
-
-            mem2.changePs(0.038);
-            mem2.changePtl(20);
-            mem2.changePt(-0.2);
+            this.membrane2.updateInputPressure(parameters.Ps);
+            this.membrane2.updateInputMusclePressure(parameters.inputMusclePressure);
         }       
 
         // this.count++;
@@ -443,14 +440,19 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
         let fout = this.hpOut.tick(trachOut);
         
         //****** simple scaling into more audio-like values, sigh  *********
-        fout = fout/(this.max*2);    
+        if( this.whichVocalModel == this.FletcherSmyth )
+        {
+            fout = fout/(this.max*2);   
+        } 
         
         if( Number.isNaN(fout) )
         { 
             console.log(" NaN detected.... relaunching ");
             this.initFunc();
+            fout = this.lastSample;
         }
 
+        
         return fout;
     }
 

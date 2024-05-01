@@ -73,10 +73,7 @@ export const syrinxDoveMembraneGenerator = /* typescript */  `class RingDoveSyri
     //measures of air flow. dU is the audio out   
     protected dU : number = 0.0;
     protected U : number = 0.0;
-    protected p : number = 0.0; //this is reflection from vocal tract 
     
-    protected z0 : number = 0.0; //impedence of brochus --small compared to trachea, trying this dummy value until more info
-    protected zG : number = 0.0; //an arbitrary impedance smaller than z0, Fletcher
     protected pAC : number = 0.0; //reflected pressure from the vocal tract after coupling - incl. impedence, etc. //is this used? 
 
     protected c1 : number = 0.0; //c1 & c2 are constants used in the collision force equations  related to damping/stiffness/materiality
@@ -87,8 +84,10 @@ export const syrinxDoveMembraneGenerator = /* typescript */  `class RingDoveSyri
     constructor()
     {
         super();
+        this.c = this.c/100; //this algorithm is all in cm, not meters
         this.timeStep = (this.T*1000.0)/2.0; //this is for integrating smoothly, change from Smyth (eg.*1000) bc everything here is in ms not sec, so convert
         this.F = [0.0, 0.0]; //membrane displacement force
+        this.p = 0.00113; //air density, table C.1
 
         //********* constants that change during modeling the coo!!! 2/2024 Table C.1 p. 134 ************ NOW CORYTHOSAURUS - 3/2024 *************
         this.m = [0.0017 * this.dinoScale]; //mass, table C.1
@@ -170,8 +169,15 @@ export const syrinxDoveMembraneGenerator = /* typescript */  `class RingDoveSyri
 
         this.c1 = 3.0 * this.k; //c1 & c2 are constants used in the collision force equations  related to damping/stiffness/materiality
         this.c2 = 3.0 * this.k;
+
+        this.inputP = 0.0;
     
     }   
+
+    public initZ0() : void 
+    {
+       this.z0 = (this.p*this.c*100)/(Math.PI*this.a*this.a); 
+    }
     
     public reset() : void 
     {
@@ -503,6 +509,41 @@ export const syrinxDoveMembraneGenerator = /* typescript */  `class RingDoveSyri
         param = param + derivative; 
         return param;        
     }
+
+
+    //already mapped functions from chuck deployment -- has dove values in comments, but not using now.
+    //0-1 -- input pressure to control, does mapping automatically for dove and dinosaur, only dino implemented
+    public updateInputPressure(inPs : number) : void
+    {
+        // if(whichDinosaur == dove)
+        // {
+        //     //input air pressure changes based on x screen position
+        //     //Ranges determined by Zaccarelli(2009) p. 73, Fig. 4.3, lower end increased for mouse playability 
+        //     membrane.changePs(inPs*0.037 + 0.001); //go up to 0.0692
+        // }
+        // else
+        // {
+            this.changePs(inPs*0.05);     
+        // }
+    }
+    
+    //0-1 -- input to control muscle pressure 
+    public updateInputMusclePressure(inPressure : number) : void
+    {
+        // if(whichDinosaur == dove)
+        // {
+        //     //Ranges from same set of figures on p. 73 illustrating muscle pressures for coo sound
+        //     inPressure * 15 + 5 => float Ptl;
+        //     membrane.changePtl(Ptl); 
+        //     membrane.changePt(((1.0-inPressure)*2)  - 1.0);
+        // }
+        // else
+        // {
+            let Ptl : number = inPressure * 40;
+            this.changePtl(Ptl);
+            this.changePt((((1.0-inPressure)*2)  - 1.0)*2.0); //Pt is generally inverse of Ptl during dove calls -- well to the limited extent of the paper
+        // }
+    } 
     
     //Main processing function of the chugen (plug-in). Everything that does stuff is called from here.
     public tick(inSample : number) : number  //with trachea, inP is the input pressure from waveguide / tube / trachea modeling... 
@@ -527,8 +568,8 @@ export const syrinxDoveMembraneGenerator = /* typescript */  `class RingDoveSyri
         //update time-varying & user-controlled parameters
         this.updatePs(); //implements a smoothing function
         this.updatePtl();
-        this.updatePt(); 
-        
+        this.updatePt();
+                
         return this.dU; 
     }
 }`;
