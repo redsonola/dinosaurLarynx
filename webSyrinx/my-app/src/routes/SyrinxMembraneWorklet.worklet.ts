@@ -412,7 +412,7 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
         }
         
 
-        console.log("reflectedPressure: " + reflectedPressure);
+        //console.log("reflectedPressure: " + reflectedPressure);
 
         //****** simple scaling into more audio-like values, sigh  *********
         //fout = fout/this.max;  

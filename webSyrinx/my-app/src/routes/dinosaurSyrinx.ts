@@ -635,13 +635,15 @@ export function trachealSyrinx()
         const limiter = new Tone.Limiter(); 
         const compressor = new Tone.Compressor();
         const gain = new Tone.Gain(10); 
+        const lp = new Tone.Filter(200, "lowpass"); //smooth out some edges in the sound, perhaps as tissue would I don't know.
+        lp.Q.value = 10; //make it a bit more resonant
 
         const meter2 = new Tone.Meter();
 
         var vol = new Tone.Volume(10);
         const membrane = new SyrinxMembraneModel({pG: 0.0});
 
-        membrane.chain(compressor, limiter, gain, vol, Tone.Destination);  
+        membrane.chain(lp, compressor, limiter, gain, vol, Tone.Destination);  
         membrane.chain(meter2);
 
         console.log(membrane);
