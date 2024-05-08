@@ -683,6 +683,8 @@ export function trachealSyrinx()
         }
         alreadyPressed = true;
         console.log("pressed");
+
+        console.log("sample rate: " + Tone.context.sampleRate);
     }
 }
 

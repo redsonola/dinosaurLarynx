@@ -8,6 +8,7 @@ import "./tonejs_fixed/DelayLine.worklet";
 import "./WallLoss.worklet";
 import "./HPout.worklet";
 import "./ScatteringJunction.worklet";
+import "./LVMCoupler.worklet";
 
 import { registerProcessor } from "./tonejs_fixed/WorkletLocalScope";
 import * as ts from "typescript";
@@ -37,11 +38,13 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
         this.lastSample = 0;
         this.lastSample2 = 0; 
         this.lastTracheaSample = 0; 
+        this.lastPressureSamp = 0; //for ElemansZacharelli -- hmm... not sure if I like how I'm handling this
 
         this.delayTimeBronchi = 0; //delay of each of the bronchi sides
         this.delayTime = 0; //the trachea delay time
 
         this.channelCount = options.channelCount;
+
 
         //one for each way
         this.bronch1Delay1 = new DelayLine(this.sampleRate, options.channelCount || 2);
@@ -52,6 +55,9 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
 
         this.tracheaDelay1 = new DelayLine(this.sampleRate, options.channelCount || 2);
         this.tracheaDelay2 = new DelayLine(this.sampleRate, options.channelCount || 2);
+
+        this.bronch1Delay1Pressure = new DelayLine(this.sampleRate, options.channelCount || 2);
+        this.bronch1Delay2Pressure = new DelayLine(this.sampleRate, options.channelCount || 2);
         
         //hadrosaur values
         this.hadrosaurInit();
@@ -65,6 +71,9 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
 
         this.tracheaFilter = new ReflectionFilter(this.membrane.c, this.membrane.T); 
         this.tracheaFilter.setParamsForReflectionFilter(this.membrane.a);
+
+        this.tracheaFilterPressure = new ReflectionFilter(this.membrane.c, this.membrane.T); 
+        this.tracheaFilterPressure.setParamsForReflectionFilter(this.membrane.a);
 
         //we'll need separate wall losses as well...
         this.wallLoss = new WallLossAttenuation(this.membrane.L, this.membrane.a);
@@ -107,6 +116,8 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
         {
             this.membrane = new RingDoveSyrinx();
             this.membrane2 = new RingDoveSyrinx();
+            this.lvmCoupler = new LVMCoupler(this.membrane); //for ElemansZacharelli
+
         }
     }
 
@@ -118,6 +129,7 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
         }
 
         this.lastSample = 0;
+        this.lastPressureSamp = 0;       
         this.lastSample2 = 0; 
         this.lastTracheaSample = 0; 
 
@@ -127,6 +139,9 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
         //one for each way
         this.bronch1Delay1 = new DelayLine(this.sampleRate, this.channelCount || 2);
         this.bronch1Delay2 = new DelayLine(this.sampleRate, this.channelCount || 2);
+
+        this.bronch1Delay1Pressure = new DelayLine(this.sampleRate, this.channelCount || 2);
+        this.bronch1Delay2Pressure = new DelayLine(this.sampleRate, this.channelCount || 2);
 
         this.bronch2Delay1 = new DelayLine(this.sampleRate, this.channelCount || 2);
         this.bronch2Delay2 = new DelayLine(this.sampleRate, this.channelCount || 2);
@@ -147,6 +162,9 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
 
         this.tracheaFilter = new ReflectionFilter(this.membrane.c, this.membrane.T); 
         this.tracheaFilter.setParamsForReflectionFilter(this.membrane.a);
+
+        this.tracheaFilterPressure = new ReflectionFilter(this.membrane.c, this.membrane.T); 
+        this.tracheaFilterPressure.setParamsForReflectionFilter(this.membrane.a);
 
         //we'll need separate wall losses as well...
         this.wallLoss = new WallLossAttenuation(this.membrane.L, this.membrane.a);
@@ -289,6 +307,21 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
         return this.generateFunction(input, channel, parameters);  //default is Tracheobronchial for now
     }
 
+    //single wave guide -- take in a syrinx membrane & resonate through a trachea
+    waveguideSingleMembrane( inSample: number, delay1: any, delay2: any, tracheaFilter:any, lastSamp:number, channel: any, parameters: any ) : number
+    {
+        //********1st delayLine => tracheaFilter => flip => last sample  *********
+        let curOut = this.delayLineGenerate(inSample+lastSamp, channel, parameters, delay1, this.delayTime);
+        lastSamp = tracheaFilter.tick(curOut); //low-pass filter
+        lastSamp = lastSamp * -1; //flip
+
+        //********2nd delayLine, going back *********
+        lastSamp = this.delayLineGenerate(lastSamp, channel, parameters, delay2, this.delayTime);
+        let fout = this.wallLoss.tick(lastSamp); 
+
+        return fout;
+    }
+
     //NOTE: Web Audio API does NOT allow cycles except when there is a delay, which introduces at least 1 buffer of audio delay (128 samples) 
     //which is not fine enough granularity for the waveguides. So all processing for the syrinx is here.
     //I will refactor this later.
@@ -303,6 +336,11 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
         if(  Number.isNaN(this.lastSample2) )
         {
             this.lastSample2 = 0;
+        }
+
+        if(  Number.isNaN(this.lastPressureSamp) )
+        {
+             this.lastPressureSamp = 0;
         }
 
         if(  Number.isNaN(this.lastTracheaSample) )
@@ -345,34 +383,54 @@ export const syrinxMembraneGenerator = /* typescript */ `class SyrinxMembraneGen
         // }
         const pOut = this.membrane.tick(this.lastSample); //the syrinx membrane  //Math.random() * 2 - 1; 
 
-        //********1st delayLine => tracheaFilter => flip => last sample  *********
-        let curOut = this.delayLineGenerate(pOut+this.lastSample, channel, parameters, this.bronch1Delay1, this.delayTime);
-        this.lastSample = this.tracheaFilter.tick(curOut); //low-pass filter
-        this.lastSample = this.lastSample * -1; //flip
+        // //********1st delayLine => tracheaFilter => flip => last sample  *********
+        // let curOut = this.delayLineGenerate(pOut+this.lastSample, channel, parameters, this.bronch1Delay1, this.delayTime);
+        // this.lastSample = this.tracheaFilter.tick(curOut); //low-pass filter
+        // this.lastSample = this.lastSample * -1; //flip
 
-        //********2nd delayLine, going back *********
-        this.lastSample = this.delayLineGenerate(this.lastSample, channel, parameters, this.bronch1Delay2, this.delayTime);
-        this.lastSample = this.wallLoss.tick(this.lastSample); 
+        // //********2nd delayLine, going back *********
+        // this.lastSample = this.delayLineGenerate(this.lastSample, channel, parameters, this.bronch1Delay2, this.delayTime);
+        // this.lastSample = this.wallLoss.tick(this.lastSample); 
 
+        // //******** Add delay lines ==> High Pass Filter => out  *********
+        // curOut = curOut + this.lastSample;
+        // let fout = this.hpOut.tick(curOut);
+
+        //travel through the trachea tubes
+        let fout = this.waveguideSingleMembrane( pOut, this.bronch1Delay1, this.bronch1Delay2, this.tracheaFilter, this.lastSample, channel, parameters );
+        this.lastSample = fout;
         //******** Add delay lines ==> High Pass Filter => out  *********
-        curOut = curOut + this.lastSample;
-        let fout = this.hpOut.tick(curOut);
+        fout = fout + this.lastSample;
+        fout = this.hpOut.tick(fout);
+
+        let reflectedPressure = 0;
+        if ( this.whichVocalModel == this.ElemansZacharelli )
+        {
+            reflectedPressure = this.waveguideSingleMembrane( this.lvmCoupler.last()+this.lastPressureSamp, this.bronch1Delay1Pressure, this.bronch1Delay2Pressure, this.tracheaFilterPressure, this.lastPressureSamp, channel, parameters );
+            this.lvmCoupler.tick(reflectedPressure);
+            this.lastPressureSamp = reflectedPressure;
+        }
+        
+
+        console.log("reflectedPressure: " + reflectedPressure);
 
         //****** simple scaling into more audio-like values, sigh  *********
-        fout = fout/this.max;  
+        //fout = fout/this.max;  
 
         //test to see if I need a limiter
-        this.count++;
-        this.max = Math.max(this.max, fout); 
-        if(this.count >50)
-        {
-            console.log("max: "+ this.max);
+        // this.count++;
+        // if( this.max < fout )
+        // {
+        //     console.log("max: "+ this.max);
+        // }
+        // this.max = Math.max(this.max, fout); 
 
-            this.count = 0;
-        }        
-
+        // if(this.count >50)
+        // {
+        //     this.count = 0;
+        // }    
+    
         //****** output w/high pass *********      
-
         return fout;
     }
 

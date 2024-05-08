@@ -4,7 +4,9 @@
 import { addToWorklet } from "./tonejs_fixed/WorkletLocalScope";
 import * as ts from "typescript";
 import { ScriptTarget } from "typescript";
-import "./SyrinxMembraneSynthesis.worklet";
+import "./SyrinxMembraneSynthesis.worklet"; 
+
+//TODO: implement the feedback, as that could be the key to the sound.
 
 
 export const syrinxDoveMembraneGenerator = /* typescript */  `class RingDoveSyrinx extends SyrinxMembrane
@@ -69,10 +71,6 @@ export const syrinxDoveMembraneGenerator = /* typescript */  `class RingDoveSyri
     protected cpo1 = 0.0;
     protected cpo2 = 0.0;
     protected cpo3 = 0.0;
-
-    //measures of air flow. dU is the audio out   
-    protected dU : number = 0.0;
-    protected U : number = 0.0;
     
     protected pAC : number = 0.0; //reflected pressure from the vocal tract after coupling - incl. impedence, etc. //is this used? 
 
@@ -171,6 +169,9 @@ export const syrinxDoveMembraneGenerator = /* typescript */  `class RingDoveSyri
         this.c2 = 3.0 * this.k;
 
         this.inputP = 0.0;
+        
+        this.U = 0; 
+        this.dU = 0; 
     
     }   
 
