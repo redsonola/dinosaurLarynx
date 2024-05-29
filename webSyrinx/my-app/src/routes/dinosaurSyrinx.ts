@@ -617,8 +617,21 @@ function scaleTension(ctrlValue : number) : number
     return tens;
 }
 
+//both paramters need to be normalized to 0-1
+function scaleElemansPsMaxWithScaledValues(tension : number, ps : number) : number
+{
+    //from polynomial fitting of the data
+    //[[-0.05909785  1.11988446 -2.61913351  1.79788292]]
+    //[0.02962862]
+
+    let psMax = -0.05909785*tension*tension*tension*tension + 1.11988446*tension*tension*tension - 2.61913351*tension*tension + 1.79788292*tension + 0.02962862;
+
+    return psMax * ps;
+}
+
 //now just a test of the syrinx
 let alreadyPressed = false; 
+let recordingMouseData = false;
 export function trachealSyrinx()
 {
     document.documentElement.requestFullscreen().catch((err) => {
@@ -648,8 +661,6 @@ export function trachealSyrinx()
 
         console.log(membrane);
 
-
-
         const pGparam = membrane.pG; 
         const meter = createMicValues();
 
@@ -671,8 +682,17 @@ export function trachealSyrinx()
                 // //pG is based on the tension
                 // let pG = scalePGValuesLow(num as number, tens, m.y);
                 // pGparam.setValueAtTime(pG, 0.0);  
+                //let p = (num as number) * 0.05; //for blowing, for now
+                //let p = m.x;
+                //let p = scaleElemansPsMaxWithScaledValues(m.y, m.x); //for mouse control
+                let p = scaleElemansPsMaxWithScaledValues(m.y, num as number); //for breath control
+                Ps.setValueAtTime(p, 0.0);
 
-                Ps.setValueAtTime(m.x, 0.0);
+                //save the data
+                if( recordingMouseData )
+                    psMouseData += p + "," + m.y + "\n";
+
+                //console.log(num as number);
                 inputMusclePressure.setValueAtTime(m.y, 0.0);
                 
                 //const context = Tone.getContext(); 
@@ -733,6 +753,24 @@ function handleTouchEnd(event) {
     event.preventDefault(); 
 }, false);
 
+//for saving data
+document.body.addEventListener('keydown',
+function keyDownloadFile(event) {
+    if (event.key === "f") {
+        downloadFile();
+    }
+    else if (event.key === "c") {
+        console.log("cleared");
+        psMouseData = "";
+    }
+    else if(event.key === "r")
+    {
+        recordingMouseData = !recordingMouseData;
+        console.log("recording: " + recordingMouseData);
+    }
+
+}, false);   
+
 //---------
 
 //from tonejs API example
@@ -742,18 +780,29 @@ function createMicValues() : Tone.Meter
     const mic = new Tone.UserMedia();
     const meter = new Tone.Meter();
     const lp = new Tone.OnePoleFilter();
+    const lp2 = new Tone.OnePoleFilter();
+
     const notch = new Tone.Filter(250, "notch"); //get rid of dino feedback
     meter.normalRange = true;
     mic.open();
     // connect mic to the meter
-    mic.chain(notch, lp, meter);
+    mic.chain(notch, lp, lp2, meter);
     // the current level of the mic
     //setInterval(() => console.log(meter.getValue()), 50);
 
     return meter; 
 }
 
-
+//modified from https://www.tutorialspoint.com/how-to-create-and-save-text-file-in-javascript
+var psMouseData ="";
+export const downloadFile = () => {
+    const link = document.createElement("a");
+    const file = new Blob([psMouseData], { type: 'text/plain' });
+    link.href = URL.createObjectURL(file);
+    link.download = "psMouseData.csv";
+    link.click();
+    URL.revokeObjectURL(link.href);
+ };
 
     //https://developer.mozilla.org/en-US/docs/Web/API/AudioWorkletNode/parameters
 
