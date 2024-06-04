@@ -6,7 +6,7 @@
 //NOTE: To get RPI work as a webcam, use this help thread: https://forums.raspberrypi.com/viewtopic.php?t=359204
 //for easy access, the command to stream is - TODO: put this in a script --:
 //gst-launch-1.0 libcamerasrc ! "video/x-raw,width=1280,height=1080,format=YUY2",interlace-mode=progressive ! videoconvert ! v4l2sink device=/dev/video8
-
+git 
 
 import * as Tone from 'tone';
 import { Gain, optionsFromArguments } from 'tone';
@@ -880,10 +880,17 @@ function createMicValues(): Tone.Meter {
     const mic = new Tone.UserMedia();
     const meter = new Tone.Meter();
     const lp = new Tone.OnePoleFilter();
+
+    const notch = new Tone.Filter(250, "notch"); //get rid of dino feedback
+    const notch2 = new Tone.Filter(500, "notch"); //get rid of dino feedback
+    const notch3 = new Tone.Filter(750, "notch"); //get rid of dino feedback
+    const notch4 = new Tone.Filter(250/2, "notch"); //get rid of dino feedback
+
+
     meter.normalRange = true;
     mic.open();
     // connect mic to the meter
-    mic.chain(lp, meter);
+    mic.chain(notch, notch2, notch3, notch4, lp, meter);
     // the current level of the mic
     //setInterval(() => console.log(meter.getValue()), 50);
 
