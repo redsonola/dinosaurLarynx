@@ -6,7 +6,6 @@
 //NOTE: To get RPI work as a webcam, use this help thread: https://forums.raspberrypi.com/viewtopic.php?t=359204
 //for easy access, the command to stream is - TODO: put this in a script --:
 //gst-launch-1.0 libcamerasrc ! "video/x-raw,width=1280,height=1080,format=YUY2",interlace-mode=progressive ! videoconvert ! v4l2sink device=/dev/video8
-git 
 
 import * as Tone from 'tone';
 import { Gain, optionsFromArguments } from 'tone';
