@@ -889,7 +889,7 @@ function createMicValues(): Tone.Meter {
     meter.normalRange = true;
     mic.open();
     // connect mic to the meter
-    mic.chain(lp, meter);
+    mic.chain(notch, lp, meter);
     // the current level of the mic
     //setInterval(() => console.log(meter.getValue()), 50);
 
