@@ -172,11 +172,10 @@
 
 		</div>
 
-		<div class="blend-shapes">
+		<!-- <div class="blend-shapes">
 		  <ul class="blend-shapes-list" id="video-blend-shapes"></ul>
 		</div>
-
-
+		-->
 		<div id="inputValuesForTracking" style="opacity:0; background:rgb(255, 255, 255)">
 			<h3 style="position:center;">Configure Mouth-Tracking Sounding Response </h3>
 
