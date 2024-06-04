@@ -940,6 +940,7 @@ function void mouseEventLoopControllingAirPressure()
                    tracheaBack.clear();                   
                    ltm.reset();                   
                }
+               <<<"ltm.last: "+ ltm.last()>>>;
 
             }
             /*

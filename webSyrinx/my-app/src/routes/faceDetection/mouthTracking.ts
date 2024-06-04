@@ -16,7 +16,8 @@
 // ++ into typescript
 
 import { DrawingUtils, FaceLandmarker, FilesetResolver, type NormalizedLandmark } from "@mediapipe/tasks-vision";
-import { m, micScaling, curMicIn, curMaxMicIn, tens, trachealSyrinx } from "../dinosaurSyrinx"
+import { m, micScaling, curMicIn, curMaxMicIn, tens, trachealSyrinx } from "../dinosaurSyrinx" //importing from here, too
+import {mouthDataFile, wideMin, wideMax, mouthAreaMin, mouthAreaMax, setMouthWideMin, setMouthAreaMax, setMouthAreaMin, setMouthWideMax} from './mouthMeasures'; //things I want to import
 
 // const vision : any  = await FilesetResolver.forVisionTasks(
 //     // path/to/wasm/root
@@ -377,11 +378,6 @@ let maxrawMY = -1000;
 //var yScaleMin = 0.07;
 // var yScaleMax = 0.12;
 
-var wideMin = 0.07;
-var wideMax = 0.12;
-var mouthAreaMin = 0.0; 
-var mouthAreaMax = 0.005480977000770437
-
 var minMic = 1000;
 var maxMic = -1000;
 var softestMic = -1.0;
@@ -503,16 +499,20 @@ export function fillMouthInputValues()
 
 export function updateWidenessOpennessScaling()
 {
-  wideMin = parseFloat(mouthWideMin.value);
-  wideMax = parseFloat(mouthWideMax.value);
-  mouthAreaMin = parseFloat(mouthOpenMin.value);
-  mouthAreaMax = parseFloat(mouthOpenMax.value);  
+  mouthDataFile.toggleRecording()
+  mouthDataFile.addData([wideMin, wideMax, mouthAreaMin, mouthAreaMax]);
+
+  setMouthWideMin(parseFloat(mouthWideMin.value));
+  setMouthWideMax(parseFloat(mouthWideMax.value));
+  setMouthAreaMin(parseFloat(mouthOpenMin.value));
+  setMouthAreaMax(parseFloat(mouthOpenMax.value));  
   mouthConfigStatus.innerText = "Mouth Tracking Minimums and Maximums are updated:\n" +
   "\nMouth Wideness Minimum Recorded Scaled Value: " + wideMin +
   "\nMouth Wideness Maximum Recorded Scaled Value: " + wideMax + "\n\n" +
   "\nMouth Openness Minimum Recorded Scaled Value: " + mouthAreaMin +
   "\nMouth Openness Maximum Recorded Scaled Value: " + mouthAreaMax + "\n\n" ;
-  
+
+  mouthDataFile.toggleRecording(); //only record this small bit of info so far
 }
 
 // export function updateMicrophoneScaling()

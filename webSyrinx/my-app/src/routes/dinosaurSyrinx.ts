@@ -19,6 +19,9 @@ import { singleIOProcess } from './tonejs_fixed/SingleIOProcessor.worklet';
 import { addToWorklet } from './tonejs_fixed/WorkletGlobalScope';
 import { Param } from "tone/build/esm/core/context/Param";
 import type { NormalRange, Positive } from "tone/build/esm/core/type/Units";
+import {mouthDataFile} from "./faceDetection/mouthMeasures";
+
+//TODO: create third "header file" for stored mouth values 5/29/2024
 
 //# sourceMappingURL=ToneAudioWorklet.js.map
 
@@ -405,7 +408,7 @@ function scalePGValuesOneMembrane(micIn: number, tens: number, ctrlValue: number
     pG = p * pG * 7000.0;
     pG = Math.min(pG, 200000);
 
-    console.log(micIn, tens, pG, ctrlValue);
+    //console.log(micIn, tens, pG, ctrlValue);
 
     return pG;
 }
@@ -644,7 +647,7 @@ function scalePGValuesLow(micIn: number, tens: number, ctrlValue: number): numbe
     //     pG=0;
     // }
 
-    console.log(micIn.toFixed(2), pG.toFixed(2), tens.toFixed(2));
+    //console.log(micIn.toFixed(2), pG.toFixed(2), tens.toFixed(2));
     return pG;
 }
 
@@ -686,6 +689,7 @@ export var useMouse = true; //default
 export var curMicIn = 0.0;
 export var curMaxMicIn = { max: 0.0};
 export var tens = 0.0;
+var recordingData = false; //whether we are recording data to file from the UI
 
 export function trachealSyrinx() {
     //document.documentElement.requestFullscreen();
@@ -750,6 +754,11 @@ export function trachealSyrinx() {
 
                 //console.log("pG: " + pG.toFixed(2) + " tens: " + tens.toFixed(2));
 
+                // if( recordingData )
+                // {
+                //     mouthSavedData += wideMin +"," +wideMax +"," + mouthAreaMin+","+mouthAreaMax+"\n"; //save mouth data
+                // }
+
                // pG = 1200; //testing value
                 if (currentMembraneCount == 1) {
                     pG = pG * 8;
@@ -804,8 +813,8 @@ document.body.addEventListener('mousemove',
     function handleMousemove(event) {
         if( useMouse )
         {
-            m.x = event.clientX / document.body.clientWidth;
-            m.y = event.clientY / document.body.clientHeight;
+            m.x = event.screenX / screen.height;
+            m.y = event.screenY / screen.width;
             m.y = 1.0 - m.y; //flip so lower is lower pitched and vice versa
 
             if (Number.isNaN(m.x) || Number.isNaN(m.y)) {
@@ -844,6 +853,25 @@ document.body.addEventListener('touchend',
         event.preventDefault();
     }, false);
 
+//     //keyboard commands for saving data
+document.body.addEventListener('keydown',
+function keyDownloadFile(event) {
+    if (event.key === "f") {
+        mouthDataFile.downloadFile();
+    }
+    // else if (event.key === "c") {
+    //     console.log("cleared");
+    //     mouthSavedData = "wideMin, wideMax, mouthAreaMin, mouthAreaMax\n"; //start with the headers
+    // }
+    // else if(event.key === "r") //this is for recording data & it will reset the file as well..
+    // {
+    //     recordingData = !recordingData;
+    //     mouthSavedData = "wideMin, wideMax, mouthAreaMin, mouthAreaMax\n"; //start with the headers
+    //     console.log("recording: " + recordingData);
+    // }
+
+}, false);   
+
 //---------
 
 //from tonejs API example
@@ -861,6 +889,7 @@ function createMicValues(): Tone.Meter {
 
     return meter;
 }
+
 
 
 //https://developer.mozilla.org/en-US/docs/Web/API/AudioWorkletNode/parameters
