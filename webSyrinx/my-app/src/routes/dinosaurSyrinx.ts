@@ -883,14 +883,14 @@ function createMicValues(): Tone.Meter {
 
     const notch = new Tone.Filter(250, "notch"); //get rid of dino feedback
     const notch2 = new Tone.Filter(500, "notch"); //get rid of dino feedback
-    const notch3 = new Tone.Filter(750, "notch"); //get rid of dino feedback
-    const notch4 = new Tone.Filter(250/2, "notch"); //get rid of dino feedback
+//const notch3 = new Tone.Filter(750, "notch"); //get rid of dino feedback
+    //const notch4 = new Tone.Filter(250/2, "notch"); //get rid of dino feedback
 
 
     meter.normalRange = true;
     mic.open();
     // connect mic to the meter
-    mic.chain(notch, notch2, notch3, notch4, lp, meter);
+    mic.chain(notch, notch2, lp, meter);
     // the current level of the mic
     //setInterval(() => console.log(meter.getValue()), 50);
 
