@@ -742,7 +742,6 @@ export function trachealSyrinx() {
                     tens = scaleTensionOneMembrane(m.y);
                 }
 
-
                 //tens = 3315563; //testing value   
                 rightTension.setValueAtTime(tens, 0.0); 
                 tension.setValueAtTime(tens, 0.0);
@@ -890,7 +889,7 @@ function createMicValues(): Tone.Meter {
     meter.normalRange = true;
     mic.open();
     // connect mic to the meter
-    mic.chain(notch, notch2, lp, meter);
+    mic.chain(lp, meter);
     // the current level of the mic
     //setInterval(() => console.log(meter.getValue()), 50);
 
