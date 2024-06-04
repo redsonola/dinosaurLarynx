@@ -588,19 +588,26 @@ function scalePGValuesLow(micIn: number, tens: number, ctrlValue: number): numbe
         maxMaxPG = 10;
     }
     else if (tens < 456080) {
-        maxMaxPG = 20;
+        maxMaxPG = 40;
+        // maxMaxPG = 20;
     }
     else if (tens < 656080) {
-        maxMaxPG = 25;
+        maxMaxPG = 45;
+        // maxMaxPG = 25;
     }
     else if (tens < 1656080) {
-        maxMaxPG = 50;
+        maxMaxPG = 90;
+        // maxMaxPG = 50;
     }
     else if (tens < 3015563) {
-        maxMaxPG = 75;
+        maxMaxPG = 120;
+
+        // maxMaxPG = 75;
     }
     else if (tens < 4515563) {
-        maxMaxPG = 90;
+        // maxMaxPG = 90;
+        maxMaxPG = 150;
+
     }
     else if (tens < 6015563) {   //5675073.28 8027448.10
         floorPG = 20; //changed from 400
