@@ -577,7 +577,7 @@ function scalePGValuesLow(micIn: number, tens: number, ctrlValue: number): numbe
 
     let maxMaxPG = 400; //656080.2213529117
 
-    let floorPG = 20;r
+    let floorPG = 20;
     if (tens < 256080) {  
         maxMaxPG = 8;
     }
@@ -736,7 +736,7 @@ export function trachealSyrinx() {
 
                 num = scaleMicValues(num as number);
                 micConfigStatus.innerHTML = "Mic raw: " + curMicIn.toFixed(2) + " Scaled: " + num.toFixed(2)  + " Recorded Max: " + curMaxMicIn.max.toFixed(2) + " Scaled Max: " + micScaling.loud.toFixed(2);
-                console.log("Mic raw: " + curMicIn.toFixed(2) + " Scaled: " + num.toFixed(2)  + " Recorded Max: " + curMaxMicIn.max.toFixed(2) + " Scaled Max: " + micScaling.loud.toFixed(2));
+                //console.log("Mic raw: " + curMicIn.toFixed(2) + " Scaled: " + num.toFixed(2)  + " Recorded Max: " + curMaxMicIn.max.toFixed(2) + " Scaled Max: " + micScaling.loud.toFixed(2));
 
                 //let tens = scaleTensionTwoMembranes(m.y);
                 tens = avgFilterTension(scaleTensionOnlyLow(m.y, m.x));
