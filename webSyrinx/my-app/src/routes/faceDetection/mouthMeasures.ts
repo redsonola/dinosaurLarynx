@@ -7,7 +7,7 @@ export const mouthDataFile : DataFileCSV = new DataFileCSV(mouthDataFileName, mo
 
 //updated with better values, depth normalization
 export var wideMin = 0.07111;  //10;   //0.14866; //0.07;
-export var wideMax = 0.08; //250; //0.34627; //0.12;
+export var wideMax = 0.11; //250; //0.34627; //0.12;
 export var mouthAreaMin = 0.002585; //0.05; //0.000291; //0.0; 
 export var mouthAreaMax = 0.0213; //75; //0.021153; //0.005480977000770437
 
