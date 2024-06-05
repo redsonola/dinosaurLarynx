@@ -331,8 +331,8 @@ function distance(pt1: NormalizedLandmark, pt2:NormalizedLandmark)
 function depthNormalizedDistance(pt1: NormalizedLandmark, pt2:NormalizedLandmark)
 {
     console.log("z: " + pt1.z + "," + pt2.z)
-    pt1.x = pt1.x / (1+pt1.z);
-    pt1.y = pt1.y / (1+pt1.z);
+    if(pt1.z != 0)  {pt1.x = pt1.x / (pt1.z);}
+    if(pt2.z != 0)  {pt2.y = pt1.y / (pt2.z);}
     return distance(pt1, pt2);
 }
 
