@@ -740,6 +740,9 @@ export function trachealSyrinx() {
 
                 //let tens = scaleTensionTwoMembranes(m.y);
                 tens = avgFilterTension(scaleTensionOnlyLow(m.y, m.x));
+
+                console.log(m.y, m.x, tens);
+
                 
                  //console.log(tens);
                  //let tens = avgFilterTension(scaleTensionTwoMembranes(m.y));

@@ -39,7 +39,7 @@
 	.setupButtonInvisible
 	{
 	  	opacity: 0.0;
-		z-index: 0.0;
+		z-index: 100.0;
 	}
 
 	.setupButtonVisible
@@ -156,6 +156,10 @@
 			Enable webcam and control syrinx tension via mouth-tracking
 					  </button>
 
+					  <button id="setupMouthTracking" class="setupButtonInvisible">
+						Adjust Mouth-Tracking Response
+					</button>
+
 		<!-- <h2>Demo: Webcam continuous face landmarks detection</h2>
 		<p>Hold your face in front of your webcam to get real-time face landmarker detection. <br/>Click <b>enable webcam</b> below and grant access to the webcam if prompted.</p> -->
 	
@@ -163,10 +167,6 @@
 		  <div > <!-- style="position: center;" -->
 			<video id="webcam" style="position: absolute" autoplay playsinline><track kind="captions"></video>
 			<canvas class="output_canvas" id="output_canvas" style="position: absolute; left: 0px; top: 0px;"></canvas>
-
-			<button id="setupMouthTracking" class="setupButtonInvisible">
-				Adjust Mouth-Tracking Response
-			</button>
 		  </div>
 
 		</div>

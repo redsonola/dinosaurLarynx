@@ -327,6 +327,14 @@ function distance(pt1: NormalizedLandmark, pt2:NormalizedLandmark)
   return Math.sqrt((pt1.x - pt2.x)*(pt1.x - pt2.x) + (pt1.y - pt2.y)*(pt1.y - pt2.y));
 }
 
+//try normalizing by depth so that it is more invariant to distance from camera
+function depthNormalizedDistance(pt1: NormalizedLandmark, pt2:NormalizedLandmark)
+{
+    pt1.x = pt1.x / (1+pt1.z);
+    pt1.y = pt1.y / (1+pt1.z);
+    return distance(pt1, pt2);
+}
+
 function scale(inSig:number, min:number, max:number)
 {
   return (inSig - min)/(max - min);
@@ -356,6 +364,16 @@ function updateMouthArea(areaMouthLandmarks:any[]) : number
   for(let i=0; i<areaMouthLandmarks.length; i++)
   {
     vertices.push({x: areaMouthLandmarks[i].x, y: areaMouthLandmarks[i].y});
+  }
+  return calcPolygonArea(vertices);
+}
+
+function updateMouthAreaDepthNormalized(areaMouthLandmarks:any[]) : number
+{
+  let vertices:{x:number, y:number}[] = [];
+  for(let i=0; i<areaMouthLandmarks.length; i++)
+  {
+    vertices.push({x: areaMouthLandmarks[i].x/(1+areaMouthLandmarks[i].z), y: areaMouthLandmarks[i].y/(1+areaMouthLandmarks[i].z)});
   }
   return calcPolygonArea(vertices);
 }
@@ -420,11 +438,11 @@ function printMouthLandmarks( landmarks?: NormalizedLandmark[][], connections?: 
       insideMouthLandmarks.push(res2);
     }
 
-    let wideness = distance(mouthLandmarks[0], mouthLandmarks[1]);
-    let openness = distance(mouthLandmarks[2], mouthLandmarks[3]);
+    let wideness = depthNormalizedDistance(mouthLandmarks[0], mouthLandmarks[1]);
+    let openness = depthNormalizedDistance(mouthLandmarks[2], mouthLandmarks[3]);
 
     //find perimeter of mouth
-    mouthAreaRaw = updateMouthArea(insideMouthLandmarks); //area of the open mouth
+    mouthAreaRaw = updateMouthAreaDepthNormalized(insideMouthLandmarks); //area of the open mouth
 
     mouthArea = scale(mouthAreaRaw, mouthAreaMin, mouthAreaMax); 
 
@@ -467,14 +485,16 @@ function printMouthLandmarks( landmarks?: NormalizedLandmark[][], connections?: 
 
     //console.log("wideness: " + m.y + " openness: " + m.x);
 
-    outputMouthValue.innerText = "Mouth Wideness Scaled: " + m.x +
+    outputMouthValue.innerText = 
+    /*
+    "Mouth Wideness Scaled: " + m.x +
     "\nMouth Wideness Minimum Recorded Scaled Value: " + minMY +
     "\nMouth Wideness Maximum Recorded Scaled Value: " + maxMY +
 
     "\n\nMouth Wideness Scaled Raw: " + wideness +  
     "\nMouth Wideness Minimum Recorded Raw Value: " + minrawMY +
     "\nMouth Wideness Minimum Recorded Raw Value: " + maxrawMY +
-
+*/
     "\n\nMouth Openness: " + m.y +
     "\nMouth Openness Minimum Recorded Scaled Value: " + minMouthArea +
     "\nMouth Openness Maximum Recorded Scaled Value: " + maxMouthArea +
