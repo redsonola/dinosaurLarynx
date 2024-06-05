@@ -739,7 +739,7 @@ export function trachealSyrinx() {
                 //console.log("Mic raw: " + curMicIn.toFixed(2) + " Scaled: " + num.toFixed(2)  + " Recorded Max: " + curMaxMicIn.max.toFixed(2) + " Scaled Max: " + micScaling.loud.toFixed(2));
 
                 //let tens = scaleTensionTwoMembranes(m.y);
-                tens = avgFilterTension(scaleTensionOnlyLmuow(m.y, m.x));
+                tens = avgFilterTension(scaleTensionOnlyLow(m.y, m.x));
 
                 console.log(m.y, m.x, tens);
 
