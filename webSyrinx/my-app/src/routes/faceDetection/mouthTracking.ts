@@ -330,6 +330,7 @@ function distance(pt1: NormalizedLandmark, pt2:NormalizedLandmark)
 //try normalizing by depth so that it is more invariant to distance from camera
 function depthNormalizedDistance(pt1: NormalizedLandmark, pt2:NormalizedLandmark)
 {
+    console.log("z: " + pt1.z + "," + pt2.z)
     pt1.x = pt1.x / (1+pt1.z);
     pt1.y = pt1.y / (1+pt1.z);
     return distance(pt1, pt2);
