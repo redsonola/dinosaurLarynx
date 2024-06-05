@@ -333,9 +333,16 @@ function depthNormalizedDistance(pt1: NormalizedLandmark, pt2:NormalizedLandmark
     console.log("z: " + pt1.z + "," + pt2.z)
     let p1 = { x: pt1.x, y: pt1.y, z: pt1.z};
     let p2 = { x: pt2.x, y: pt2.y, z: pt2.z};
-    if(pt1.z != 0)  {p1.x = p1.x / (p1.z);}
-    if(pt2.z != 0)  {p2.y = p1.y / (p2.z);}
-    return distance(p1, p2);
+    // if(pt1.z != 0)  {p1.x = p1.x / (p1.z);}
+    // if(pt2.z != 0)  {p2.y = p1.y / (p2.z);}
+    let dist = distance(p1, p2);
+    let normDepth = scale(pt1.z, -0.03, 0.1);
+
+    if(normDepth != 0)
+    {
+        dist = dist * (1-normDepth);
+    }
+    return dist;
 }
 
 function scale(inSig:number, min:number, max:number)

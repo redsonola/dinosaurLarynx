@@ -739,7 +739,7 @@ export function trachealSyrinx() {
                 //console.log("Mic raw: " + curMicIn.toFixed(2) + " Scaled: " + num.toFixed(2)  + " Recorded Max: " + curMaxMicIn.max.toFixed(2) + " Scaled Max: " + micScaling.loud.toFixed(2));
 
                 //let tens = scaleTensionTwoMembranes(m.y);
-                tens = avgFilterTension(scaleTensionOnlyLow(m.y, m.x));
+                tens = avgFilterTension(scaleTensionOnlyLmuow(m.y, m.x));
 
                 console.log(m.y, m.x, tens);
 
@@ -892,6 +892,7 @@ function createMicValues(): Tone.Meter {
 
     const notch = new Tone.Filter(250, "notch"); //get rid of dino feedback
     const notch2 = new Tone.Filter(500, "notch"); //get rid of dino feedback
+    const notchLowFeedback = new Tone.Filter(92, "notch"); //get rid of dino feedback
 
     const notchfan = new Tone.Filter(86*2, "notch"); //get rid of the fan noise -- https://noctua.at/pub/media/wysiwyg/Noctua_PWM_specifications_white_paper.pdf
 //const notch3 = new Tone.Filter(750, "notch"); //get rid of dino feedback
@@ -901,7 +902,7 @@ function createMicValues(): Tone.Meter {
     meter.normalRange = true;
     mic.open();
     // connect mic to the meter
-    mic.chain(notch, notch2, notchfan, lp, meter);
+    mic.chain(notch, notch2, notchfan, notchLowFeedback, lp, meter);
     // the current level of the mic
     //setInterval(() => console.log(meter.getValue()), 50);
 
