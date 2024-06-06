@@ -17,7 +17,7 @@
 
 import { DrawingUtils, FaceLandmarker, FilesetResolver, type NormalizedLandmark } from "@mediapipe/tasks-vision";
 import { m, micScaling, curMicIn, curMaxMicIn, tens, trachealSyrinx } from "../dinosaurSyrinx" //importing from here, too
-import {mouthDataFile, wideMin, wideMax, mouthAreaMin, mouthAreaMax, setMouthWideMin, setMouthAreaMax, setMouthAreaMin, setMouthWideMax} from './mouthMeasures'; //things I want to import
+import {widenessTrainingFile, mouthDataFile, wideMin, wideMax, mouthAreaMin, mouthAreaMax, setMouthWideMin, setMouthAreaMax, setMouthAreaMin, setMouthWideMax} from './mouthMeasures'; //things I want to import
 
 // const vision : any  = await FilesetResolver.forVisionTasks(
 //     // path/to/wasm/root
@@ -25,6 +25,7 @@ import {mouthDataFile, wideMin, wideMax, mouthAreaMin, mouthAreaMax, setMouthWid
 
 //   );
   
+
 // const { FaceLandmarker, FilesetResolver, DrawingUtils } = vision;
    const demosSection = document.getElementById("demos");
    const imageBlendShapes = document.getElementById("image-blend-shapes");
@@ -40,8 +41,6 @@ import {mouthDataFile, wideMin, wideMax, mouthAreaMin, mouthAreaMax, setMouthWid
     let micAutoFill : HTMLButtonElement = document.getElementById("micAutoFill") as HTMLButtonElement; // initialize submit button for mouth params
     let submitMicMax : HTMLButtonElement = document.getElementById("submitMicMax") as HTMLButtonElement; // initialize submit button for mouth params
 
-
-
     let inputValuesForTrackingSection: HTMLElement;
     let outputMouthValue : HTMLLabelElement = document.getElementById("outputMouthValue") as HTMLLabelElement; // initialize output label
     let editMouthValueAutoFill : HTMLButtonElement = document.getElementById("editMouthValueAutoFill") as HTMLButtonElement; // initialize fill button for mouth params
@@ -54,6 +53,9 @@ import {mouthDataFile, wideMin, wideMax, mouthAreaMin, mouthAreaMax, setMouthWid
     let resetRecordedMouthMinimumsAndMaximums : HTMLButtonElement = document.getElementById("resetRecordedMouthMinimumsAndMaximums") as HTMLButtonElement; // initialize submit button for mouth params
     let mouthConfigStatus : HTMLLabelElement = document.getElementById("mouthConfigStatus") as HTMLLabelElement; // status for mouth tracking config
   
+    let trainingWidenessSlider : any = document.getElementById("wideOut");
+    let recordingWideCheckbox : any = document.getElementById("recordingWideness");
+
     let webcamRunning: Boolean = false;
     export const videoWidth = 480;
 
@@ -113,6 +115,7 @@ if (hasGetUserMedia()) {
     resetMicMax.addEventListener("click", resetMicMinMax );
     submitMicMax.addEventListener("click", submitMicMaxFunc);
     micAutoFill.addEventListener("click", micAutoFillSubmit);
+    recordingWideCheckbox.addEventListener("change", toggleMouthWidenessRecording);
 
     
     inputValuesForTrackingSection = document.getElementById("inputValuesForTracking") as HTMLElement;
@@ -449,7 +452,10 @@ function printMouthLandmarks( landmarks?: NormalizedLandmark[][], connections?: 
     }
 
     let wideness = depthNormalizedDistance(mouthLandmarks[0], mouthLandmarks[1]);
-    let openness = depthNormalizedDistance(mouthLandmarks[2], mouthLandmarks[3]);
+    //let openness = depthNormalizedDistance(mouthLandmarks[2], mouthLandmarks[3]);
+
+    //save the mouth data for wideness to use non-linear regression to find a good mapping function
+    saveMouthWidenessTrainingData(mouthLandmarks[0], mouthLandmarks[1]);
 
     //find perimeter of mouth
     mouthAreaRaw = updateMouthAreaDepthNormalized(insideMouthLandmarks); //area of the open mouth
@@ -543,6 +549,32 @@ export function updateWidenessOpennessScaling()
   "\nMouth Openness Maximum Recorded Scaled Value: " + mouthAreaMax + "\n\n" ;
 
   mouthDataFile.toggleRecording(); //only record this small bit of info so far
+}
+
+function getSelectedWidess() : number
+{
+  let w = -1; //default value
+
+  if(recordingWideCheckbox.checked)
+  {
+      w = parseFloat(trainingWidenessSlider.value) / parseFloat(trainingWidenessSlider.max);
+  }
+  
+  return w;
+}
+
+export function saveMouthWidenessTrainingData(pt1 : NormalizedLandmark, pt2: NormalizedLandmark)
+{
+  let dist = distance(pt1, pt2);
+  let z = pt1.z;
+  let inputValue = getSelectedWidess();
+  if (inputValue != -1)
+    widenessTrainingFile.addData([dist, z, inputValue]);
+}
+
+export function toggleMouthWidenessRecording()
+{
+  widenessTrainingFile.toggleRecording();
 }
 
 // export function updateMicrophoneScaling()

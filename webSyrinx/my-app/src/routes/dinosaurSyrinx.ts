@@ -18,7 +18,7 @@ import { singleIOProcess } from './tonejs_fixed/SingleIOProcessor.worklet';
 import { addToWorklet } from './tonejs_fixed/WorkletGlobalScope';
 import { Param } from "tone/build/esm/core/context/Param";
 import type { NormalRange, Positive } from "tone/build/esm/core/type/Units";
-import {mouthDataFile} from "./faceDetection/mouthMeasures";
+import {widenessTrainingFile} from "./faceDetection/mouthMeasures";
 
 //TODO: create third "header file" for stored mouth values 5/29/2024
 
@@ -866,7 +866,8 @@ document.body.addEventListener('touchend',
 document.body.addEventListener('keydown',
 function keyDownloadFile(event) {
     if (event.key === "f") {
-        mouthDataFile.downloadFile();
+        //mouthDataFile.downloadFile();
+        widenessTrainingFile.downloadFile();
     }
     // else if (event.key === "c") {
     //     console.log("cleared");

@@ -193,6 +193,18 @@
 				<button id="editMouthValueAutoFill"> Fill values with Raw Minimums and Maximums for Mouth Wideness/Openness  </button> <br />
 				<button id="submitEditMouthConfig"> Update Mouth Tracking Scaling for Mouth Wideness/Openness</button> <br />
 
+				<p>Select output for training:</p>
+				<div class="slidecontainer">
+					<input type="range" min="0.0" max="100.0" value="0.0" class="slider" id="wideOut" name="wideOut">
+					<label for="wideOut">Wideness value</label><br>
+
+					<input type="checkbox" id="recordingWideness" name="recordingWideness"/>
+					<label for="recordingWideness">Recording Mouth Wideness?</label><br>
+				</div>
+						
+
+
+
 			<!--	<button id="resetRecordedMouthMinimumsAndMaximumsMic"> Reset Recorded Minuminums and Maximums for Microphone Input </button> <br />
 				<button id="editMouthValueAutoFillMic"> Fill values with Raw Minimums and Maximums for Microphone Input   </button> <br />
 				<button id="submitEditMouthConfigMic"> Update Mouth Tracking Scaling for for Microphone Input </button> <br /> -->
