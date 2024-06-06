@@ -452,16 +452,16 @@ function printMouthLandmarks( landmarks?: NormalizedLandmark[][], connections?: 
       insideMouthLandmarks.push(res2);
     }
 
-    let wideness = depthNormalizedDistance(mouthLandmarks[0], mouthLandmarks[1]);
+    //let wideness = depthNormalizedDistance(mouthLandmarks[0], mouthLandmarks[1]);
     //let openness = depthNormalizedDistance(mouthLandmarks[2], mouthLandmarks[3]);
 
     //save the mouth data for wideness to use non-linear regression to find a good mapping function
-    saveMouthWidenessTrainingData(mouthLandmarks[0], mouthLandmarks[1]);
+    //saveMouthWidenessTrainingData(mouthLandmarks[0], mouthLandmarks[1]);
 
     //find perimeter of mouth
-    mouthAreaRaw = updateMouthAreaDepthNormalized(insideMouthLandmarks); //area of the open mouth
+    //mouthAreaRaw = updateMouthAreaDepthNormalized(insideMouthLandmarks); //area of the open mouth
 
-    mouthArea = scale(mouthAreaRaw, mouthAreaMin, mouthAreaMax); 
+    mouthArea = 0.5; //test values ---> old //scale(mouthAreaRaw, mouthAreaMin, mouthAreaMax); 
 
 
     //minMouthArea = Math.min(0.1, mouthArea);
@@ -469,11 +469,11 @@ function printMouthLandmarks( landmarks?: NormalizedLandmark[][], connections?: 
     //console.log("Mouth Area: " + mouthArea + ", min: "+ minMouthArea + ", max: " + maxMouthArea);
 
     //note: values are flipped to match the mouse movement. So x is openness and y is wideness
-    let wide = scale(wideness, wideMin, wideMax) ;
+   // let wide = scale(wideness, wideMin, wideMax) ;
 
     //put some guard rails on the values
-    m.x = Math.max(0.00000001, m.x);
-    m.x = Math.min(1.2, m.x);
+    //m.x = Math.max(0.00000001, m.x);
+    //m.x = Math.min(1.2, m.x);
 
             // //put some guard rails on the values -- got rid of this for now
             // m.y = Math.max(0.00000001, m.y);
@@ -491,40 +491,40 @@ function printMouthLandmarks( landmarks?: NormalizedLandmark[][], connections?: 
 
 
 
-    //find min values
-    minMouthAreaRaw = Math.min(minMouthAreaRaw, mouthAreaRaw);
-    minrawMY = Math.min(minrawMY, wideness);
-    //minMX = Math.min(minMX, m.x);
-    minMY = Math.min(minMY, m.y);
+//     //find min values
+//     minMouthAreaRaw = Math.min(minMouthAreaRaw, mouthAreaRaw);
+//     minrawMY = Math.min(minrawMY, wideness);
+//     //minMX = Math.min(minMX, m.x);
+//     minMY = Math.min(minMY, m.y);
 
-    //find max values
-    maxMouthAreaRaw = Math.max(maxMouthAreaRaw, mouthAreaRaw);
-    maxrawMY = Math.max(maxrawMY, wideness);
-    //maxMX = Math.max(maxMX, m.x);
-    maxMY = Math.max(maxMY, m.y);
+//     //find max values
+//     maxMouthAreaRaw = Math.max(maxMouthAreaRaw, mouthAreaRaw);
+//     maxrawMY = Math.max(maxrawMY, wideness);
+//     //maxMX = Math.max(maxMX, m.x);
+//     maxMY = Math.max(maxMY, m.y);
 
-    //console.log("wideness: " + m.y + " openness: " + m.x);
+//     //console.log("wideness: " + m.y + " openness: " + m.x);
 
-    outputMouthValue.innerText = 
-    /*
-    "Mouth Wideness Scaled: " + m.x +
-    "\nMouth Wideness Minimum Recorded Scaled Value: " + minMY +
-    "\nMouth Wideness Maximum Recorded Scaled Value: " + maxMY +
+//     outputMouthValue.innerText = 
+//     /*
+//     "Mouth Wideness Scaled: " + m.x +
+//     "\nMouth Wideness Minimum Recorded Scaled Value: " + minMY +
+//     "\nMouth Wideness Maximum Recorded Scaled Value: " + maxMY +
 
-    "\n\nMouth Wideness Scaled Raw: " + wideness +  
-    "\nMouth Wideness Minimum Recorded Raw Value: " + minrawMY +
-    "\nMouth Wideness Minimum Recorded Raw Value: " + maxrawMY +
-*/
-    "\n\nMouth Openness: " + m.y +
-    "\nMouth Openness Minimum Recorded Scaled Value: " + minMouthArea +
-    "\nMouth Openness Maximum Recorded Scaled Value: " + maxMouthArea +
+//     "\n\nMouth Wideness Scaled Raw: " + wideness +  
+//     "\nMouth Wideness Minimum Recorded Raw Value: " + minrawMY +
+//     "\nMouth Wideness Minimum Recorded Raw Value: " + maxrawMY +
+// */
+//     "\n\nMouth Openness: " + m.y +
+//     "\nMouth Openness Minimum Recorded Scaled Value: " + minMouthArea +
+//     "\nMouth Openness Maximum Recorded Scaled Value: " + maxMouthArea +
 
-    "\n\nMouth Openness Scaled Raw: " + m.y +  
-    "\nMouth Openness Minimum Recorded Raw Value: " + minMouthAreaRaw +
-    "\nMouth Openness Maximum Recorded Raw Value: " + maxMouthAreaRaw +
+//     "\n\nMouth Openness Scaled Raw: " + m.y +  
+//     "\nMouth Openness Minimum Recorded Raw Value: " + minMouthAreaRaw +
+//     "\nMouth Openness Maximum Recorded Raw Value: " + maxMouthAreaRaw +
 
-    "\n\nVocal tension (After mapping): " + tens + "\n\n";
-  } 
+//     "\n\nVocal tension (After mapping): " + tens + "\n\n";
+//   } 
 }
 
 export function fillMouthInputValues()
