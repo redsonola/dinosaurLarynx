@@ -483,7 +483,6 @@ function printMouthLandmarks( landmarks?: NormalizedLandmark[][], connections?: 
     //m.y = Math.min(5.0, m.y); 
 
     m.y = getWidenessFromPolyRegression(distance(mouthLandmarks[0], mouthLandmarks[1]), mouthLandmarks[0].z);
-    console.log("value from training:" + m.y);
 
     m.x = mouthArea//testing mouth area
     m.x = Math.min(5.0, m.x); 
@@ -561,21 +560,22 @@ export function updateWidenessOpennessScaling()
 //z -- is the depth of the first point of the mouth
 function getWidenessFromPolyRegression(dist : number, z :number)
 {
-  //[1.52886688] //intercept
-  //coefficients
-  //['x0', 'x1', 'x0^2', 'x0 x1', 'x1^2', 'x0^3', 'x0^2 x1', 'x0 x1^2', 'x1^3', 'x0^4', 'x0^3 x1', 'x0^2 x1^2', 'x0 x1^3', 'x1^4']
+  // [0.56486529]
+  // ['x0', 'x1', 'x0^2', 'x0 x1', 'x1^2', 'x0^3', 'x0^2 x1', 'x0 x1^2', 'x1^3']
+  // [[  -8.79520751   60.97062801   75.61542798 -423.56148188 -537.82171909
+  //   -117.49218294  643.85755485  829.98757768 2135.50815236]]
 
-  let a = [  -34.14618598,   117.42119832,   297.97663684, -1423.12375566,
-    562.08934241,  -897.91181704,  5701.95738162, -7637.36170526,
-   1611.31597744,   883.17003137 -6780.52796348, 11979.47799081,
-   3900.16878842,  6088.2840296 ];
+  let a : number[] = [  -8.79520751,   60.97062801,   75.61542798, -423.56148188, -537.82171909,
+       -117.49218294,  643.85755485,  829.98757768, 2135.50815236];
 
   let x0 = dist; 
   let x1 = z; 
-  let b = 1.52886688; //intercept
+  let b = 0.56486529; //intercept
 
-  let w = a[0]*x0 + a[1]*x1 + a[2]*x0*x0 + a[3]*x0*x1 + a[4]*x1*x1 + a[5]*x0*x0*x0+ a[6]*x0*x0*x1+ a[7]*x0*x1*x1+ a[8]*x1*x1*x1+
-  a[9]*x0*x0*x0*x0 + a[10]*x0*x0*x0*x1 + a[11]*x0*x0*x1*x1 + a[12]*x0*x1*x1*x1 + a[13]*x1*x1*x1*x1 + b;
+  let w =  a[0]*x0 + a[1]*x1 + a[2]*x0^2 + a[3]*x0*x1 + a[4]*x1*x1 + a[5]*x0*x0*x0 + a[6]*x0*x0*x1 + a[7]*x0*x1*x1 + a[8]*x1*x1*x1 + b;
+
+  console.log(dist, z, w);
+  console.log("value from training:" + w);
 
   return w;
 }
