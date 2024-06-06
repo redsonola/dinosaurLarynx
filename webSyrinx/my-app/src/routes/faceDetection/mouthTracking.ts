@@ -479,8 +479,11 @@ function printMouthLandmarks( landmarks?: NormalizedLandmark[][], connections?: 
             // m.y = Math.max(0.00000001, m.y);
             // m.y = Math.min(1.2, m.y);
 
-    m.y =  scale(wideness, wideMin, wideMax) ;
-    m.y = Math.min(5.0, m.y); 
+    //m.y =  scale(wideness, wideMin, wideMax) ;
+    //m.y = Math.min(5.0, m.y); 
+
+    m.y = getWidenessFromPolyRegression(distance(mouthLandmarks[0], mouthLandmarks[1]), mouthLandmarks[0].z);
+
     m.x = mouthArea//testing mouth area
     m.x = Math.min(5.0, m.x); 
     //console.log("m.y: "+m.y+" wideness: " +wide +" Mouth Area: " + mouthArea + ", min: "+ minMouthArea + ", max: " + maxMouthArea);
@@ -550,6 +553,20 @@ export function updateWidenessOpennessScaling()
   "\nMouth Openness Maximum Recorded Scaled Value: " + mouthAreaMax + "\n\n" ;
 
   mouthDataFile.toggleRecording(); //only record this small bit of info so far
+}
+
+//scale mouth wideness via regression equation
+//dist -- is raw wideness distance
+//z -- is the depth of the first point of the mouth
+function getWidenessFromPolyRegression(dist : number, z :number)
+{
+//   [[-0.19813054  0.72119584 -0.43471845]
+//  [-0.1641016   0.41840146 -0.23741123]]
+// [0.13137949 0.00567868]
+  let w = dist * -0.19813054 + dist * dist* 0.72119584 + dist*dist*dist-0.43471845;
+  w = w + z * -0.1641016 + z*z*0.41840146 + z*z*z*-0.23741123;
+  w = w + 0.13137949 + 0.00567868;
+  return w;
 }
 
 function getSelectedWidess() : number
