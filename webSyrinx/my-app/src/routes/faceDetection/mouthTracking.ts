@@ -571,8 +571,8 @@ function getWidenessFromPolyRegression(dist : number, z :number)
   let x0 = dist; 
   let x1 = z; 
   let b = 0.56486529; //intercept
-
-  let w =  a[0]*x0 + a[1]*x1 + a[2]*x0^2 + a[3]*x0*x1 + a[4]*x1*x1 + a[5]*x0*x0*x0 + a[6]*x0*x0*x1 + a[7]*x0*x1*x1 + a[8]*x1*x1*x1 + b;
+  //       ['x0',        'x1',    'x0^2',    'x0 x1',      'x1^2',        'x0^3',       'x0^2 x1',     'x0 x1^2',        'x1^3']
+  let w =  a[0]*x0 + a[1]*x1 + a[2]*x0*x0 + a[3]*x0*x1 + a[4]*x1*x1 + a[5]*x0*x0*x0 + a[6]*x0*x0*x1 + a[7]*x0*x1*x1 + a[8]*x1*x1*x1 + b;
 
   console.log(dist, z, w);
   console.log("value from training:" + w);
