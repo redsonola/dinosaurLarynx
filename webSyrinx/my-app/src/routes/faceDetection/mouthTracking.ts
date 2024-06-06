@@ -483,6 +483,7 @@ function printMouthLandmarks( landmarks?: NormalizedLandmark[][], connections?: 
     //m.y = Math.min(5.0, m.y); 
 
     m.y = getWidenessFromPolyRegression(distance(mouthLandmarks[0], mouthLandmarks[1]), mouthLandmarks[0].z);
+    console.log("value from training:" + m.y);
 
     m.x = mouthArea//testing mouth area
     m.x = Math.min(5.0, m.x); 
