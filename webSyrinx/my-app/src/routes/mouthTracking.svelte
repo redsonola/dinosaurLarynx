@@ -228,10 +228,13 @@
 				<p>Training mouth wideness across depth values:</p>
 				<div class="slidecontainer">
 					<input type="range" min="0.0" max="100.0" value="0.0" class="slider" id="wideOut" name="wideOut">
-					<label for="wideOut">Wideness value</label><br>
+					<label for="wideOut">Wideness value: </label> <label id="widenessVal"></label><br>
+
 
 					<input type="checkbox" id="recordingWideness" name="recordingWideness"/>
 					<label for="recordingWideness">Recording Mouth Wideness?</label><br>
+					
+
 				</div>
 						
 

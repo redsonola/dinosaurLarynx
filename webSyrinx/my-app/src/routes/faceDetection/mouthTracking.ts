@@ -55,6 +55,7 @@ import {widenessTrainingFile, mouthDataFile, wideMin, wideMax, mouthAreaMin, mou
   
     let trainingWidenessSlider : any = document.getElementById("wideOut");
     let recordingWideCheckbox : any = document.getElementById("recordingWideness");
+    let widenessValLabel : any = document.getElementById("widenessVal");
 
     let webcamRunning: Boolean = false;
     export const videoWidth = 480;
@@ -558,6 +559,7 @@ function getSelectedWidess() : number
   if(recordingWideCheckbox.checked)
   {
       w = parseFloat(trainingWidenessSlider.value) / parseFloat(trainingWidenessSlider.max);
+      widenessValLabel.innerText=w;
   }
   
   return w;
