@@ -456,7 +456,7 @@ function printMouthLandmarks( landmarks?: NormalizedLandmark[][], connections?: 
     //let openness = depthNormalizedDistance(mouthLandmarks[2], mouthLandmarks[3]);
 
     //save the mouth data for wideness to use non-linear regression to find a good mapping function
-    //saveMouthWidenessTrainingData(mouthLandmarks[0], mouthLandmarks[1]);
+    saveMouthWidenessTrainingData(mouthLandmarks[0], mouthLandmarks[1]);
 
     //find perimeter of mouth
     //mouthAreaRaw = updateMouthAreaDepthNormalized(insideMouthLandmarks); //area of the open mouth
