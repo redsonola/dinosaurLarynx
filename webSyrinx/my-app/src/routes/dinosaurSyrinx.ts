@@ -571,7 +571,7 @@ function scaleTensionOnlyLow(ctrlValue: number, xctrl: number): number {
 
 
 //pG for only low
-export var noiseFloor: number = 0.05; //trying a lower noise floor, was 0.18
+export var noiseFloor: number = 0.0005; //trying a lower noise floor, was 0.18
 function scalePGValuesLow(micIn: number, tens: number, ctrlValue: number): number {
     //pG is based on the tension
 
