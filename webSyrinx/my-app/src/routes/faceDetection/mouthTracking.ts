@@ -524,7 +524,7 @@ function printMouthLandmarks( landmarks?: NormalizedLandmark[][], connections?: 
 //     "\nMouth Openness Maximum Recorded Raw Value: " + maxMouthAreaRaw +
 
 //     "\n\nVocal tension (After mapping): " + tens + "\n\n";
-//   } 
+   } 
 }
 
 export function fillMouthInputValues()
