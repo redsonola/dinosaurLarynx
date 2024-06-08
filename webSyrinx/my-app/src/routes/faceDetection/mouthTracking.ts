@@ -452,7 +452,7 @@ function printMouthLandmarks( landmarks?: NormalizedLandmark[][], connections?: 
       insideMouthLandmarks.push(res2);
     }
 
-    //let wideness = depthNormalizedDistance(mouthLandmarks[0], mouthLandmarks[1]);
+    let wideness = distance(mouthLandmarks[0], mouthLandmarks[1]); //depthNormalizedDistance(mouthLandmarks[0], mouthLandmarks[1]);
     //let openness = depthNormalizedDistance(mouthLandmarks[2], mouthLandmarks[3]);
 
     //save the mouth data for wideness to use non-linear regression to find a good mapping function
@@ -479,8 +479,8 @@ function printMouthLandmarks( landmarks?: NormalizedLandmark[][], connections?: 
             // m.y = Math.max(0.00000001, m.y);
             // m.y = Math.min(1.2, m.y);
 
-    //m.y =  scale(wideness, wideMin, wideMax) ;
-    //m.y = Math.min(5.0, m.y); 
+    m.y =  scale(wideness, wideMin, wideMax) ;
+    m.y = Math.min(5.0, m.y); 
 
     m.y = getWidenessFromPolyRegression(distance(mouthLandmarks[0], mouthLandmarks[1]), mouthLandmarks[0].z);
 
