@@ -752,6 +752,8 @@ export function trachealSyrinx() {
                     tens = scaleTensionOneMembrane(m.y);
                 }
 
+                console.log(m.y, tens);
+
                 //tens = 3315563; //testing value   
                 rightTension.setValueAtTime(tens, 0.0); 
                 tension.setValueAtTime(tens, 0.0);
