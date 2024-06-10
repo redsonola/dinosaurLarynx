@@ -459,7 +459,7 @@ function printMouthLandmarks( landmarks?: NormalizedLandmark[][], connections?: 
     saveMouthWidenessTrainingData(mouthLandmarks[0], mouthLandmarks[1]);
 
     //find perimeter of mouth
-    //mouthAreaRaw = updateMouthAreaDepthNormalized(insideMouthLandmarks); //area of the open mouth
+    //mouthAreaRaw = updateMouthAreaDepthNormalized(insideMoutndmarks); //area of the open mouth
 
     mouthArea = 0.5; //test values ---> old //scale(mouthAreaRaw, mouthAreaMin, mouthAreaMax); 
 
@@ -564,20 +564,26 @@ function getWidenessFromPolyRegression(dist : number, z :number)
   // ['x0', 'x1', 'x0^2', 'x0 x1', 'x1^2', 'x0^3', 'x0^2 x1', 'x0 x1^2', 'x1^3']
   // [[  -8.79520751   60.97062801   75.61542798 -423.56148188 -537.82171909
   //   -117.49218294  643.85755485  829.98757768 2135.50815236]]
+  let w = 5.11153559*dist + -2.0062539*z + -10.98519015*dist*dist + 39.08383359*dist*z + -70.40145449*z*z + 0.00251011;
 
-  let a : number[] = [  -8.79520751,   60.97062801,   75.61542798, -423.56148188, -537.82171909,
-       -117.49218294,  643.85755485,  829.98757768, 2135.50815236];
+  return w;
 
-  let x0 = dist; 
-  let x1 = z; 
-  let b = 0.56486529; //intercept
-  //       ['x0',        'x1',    'x0^2',    'x0 x1',      'x1^2',        'x0^3',       'x0^2 x1',     'x0 x1^2',        'x1^3']
-  let w =  a[0]*x0 + a[1]*x1 + a[2]*x0*x0 + a[3]*x0*x1 + a[4]*x1*x1 + a[5]*x0*x0*x0 + a[6]*x0*x0*x1 + a[7]*x0*x1*x1 + a[8]*x1*x1*x1 + b;
+  //****** prev values
+  // let a : number[] = [  -8.79520751,   60.97062801,   75.61542798, -423.56148188, -537.82171909,
+  //      -117.49218294,  643.85755485,  829.98757768, 2135.50815236];
+  // let x0 = dist; 
+  // let x1 = z; 
+  // let b = 0.56486529; //intercept
+  // //       ['x0',        'x1',    'x0^2',    'x0 x1',      'x1^2',        'x0^3',       'x0^2 x1',     'x0 x1^2',        'x1^3']
+  // let w =  a[0]*x0 + a[1]*x1 + a[2]*x0*x0 + a[3]*x0*x1 + a[4]*x1*x1 + a[5]*x0*x0*x0 + a[6]*x0*x0*x1 + a[7]*x0*x1*x1 + a[8]*x1*x1*x1 + b;
 
   // console.log(dist, z, w);
   // console.log("value from training:" + w);
 
-  return w;
+//   [0.00251011]
+// ['x0', 'x1', 'x0^2', 'x0 x1', 'x1^2']
+// [[  5.11153559  -2.0062539  -10.98519015  39.08383359 -70.40145449]]run 
+
 }
 
 function getSelectedWidess() : number
