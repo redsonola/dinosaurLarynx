@@ -683,7 +683,124 @@ function scaleMicValues(micIn : number) : number
     res = Math.min(1.0, res); //cap it at 1.0
     return res; 
 }
+//-----------------------
+//--------------------------
+function scaleTensionLowBelfast(ctrlValue: number): number {
+    let tens = 0;
+    let maxTens = 808510292;
+    let maxTens2 = 10615563;
+    // if (m.y < 0.75) {
+    //     tens = ((ctrlValue) * (9890243.3116 - 2083941)) + 2083941;
+    // }
+    // else {
+    //     let addOn = ((0.75) * (9890243.3116 - 2083941)) + 2083941;
+    //     tens = ((ctrlValue) * (98989831.3116 - addOn)) + addOn;
+    // }
 
+    tens = ((ctrlValue) * (maxTens2- 156080)) + 156080;
+
+    //add something from the x value
+
+    //put 0 at the center
+    //let scaledX = m.x ; //take out this for mouth -- have it only add.
+
+    //add or minus a certain amt.
+    //tens += scaledX * (10000 * m.y); //have what the area adds be a percentage of the wideness.
+    //tens = Math.max(156080, tens);
+
+    console.log( tens );
+
+    return tens;
+}
+//-----------------------
+//--------------------------
+function scalePGValuesLowBelfast(micIn: number, tens: number, ctrlValue: number): number {
+    //pG is based on the tension
+
+    let maxMaxPG = 400; //656080.2213529117
+
+    let floorPG = 20;
+    if (tens < 256080) {  
+        maxMaxPG = 8;
+    }
+    else if (tens < 356080) {
+        maxMaxPG = 9;
+    }
+    else if (tens < 400800) {
+        maxMaxPG = 10;
+    }
+    else if (tens < 456080) {
+        maxMaxPG = 20;
+    }
+    else if (tens < 656080) {
+        maxMaxPG = 25;
+    }
+    else if (tens < 1656080) { //12547837.826411683
+        maxMaxPG = 50;
+    }
+    else if (tens < 3015563) {
+        maxMaxPG = 75;
+    }
+    else if (tens < 4515563) {
+        maxMaxPG = 90;
+    }
+    else if (tens < 6015563) {   //5675073.28 8027448.10
+        floorPG = 20; //changed from 400
+        maxMaxPG = 100;
+    }
+    else if (tens<7015563) { 
+
+        floorPG = 90;
+        maxMaxPG = 150;
+    }
+    else if (tens < 8015563) {
+    
+        floorPG = 20;
+        maxMaxPG = 200;
+    }
+    else if (tens < 10015563) {
+
+        floorPG = 20;
+        maxMaxPG = 250;
+    }
+    else
+    {
+        floorPG = 20;
+        maxMaxPG = 300;
+    }
+
+    let maxPG = maxMaxPG;// (ctrlValue * (maxMaxPG - floorPG)) + floorPG;
+    let oldMaxPG = (ctrlValue * (maxMaxPG - floorPG)) + floorPG;
+
+    let rawMicIn = micIn;
+    //micIn = logScale(micIn, 0.0000001, 1.0) * 3.0;
+    let pG = micIn * maxPG ;
+    pG *= 3; 
+
+    //put 0 at the center
+    let scaledX = ctrlValue; //don't subtract right now.
+
+    //add or minus a certain amt.
+    
+    if (pG > 30) //don't add if pG is already super low
+        {pG += scaledX * (100 * m.y);} //note: was 500} //just adds a little
+        
+
+    //add in a mic noise floor -- production code now. 1/13/24
+    if( micIn < noiseFloor)
+    {
+        pG = 0;
+    }
+
+    pG = Math.max(pG, 0);
+    // if(rawMicIn < 0.04)
+    // {
+    //     pG=0;
+    // }
+
+    console.log(micIn.toFixed(2), pG.toFixed(2), tens.toFixed(2));
+    return pG;
+}
 //--------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------
 //Main syrinx function main
@@ -739,8 +856,8 @@ export function trachealSyrinx() {
                 //console.log("Mic raw: " + curMicIn.toFixed(2) + " Scaled: " + num.toFixed(2)  + " Recorded Max: " + curMaxMicIn.max.toFixed(2) + " Scaled Max: " + micScaling.loud.toFixed(2));
 
                 //let tens = scaleTensionTwoMembranes(m.y);
-                tens = avgFilterTension(scaleTensionOnlyLow(m.y, m.x));
-
+                //tens = avgFilterTension(scaleTensionOnlyLow(m.y, m.x));
+                tens = scaleTensionLowBelfast(m.y); //testing Belfast values
                 //console.log(m.y, m.x, tens);
 
                 
@@ -760,8 +877,8 @@ export function trachealSyrinx() {
 
                 //pG is based on the tension
                  //let pG = scalePGValuesTwoMembranes(num as number, tens, m.y); //TODO: find PG given 2 separate membrane values
-                let pG = avgFilterPG(scalePGValuesLow(num as number, tens, m.y)); //TODO: find PG given 2 separate membrane values
-
+                //let pG = avgFilterPG(scalePGValuesLow(num as number, tens, m.y)); //TODO: find PG given 2 separate membrane values
+                let pG = scalePGValuesLowBelfast(num as number, tens, m.y); //TODO: find PG given 2 separate membrane values
 
                 //console.log("pG: " + pG.toFixed(2) + " tens: " + tens.toFixed(2));
 
