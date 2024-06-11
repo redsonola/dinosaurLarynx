@@ -830,7 +830,7 @@ export function trachealSyrinx() {
         const limiter = new Tone.Limiter();
         const compressor = new Tone.Compressor();
         const gain = new Tone.Gain(50); //to do -- make visible to UI
-        const vol = new Tone.Volume(0);
+        const vol = new Tone.Volume(3);
 
         membrane = new SyrinxMembraneFS({ pG: 0.0 }); //needs to be global.. 
 
