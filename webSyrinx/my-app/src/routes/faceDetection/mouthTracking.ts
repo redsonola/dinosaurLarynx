@@ -494,7 +494,7 @@ function printMouthLandmarks( landmarks?: NormalizedLandmark[][], connections?: 
     m.y =  scale(wideness, wideMin, wideMax) ;
     m.y = Math.min(5.0, m.y); 
 
-    m.y = getWidenessFromPolyRegression(distance(mouthLandmarks[0], mouthLandmarks[1]), mouthLandmarks[0].z);
+    m.y = getWidenessFromPolyRegression(distance(mouthLandmarks[0], mouthLandmarks[1]), mouthLandmarks[0].z, eyeDist);
 
     m.x = mouthArea//testing mouth area
     m.x = Math.min(5.0, m.x); 
@@ -570,7 +570,7 @@ export function updateWidenessOpennessScaling()
 //scale mouth wideness via regression equation
 //dist -- is raw wideness distance
 //z -- is the depth of the first point of the mouth
-function getWidenessFromPolyRegression(dist : number, z :number)
+function getWidenessFromPolyRegression(dist : number, z :number, eyeDist: number) : number
 {
   // [0.56486529]
   // ['x0', 'x1', 'x0^2', 'x0 x1', 'x1^2', 'x0^3', 'x0^2 x1', 'x0 x1^2', 'x1^3']
@@ -581,7 +581,23 @@ function getWidenessFromPolyRegression(dist : number, z :number)
 //   [0.00251011]
 // ['x0', 'x1', 'x0^2', 'x0 x1', 'x1^2']
 // [[  5.11153559  -2.0062539  -10.98519015  39.08383359 -70.40145449]]
-  let w = 5.11153559*dist + -2.0062539*z + -10.98519015*dist*dist + 39.08383359*dist*z + -70.40145449*z*z + 0.00251011;
+//  let w = 5.11153559*dist + -2.0062539*z + -10.98519015*dist*dist + 39.08383359*dist*z + -70.40145449*z*z + 0.00251011;
+
+//include eye distance in training data
+
+let a = [  24.2735987  ,   7.37318134 , -24.2204243  ,  39.65292018 , -36.72554185,
+  -265.58151148 ,  55.42195855 , -12.89257628,  231.80749177, -121.22899618,
+   314.83504451 , 120.31485829 ,-128.38928698, -762.81821586,  671.42468096,
+    48.4001318 , -190.80289448,  631.81602523, -703.65027863];
+
+let b = 0.14239084;
+let x0 = dist; 
+let x1 = z;
+let x2 = eyeDist;
+//['x0', 'x1', 'x2', 'x0^2', 'x0 x1', 'x0 x2', 'x1^2', 'x1 x2', 'x2^2', 'x0^3', 'x0^2 x1', 'x0^2 x2', 'x0 x1^2', 'x0 x1 x2', 'x0 x2^2', 'x1^3', 'x1^2 x2', 'x1 x2^2', 'x2^3']
+let w = a[0]*x0 + a[1]*x1 + a[2]*x2 + a[3]*x0*x0 + a[4]*x0*x1+ a[5]*x0*x2 + a[6]*x1*x1 + a[7]*x1*x2 + 
+a[8]*x2*x2 + a[9]*x0*x0*x0 + a[10]*x0*x0*x1 + a[11]*x0*x0*x2 + a[12]*x0*x1*x1 + a[13]*x0*x1*x2 + a[14]*x0*x2*x2 + a[15]*x1*x1*x1 + a[16]*x1*x1*x2 + 
+a[17]*x1*x2*x2 + a[18]*x2*x2*x2 + b;
 
   return w;
 
