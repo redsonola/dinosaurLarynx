@@ -706,7 +706,7 @@ function scaleTensionLowBelfast(ctrlValue: number): number {
 
     //add or minus a certain amt.
     //tens += scaledX * (10000 * m.y); //have what the area adds be a percentage of the wideness.
-    //tens = Math.max(156080, tens);
+    tens = Math.max(156080, tens);
 
     console.log( tens );
 
