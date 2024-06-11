@@ -857,7 +857,7 @@ export function trachealSyrinx() {
 
                 //let tens = scaleTensionTwoMembranes(m.y);
                 //tens = avgFilterTension(scaleTensionOnlyLow(m.y, m.x));
-                tens = scaleTensionLowBelfast(m.y); //testing Belfast values
+                tens = avgFilterPG(scaleTensionLowBelfast(m.y)); //testing Belfast values
                 //console.log(m.y, m.x, tens);
 
                 
