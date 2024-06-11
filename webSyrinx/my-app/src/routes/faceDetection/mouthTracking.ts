@@ -307,6 +307,8 @@ export const FACE_LANDMARKS_LIPS_OPENNESS_MEASURES: any[] = [
   {start: 14, end: 13}
 ];
 
+//left and right inner eye corners
+export const EYE_CORNER_LANDMARK: any = {start: 173, end:398};
 
 //TODO: test until find a good marker for mouth openness
 // export const FACE_LANDMARKS_LIPS_OPENNESS_OUTSIDE: any[] = [
@@ -423,6 +425,8 @@ var mouthArea = 0.0;
 var minMouthAreaRaw = 1000;
 var maxMouthAreaRaw = -1000;
 
+var eyeDist = 0.0;
+
 
 //print mouth landmarks values to console & update mouth values
 function printMouthLandmarks( landmarks?: NormalizedLandmark[][], connections?: any[]) : void {
@@ -452,11 +456,19 @@ function printMouthLandmarks( landmarks?: NormalizedLandmark[][], connections?: 
       insideMouthLandmarks.push(res2);
     }
 
+    //update eye distance via EYE_CORNER_LANDMARKS
+    let EYEres : NormalizedLandmark = marks[ EYE_CORNER_LANDMARK.start];
+    let EYEres2 : NormalizedLandmark = marks[ EYE_CORNER_LANDMARK.end];
+    eyeDist = distance(EYEres, EYEres2);
+
+
+      
+
     let wideness = distance(mouthLandmarks[0], mouthLandmarks[1]); //depthNormalizedDistance(mouthLandmarks[0], mouthLandmarks[1]);
     //let openness = depthNormalizedDistance(mouthLandmarks[2], mouthLandmarks[3]);
 
     //save the mouth data for wideness to use non-linear regression to find a good mapping function
-    saveMouthWidenessTrainingData(mouthLandmarks[0], mouthLandmarks[1]);
+    saveMouthWidenessTrainingData(mouthLandmarks[0], mouthLandmarks[1], eyeDist);
 
     //find perimeter of mouth
     //mouthAreaRaw = updateMouthAreaDepthNormalized(insideMoutndmarks); //area of the open mouth
@@ -600,13 +612,13 @@ function getSelectedWidess() : number
   return w;
 }
 
-export function saveMouthWidenessTrainingData(pt1 : NormalizedLandmark, pt2: NormalizedLandmark)
+export function saveMouthWidenessTrainingData(pt1 : NormalizedLandmark, pt2: NormalizedLandmark, eyeDist: number)
 {
   let dist = distance(pt1, pt2);
   let z = pt1.z;
   let inputValue = getSelectedWidess();
   if (inputValue != -1)
-    widenessTrainingFile.addData([dist, z, inputValue]);
+    widenessTrainingFile.addData([dist, z, eyeDist, inputValue]);
 }
 
 export function toggleMouthWidenessRecording()

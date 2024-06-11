@@ -6,7 +6,7 @@ const mouthDataHeader = "Wideness Min, Wideness Max, Open Min, Open Max";
 export const mouthDataFile : DataFileCSV = new DataFileCSV(mouthDataFileName, mouthDataHeader);
 
 let mouthDataFileName2 = "mouthWidenessData.csv";
-let mouthDataHeader2 = "wideness, z, scaledValue";
+let mouthDataHeader2 = "wideness,z,eyeDist,scaledValue";
 export const widenessTrainingFile : DataFileCSV = new DataFileCSV(mouthDataFileName2, mouthDataHeader2);
 
 //updated with better values, depth normalization

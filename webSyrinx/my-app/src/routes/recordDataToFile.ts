@@ -50,7 +50,8 @@ export class DataFileCSV
         {
             for (let i = 0; i < data.length; i++)
             {
-                this.saveddata += data[i] + ",";
+                this.saveddata += data[i] 
+                if (i < data.length - 1) this.saveddata += ",";
             }
             this.saveddata += "\n";
         }
