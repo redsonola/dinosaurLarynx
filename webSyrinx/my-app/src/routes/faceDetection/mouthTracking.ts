@@ -16,7 +16,7 @@
 // ++ into typescript
 
 import { DrawingUtils, FaceLandmarker, FilesetResolver, type NormalizedLandmark } from "@mediapipe/tasks-vision";
-import { m, micScaling, curMicIn, curMaxMicIn, tens, trachealSyrinx } from "../dinosaurSyrinx" //importing from here, too
+import { m, micScaling, curMaxMicIn, trachealSyrinx, alreadyPressed } from "../dinosaurSyrinx" //importing from here, too
 import {widenessTrainingFile, mouthDataFile, wideMin, wideMax, mouthAreaMin, mouthAreaMax, setMouthWideMin, setMouthAreaMax, setMouthAreaMin, setMouthWideMax} from './mouthMeasures'; //things I want to import
 
 // const vision : any  = await FilesetResolver.forVisionTasks(
@@ -33,7 +33,7 @@ import {widenessTrainingFile, mouthDataFile, wideMin, wideMax, mouthAreaMin, mou
 
    let faceLandmarker : FaceLandmarker;
     let runningMode: "IMAGE" | "VIDEO" = "IMAGE";
-    let enableWebcamButton: HTMLButtonElement;
+    //let enableWebcamButton: HTMLButtonElement;
 
     let micMaxInput : HTMLInputElement = document.getElementById("micMax") as HTMLInputElement; // initialize submit button for mouth params
     let micConfigStatus : HTMLLabelElement = document.getElementById("micConfigStatus") as HTMLLabelElement; // status for mic config
@@ -102,14 +102,15 @@ function hasGetUserMedia() {
 // If webcam supported, add event listener to button for when user
 // wants to activate it.
 if (hasGetUserMedia()) {
-  enableWebcamButton = document.getElementById(
-    "webcamButton"
-  ) as HTMLButtonElement;
-  enableWebcamButton.addEventListener("click", enableCam);
-  configMouthTrackingButton = document.getElementById(
-    "setupMouthTracking"
-    ) as HTMLButtonElement;
-    configMouthTrackingButton.addEventListener("click", showInputValuesSection);
+//  enableWebcamButton = document.getElementById(
+//    "webcamButton"
+//  ) as HTMLButtonElement;
+  // enableWebcamButton.addEventListener("click", enableCam);
+  document.body.addEventListener("click", enableCam);
+  // configMouthTrackingButton = document.getElementById(
+  //   "setupMouthTracking"
+  //   ) as HTMLButtonElement;
+    //configMouthTrackingButton.addEventListener("click", showInputValuesSection);
     editMouthValueAutoFill.addEventListener("click", fillMouthInputValues);
     resetRecordedMouthMinimumsAndMaximums.addEventListener("click", resetMouthMinMax);
     submitEditMouthConfig.addEventListener("click", updateWidenessOpennessScaling);
@@ -125,34 +126,39 @@ if (hasGetUserMedia()) {
 }
 
 // Enable the live webcam view and start detection.
+var camEnabled = false;
 function enableCam(event : any) {
-  trachealSyrinx(); //start the sound just in case.
+  if(!alreadyPressed) { trachealSyrinx(); }//start the sound just in case.
+  if(camEnabled) {return;}
+  console.log("enabled cam");
+  camEnabled = true; 
   if (!faceLandmarker) {
     console.log("Wait! faceLandmarker not loaded yet.");
+    camEnabled = false;
     return;
   }
 
-  if (webcamRunning === true) {
-    webcamRunning = false;
-    enableWebcamButton.innerText = "Enable Mouth Tracking Syrinx Control";
-    configMouthTrackingButton.className = "setupButtonInvisible";
-    configMouthTrackingButton.style.opacity = "0";
-    video.style.opacity = "0";
-    canvasElement.style.opacity = "0";
-    inputValuesForTrackingSection.style.opacity = "0";
-    configMouthTrackingButton.innerText = "Adjust Mouth-Tracking Response";
+  // if (webcamRunning === true) {
+  //   webcamRunning = false;
+  //   //enableWebcamButton.innerText = "Enable Mouth Tracking Syrinx Control";
+  //   configMouthTrackingButton.className = "setupButtonInvisible";
+  //   configMouthTrackingButton.style.opacity = "0";
+  //   video.style.opacity = "0";
+  //   canvasElement.style.opacity = "0";
+  //   inputValuesForTrackingSection.style.opacity = "0";
+  //   configMouthTrackingButton.innerText = "Adjust Mouth-Tracking Response";
 
 
 
-  } else {
+  // } else {
     webcamRunning = true;
-    enableWebcamButton.innerText = "Disable Mouth Tracking Syrinx Control";
+    //enableWebcamButton.innerText = "Disable Mouth Tracking Syrinx Control";
     video.style.opacity = "1";
     canvasElement.style.opacity = "1";
-    inputValuesForTrackingSection.style.opacity = "0";
-    configMouthTrackingButton.innerText = "Adjust Mouth-Tracking Response";
+    //inputValuesForTrackingSection.style.opacity = "0";
+    //configMouthTrackingButton.innerText = "Adjust Mouth-Tracking Response";
 
-  }
+  // }
 
   // getUsermedia parameters
   const constraints = {
@@ -186,19 +192,19 @@ async function predictWebcam() {
   //console.log("configTop: " + configTop);
 
   //place config button after video
-  configMouthTrackingButton.style.position = "relative";
-  configMouthTrackingButton.style.top = configTop + "px";
-  configMouthTrackingButton.style.left = 0 + "px";
+  // configMouthTrackingButton.style.position = "relative";
+  // configMouthTrackingButton.style.top = configTop + "px";
+  // configMouthTrackingButton.style.left = 0 + "px";
   inputValuesForTrackingSection.style.position = "relative";
   inputValuesForTrackingSection.style.top = canvasElement.height + "px";
   inputValuesForTrackingSection.style.left = 0 + "px";
 
   
-  if( results && webcamRunning === true)
-  {
-    configMouthTrackingButton.className = "setupButtonVisible";
-    configMouthTrackingButton.style.opacity = "1";
-  }
+  // if( results && webcamRunning === true)
+  // {
+  //   configMouthTrackingButton.className = "setupButtonVisible";
+  //   configMouthTrackingButton.style.opacity = "1";
+  // }
 
   // Now let's start detecting the stream.
   if (runningMode === "IMAGE") {
@@ -693,13 +699,13 @@ export function showInputValuesSection()
   if(inputValuesForTrackingSection.style.opacity === "0" )
   {
     inputValuesForTrackingSection.style.opacity = "1";
-    configMouthTrackingButton.innerText = "Hide Mouth Tracking Configuration Controls";
+    // configMouthTrackingButton.innerText = "Hide Mouth Tracking Configuration Controls";
   }
-  else
-  {
-    inputValuesForTrackingSection.style.opacity = "0";
-    configMouthTrackingButton.innerText = "Adjust Mouth-Tracking Response"; //test build
-  }
+  // else
+  // {
+  //   inputValuesForTrackingSection.style.opacity = "0";
+  //   configMouthTrackingButton.innerText = "Adjust Mouth-Tracking Response"; //test build
+  // }
 }
 
 // let micMaxInput : HTMLInputElement = document.getElementById("micMax") as HTMLInputElement; // initialize submit button for mouth params

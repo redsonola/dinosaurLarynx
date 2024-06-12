@@ -708,7 +708,7 @@ function scaleTensionLowBelfast(ctrlValue: number): number {
     //tens += scaledX * (10000 * m.y); //have what the area adds be a percentage of the wideness.
     tens = Math.max(156080, tens);
 
-    console.log( tens );
+    // console.log( tens );
 
     return tens;
 }
@@ -798,13 +798,13 @@ function scalePGValuesLowBelfast(micIn: number, tens: number, ctrlValue: number)
     //     pG=0;
     // }
 
-    console.log(micIn.toFixed(2), pG.toFixed(2), tens.toFixed(2));
+    //console.log(micIn.toFixed(2), pG.toFixed(2), tens.toFixed(2));
     return pG;
 }
 //--------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------
 //Main syrinx function main
-let alreadyPressed = false;
+export var alreadyPressed = false;
 var membrane: SyrinxMembraneFS;
 var currentMembraneCount = 2; //default
 var independentMembranes = false; //default
@@ -819,11 +819,11 @@ export function trachealSyrinx() {
 
     let micConfigStatus : HTMLLabelElement = document.getElementById("micConfigStatus") as HTMLLabelElement; // status for mic config
 
-    // document.documentElement.requestFullscreen().catch((err) => {
-    //   console.log(
-    //         `Error attempting to enable fullscreen mode: ${err.message} (${err.name})`
-    //     );
-    // });
+    document.documentElement.requestFullscreen().catch((err) => {
+      console.log(
+            `Error attempting to enable fullscreen mode: ${err.message} (${err.name})`
+        );
+    });
 
     if (!alreadyPressed) {
 
@@ -871,7 +871,7 @@ export function trachealSyrinx() {
                     tens = scaleTensionOneMembrane(m.y);
                 }
 
-                console.log(m.y, tens);
+                // console.log(m.y, tens);
 
                 //tens = 3315563; //testing value   
                 rightTension.setValueAtTime(tens, 0.0); 

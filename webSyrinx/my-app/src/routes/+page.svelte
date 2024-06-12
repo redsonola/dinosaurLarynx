@@ -26,7 +26,7 @@
 	In addition, as you accelerate and decelerate your breath whilst blowing into the microphone, you are also driving pitch, timbre, and volume of the sound.</p>
 		
 	<p>		Alternatively, enable your webcam and use your mouthshape to control the tension on the vocal cords! The wider and more open your mouth is, the higher the tension. And vice versa. </p>
-	<p> <a href="https://vimeo.com/912455205">Click for Video of Demonstration and Instructions for webcam mouth-tracking</a> </p>
+	<!-- <p> <a href="https://vimeo.com/912455205">Click for Video of Demonstration and Instructions for webcam mouth-tracking</a> </p> -->
 
 	<p>The default mode of the computational model employs a two membranes (a tracheobronchial, meaning two membranes, one each in the bronchi) syrinx like a songbird (passerine). However, you can switch between this mode and a tracheal mode with only one membrane (one vibrating membrane in the trachea), like an ostrich, duck, or dove.
 		<br /> <br />
@@ -52,9 +52,9 @@
 
 <div class="dinobackground">
 
-	<button on:click={() => setMembraneCount(1)}>Tracheal Syrinx (One Membrane, like an ostrich)</button> 
+	<!--<button on:click={() => setMembraneCount(1)}>Tracheal Syrinx (One Membrane, like an ostrich)</button> 
 	<br/><button on:click={() => setMembraneCount(2)}>Tracheobronchial Syrinx (Two Membranes, like a songbird)</button>
-	<!-- <br/><button on:click={membranesIndependent}>Press for Independent Membranes</button> -->
+	<br/><button on:click={membranesIndependent}>Press for Independent Membranes</button> -->
 	<MouthTracking />
 <br />
 <br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br /><br />

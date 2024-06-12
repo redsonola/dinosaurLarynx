@@ -184,6 +184,7 @@
 	  <br />
 
 	  <section id="demos">
+	  <!-- comment out for actual exhibition
 		<button id="webcamButton" class="z-index: 100.0;" >
 			Enable webcam and control syrinx tension via mouth-tracking
 					  </button>
@@ -191,6 +192,7 @@
 					  <button id="setupMouthTracking" class="setupButtonInvisible">
 						Adjust Mouth-Tracking Response
 					</button>
+		-->
 
 		<!-- <h2>Demo: Webcam continuous face landmarks detection</h2>
 		<p>Hold your face in front of your webcam to get real-time face landmarker detection. <br/>Click <b>enable webcam</b> below and grant access to the webcam if prompted.</p> -->
