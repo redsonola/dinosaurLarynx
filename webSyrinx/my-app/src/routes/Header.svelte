@@ -33,11 +33,18 @@
 	-->
 </header>
 
-	<directions><p>
-		Click anywhere in the window  to start the sound and blow into the microphone! <br /><br />  
-		You can change the tension on the vocal cords by moving your mouse! <br /><br/>
+	<directions>
+		Click anywhere in the window  to start the sound! <br /><br />  
+		You can change the air pressure and tension on the vocal cords by moving your mouse! <br /><br/>
 
-		Changing the tension affects the pitch and timbre. The lower you move your mouse (you can scroll down) the lower the tension, and generally, the lower the pitch. The higher your mouse moves, the higher the pitch. In addition, the more or less you accelerate your breath, this also has an effect on pitch, timbre, and volume.</p>
+		Changing the tension affects the pitch and timbre. The lower you move your mouse (you can scroll down) the lower the tension, and generally, the lower the pitch. The higher your mouse moves, the higher the pitch. In addition, the more to the right that you move your mouse on the screen, the more air pressure below the syrinx and the lowuder the sound. To stop the sound, move your mouse to the left edge of the screen. Both actions also have an effect on pitch, timbre, and volume.
+
+		This syrinx is based on a computational model of a ring dove syrinx:<br /><br />
+
+
+		Zaccarelli, R., Elemans, C. P., Fitch, W., & Herzel, H. (2006). Modelling bird songs: voice onset, overtones and registers. Acta acustica united with acustica, 92(5), 741-748.<br /><br />
+		Zaccarelli, R. (2009). Mathematical modelling of sound production in birds. <br /><br />
+		Elemans, C. P., Zaccarelli, R., & Herzel, H. (2008). Biomechanics and control of vocalization in a non-songbird. Journal of the Royal Society Interface, 5(24), 691-703. <br /><br />
 	</directions>
 
 <style>

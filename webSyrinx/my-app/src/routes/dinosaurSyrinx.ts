@@ -634,11 +634,12 @@ let alreadyPressed = false;
 let recordingMouseData = false;
 export function trachealSyrinx()
 {
-    document.documentElement.requestFullscreen().catch((err) => {
-       console.log(
-             `Error attempting to enable fullscreen mode: ${err.message} (${err.name})`
-         );
-     });
+    //don't do full screen for website version
+    // document.documentElement.requestFullscreen().catch((err) => {
+    //    console.log(
+    //          `Error attempting to enable fullscreen mode: ${err.message} (${err.name})`
+    //      );
+    //  });
     
 
     if (!alreadyPressed)
@@ -684,8 +685,8 @@ export function trachealSyrinx()
                 // pGparam.setValueAtTime(pG, 0.0);  
                 //let p = (num as number) * 0.05; //for blowing, for now
                 //let p = m.x;
-                //let p = scaleElemansPsMaxWithScaledValues(m.y, m.x); //for mouse control
-                let p = scaleElemansPsMaxWithScaledValues(m.y, num as number); //for breath control
+                let p = scaleElemansPsMaxWithScaledValues(m.y, m.x); //for mouse control
+                //let p = scaleElemansPsMaxWithScaledValues(m.y, num as number); //for breath control
                 Ps.setValueAtTime(p, 0.0);
 
                 //save the data
@@ -802,7 +803,7 @@ export const downloadFile = () => {
     link.download = "psMouseData.csv";
     link.click();
     URL.revokeObjectURL(link.href);
- };
+}
 
     //https://developer.mozilla.org/en-US/docs/Web/API/AudioWorkletNode/parameters
 
