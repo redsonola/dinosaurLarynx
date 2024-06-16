@@ -949,7 +949,7 @@ document.body.addEventListener('mousemove',
 
             if (Number.isNaN(m.x) || Number.isNaN(m.y)) {
                 console.log("mouse is NAN!!");
-             }
+             } 
         }
     });
 
