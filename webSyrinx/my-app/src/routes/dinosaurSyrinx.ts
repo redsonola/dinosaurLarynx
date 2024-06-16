@@ -634,12 +634,11 @@ let alreadyPressed = false;
 let recordingMouseData = false;
 export function trachealSyrinx()
 {
-    //don't do full screen for website version
-    // document.documentElement.requestFullscreen().catch((err) => {
-    //    console.log(
-    //          `Error attempting to enable fullscreen mode: ${err.message} (${err.name})`
-    //      );
-    //  });
+    document.documentElement.requestFullscreen().catch((err) => {
+       console.log(
+             `Error attempting to enable fullscreen mode: ${err.message} (${err.name})`
+         );
+     });
     
 
     if (!alreadyPressed)
