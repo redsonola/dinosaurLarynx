@@ -45,6 +45,8 @@
 		Zaccarelli, R., Elemans, C. P., Fitch, W., & Herzel, H. (2006). Modelling bird songs: voice onset, overtones and registers. Acta acustica united with acustica, 92(5), 741-748.<br /><br />
 		Zaccarelli, R. (2009). Mathematical modelling of sound production in birds. <br /><br />
 		Elemans, C. P., Zaccarelli, R., & Herzel, H. (2008). Biomechanics and control of vocalization in a non-songbird. Journal of the Royal Society Interface, 5(24), 691-703. <br /><br />
+
+		Parameters of the model were adjusted based on Corythosaurus skeleton and skull, as well as for some speculative properties of its syrinx based on other bird and alligator models. <br /><br />
 	</directions>
 
 <style>
