@@ -46,7 +46,7 @@
 		Zaccarelli, R. (2009). Mathematical modelling of sound production in birds. <br /><br />
 		Elemans, C. P., Zaccarelli, R., & Herzel, H. (2008). Biomechanics and control of vocalization in a non-songbird. Journal of the Royal Society Interface, 5(24), 691-703. <br /><br />
 
-		Parameters of the model were adjusted based on Corythosaurus skeleton and skull, as well as for some speculative properties of its syrinx based on other bird and alligator models. <br /><br />
+		Parameters of the model were adjusted based on Corythosaurus skeleton and skull, as well as for some speculative properties of its syrinx based on other bird and alligator models. The resonance of the trachea is modeled via waveguide synthesis, and the returning pressure waves are fed back into the model. Skull resonance is not accounted for in this model, as it was developed for the musical dinosaur skull instrument.<br /><br />
 	</directions>
 
 <style>
