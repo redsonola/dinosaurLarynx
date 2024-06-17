@@ -35,10 +35,10 @@
 
 	<directions>
 		Click anywhere in the window to start the sound! Clicking will also maximize the window. <br /><br />  
-		You can change the air pressure and tension on the vocal cords by moving your mouse! <br /><br/>
+		You can change the air pressure and muscle tension on the vocal cords by moving your mouse! <br /><br/>
 
 		Instructions:
-		Changing the tension affects the pitch and timbre. The lower you move your mouse (you can scroll down) the lower the tension, and generally, the lower the pitch. The higher your mouse moves, the higher the pitch. In addition, the more to the right that you move your mouse on the screen, the more air pressure below the syrinx and the louder the sound. To stop the sound, move your mouse to the left edge of the screen. Note that each parameter (air pressure, tension) has an effect on pitch, timbre, and volume to some degree. <br /><br />
+		Changing the syrinx muscle tension affects the pitch and timbre. The lower you move your mouse (you can scroll down) the lower the syrinx muscle tension, and generally, the lower the pitch. The higher your mouse moves, the higher the pitch. In addition, the more to the right that you move your mouse on the screen, the more air pressure below the syrinx and the louder the sound. To stop the sound, move your mouse to the left edge of the screen. Note that each parameter (air pressure, tension) has an effect on pitch, timbre, and volume to some degree. <br /><br />
 
 		This syrinx is based on a computational model of a ring dove syrinx:<br /><br />
 
@@ -47,7 +47,7 @@
 		Zaccarelli, R. (2009). Mathematical modelling of sound production in birds. <br /><br />
 		Elemans, C. P., Zaccarelli, R., & Herzel, H. (2008). Biomechanics and control of vocalization in a non-songbird. Journal of the Royal Society Interface, 5(24), 691-703. <br /><br />
 
-		Parameters of the model were adjusted based on Corythosaurus skeleton and skull, as well as for some speculative properties of its syrinx based on other bird and alligator models. The resonance of the trachea is modeled via waveguide synthesis, and the returning pressure waves are fed back into the model. Skull resonance is not accounted for in this model, as it was developed for the musical dinosaur skull instrument, and in that case, the process happens via the physical recreation of the skull.<br /><br />
+		Parameters of the model were adjusted based on Corythosaurus skeleton and skull, as well as for some speculative properties of its syrinx based on other bird and alligator models. The resonance of the trachea is modeled via waveguide synthesis, and the returning pressure waves are fed back into the model. Skull resonance is not accounted for in this model, as it was developed for the musical dinosaur skull instrument, and in that case, the process happens via the physical recreation of the skull. The muscle tensio parameter in this demonstration combines the parameters for two types of muscle tension that are implemented in the model: (1) transmural pressure difference (the pressure difference between inside and outside the syrinx) and (2) the stress exerted by syringeal muscles (the tracheolateralis) as developed in the Zaccarelli, Elemans, et. al. (2006-9) model for an easier, more intuitive musical interface. <br /><br />
 	</directions>
 
 <style>
