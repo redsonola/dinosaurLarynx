@@ -38,7 +38,7 @@
 		You can change the air pressure and tension on the vocal cords by moving your mouse! <br /><br/>
 
 		Instructions:
-		Changing the tension affects the pitch and timbre. The lower you move your mouse (you can scroll down) the lower the tension, and generally, the lower the pitch. The higher your mouse moves, the higher the pitch. In addition, the more to the right that you move your mouse on the screen, the more air pressure below the syrinx and the louder the sound. To stop the sound, move your mouse to the left edge of the screen. Both actions also have an effect on pitch, timbre, and volume. <br /><br />
+		Changing the tension affects the pitch and timbre. The lower you move your mouse (you can scroll down) the lower the tension, and generally, the lower the pitch. The higher your mouse moves, the higher the pitch. In addition, the more to the right that you move your mouse on the screen, the more air pressure below the syrinx and the louder the sound. To stop the sound, move your mouse to the left edge of the screen. Note that each parameter (air pressure, tension) has an effect on pitch, timbre, and volume to some degree. <br /><br />
 
 		This syrinx is based on a computational model of a ring dove syrinx:<br /><br />
 
