@@ -439,8 +439,8 @@ function printMouthLandmarks( landmarks?: NormalizedLandmark[][], connections?: 
   if (!landmarks) {
     return;
   }
-  let mouthLandmarks = []; 
-  let insideMouthLandmarks = [];
+  let mouthLandmarks : any[] = []; 
+  let insideMouthLandmarks : any[] = [];
   let marks : NormalizedLandmark[] = landmarks[0];
   if( marks )
   {
@@ -502,8 +502,9 @@ function printMouthLandmarks( landmarks?: NormalizedLandmark[][], connections?: 
 
     m.y = getWidenessFromPolyRegression(distance(mouthLandmarks[0], mouthLandmarks[1]), mouthLandmarks[0].z, eyeDist);
 
-    m.x = mouthArea//testing mouth area
-    m.x = Math.min(5.0, m.x); 
+    //m.x = mouthArea//testing mouth area
+    //m.x = Math.min(5.0, m.x); 
+    m.x = 0; 
     //console.log("m.y: "+m.y+" wideness: " +wide +" Mouth Area: " + mouthArea + ", min: "+ minMouthArea + ", max: " + maxMouthArea);
 
 

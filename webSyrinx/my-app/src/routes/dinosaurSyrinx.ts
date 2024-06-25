@@ -897,8 +897,8 @@ export function trachealSyrinx() {
 
                 pGparam.setValueAtTime(pG, 0.0);
         },
-        5);
-    }
+        10); //burning out the cpu with 5ms, try double
+     }
     else {
         console.log("unhandled meter error - array returned instead of number");
     }
