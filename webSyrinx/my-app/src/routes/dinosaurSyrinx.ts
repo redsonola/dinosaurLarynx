@@ -674,7 +674,7 @@ function scaleTensionOneMembrane(ctrlValue: number): number {
 }
 
 //this needed as the audio interface/mic amplititude response reduces substantially when using the webcam at the same time.
-export var micScaling: Record<'soft' | 'loud', number> = { soft :0.0,  loud: 1.0} ;
+export var micScaling: Record<'soft' | 'loud', number> = { soft :0.02,  loud: 0.2} ; //for contact mic
 function scaleMicValues(micIn : number) : number
 {
     //adjust threshols
