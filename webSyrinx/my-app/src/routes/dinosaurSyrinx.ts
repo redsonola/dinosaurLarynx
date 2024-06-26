@@ -674,12 +674,12 @@ function scaleTensionOneMembrane(ctrlValue: number): number {
 }
 
 //this needed as the audio interface/mic amplititude response reduces substantially when using the webcam at the same time.
-export var micScaling: Record<'soft' | 'loud', number> = { soft :0.03,  loud: 0.2} ; //for contact mic
+export var micScaling: Record<'soft' | 'loud', number> = { soft :0.0,  loud: 1.0} ; //for contact mic
 function scaleMicValues(micIn : number) : number
 {
     //adjust threshols
     //return  micIn * (micScaling.loud-micScaling.soft) + micScaling.soft;
-    let res = (micIn - micScaling.soft)/(micScaling.loud - micScaling.soft);
+    let res = (Math.max(micIn - micScaling.soft, 0))/(micScaling.loud - micScaling.soft);
     res = Math.min(1.0, res); //cap it at 1.0
     return res; 
 }
@@ -853,9 +853,9 @@ export function trachealSyrinx() {
                 curMicIn = num as number;
                 curMaxMicIn.max = Math.max(curMaxMicIn.max, curMicIn);
 
-                num = scaleMicValues(num as number);
+                let mic = scaleMicValues(num as number);
                 micConfigStatus.innerHTML = "Mic raw: " + curMicIn.toFixed(2) + " Scaled: " + num.toFixed(2)  + " Recorded Max: " + curMaxMicIn.max.toFixed(2) + " Scaled Max: " + micScaling.loud.toFixed(2);
-                //console.log("Mic raw: " + curMicIn.toFixed(2) + " Scaled: " + num.toFixed(2)  + " Recorded Max: " + curMaxMicIn.max.toFixed(2) + " Scaled Max: " + micScaling.loud.toFixed(2));
+                //console.log("Mic raw: " + curMicIn.toFixed(4) + " Scaled: " + mic.toFixed(4));
 
                 //let tens = scaleTensionTwoMembranes(m.y);
                 //tens = avgFilterTension(scaleTensionOnlyLow(m.y, m.x));
@@ -880,7 +880,7 @@ export function trachealSyrinx() {
                 //pG is based on the tension
                  //let pG = scalePGValuesTwoMembranes(num as number, tens, m.y); //TODO: find PG given 2 separate membrane values
                 //let pG = avgFilterPG(scalePGValuesLow(num as number, tens, m.y)); //TODO: find PG given 2 separate membrane values
-                let pG = scalePGValuesLowBelfast(num as number, tens, m.y); //TODO: find PG given 2 separate membrane values
+                let pG = scalePGValuesLowBelfast(mic, tens, m.y); //TODO: find PG given 2 separate membrane values
 
                 //console.log("pG: " + pG.toFixed(2) + " tens: " + tens.toFixed(2));
 
