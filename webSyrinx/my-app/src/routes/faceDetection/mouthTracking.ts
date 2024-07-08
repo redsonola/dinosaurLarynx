@@ -66,11 +66,6 @@ import {widenessTrainingFile, mouthDataFile, wideMin, wideMax, mouthAreaMin, mou
 // loading. Machine Learning models can be large and take a moment to
 // get everything needed to run.
 
-// todo:
-// npm -i htt-server
-// npx http-server -cors node_modules/@mediapipe/tasks-vision/wasm
-// npx http-server -cors node_modules/@mediapipe/tasks-vision/wasm
-
 async function createFaceLandmarker() {
   const filesetResolver = await FilesetResolver.forVisionTasks(
     // "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"
