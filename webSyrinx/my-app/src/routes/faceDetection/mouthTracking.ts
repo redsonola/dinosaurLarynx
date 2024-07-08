@@ -65,13 +65,21 @@ import {widenessTrainingFile, mouthDataFile, wideMin, wideMax, mouthAreaMin, mou
 // Before we can use HandLandmarker class we must wait for it to finish
 // loading. Machine Learning models can be large and take a moment to
 // get everything needed to run.
+
+// todo:
+// npm -i htt-server
+// npx http-server -cors node_modules/@mediapipe/tasks-vision/wasm
+// npx http-server -cors node_modules/@mediapipe/tasks-vision/wasm
+
 async function createFaceLandmarker() {
   const filesetResolver = await FilesetResolver.forVisionTasks(
-    "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"
+    // "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"
+    "http://127.0.0.1:8080"
   );
   faceLandmarker = await FaceLandmarker.createFromOptions(filesetResolver, {
     baseOptions: {
-      modelAssetPath: `https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task`,
+      // modelAssetPath: `https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task`,
+      modelAssetPath: `/face_landmarker.task`,
       delegate: "GPU"
     },
     outputFaceBlendshapes: false,
