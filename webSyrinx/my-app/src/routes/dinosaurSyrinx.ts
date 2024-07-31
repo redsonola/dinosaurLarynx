@@ -647,16 +647,18 @@ export function trachealSyrinx()
 
         const limiter = new Tone.Limiter(); 
         const compressor = new Tone.Compressor();
-        const gain = new Tone.Gain(10); 
-        const lp = new Tone.Filter(200, "lowpass"); //smooth out some edges in the sound, perhaps as tissue would I don't know.
+        const gain = new Tone.Gain(2); 
+        const lp = new Tone.Filter(250, "lowpass"); //smooth out some edges in the sound, perhaps as tissue would I don't know.
         lp.Q.value = 10; //make it a bit more resonant
 
         const meter2 = new Tone.Meter();
 
-        var vol = new Tone.Volume(10);
+        var vol = new Tone.Volume(1);
         const membrane = new SyrinxMembraneModel({pG: 0.0});
 
-        membrane.chain(lp, compressor, limiter, gain, vol, Tone.Destination);  
+        //membrane.chain(lp, compressor, limiter, gain, vol, Tone.Destination);  
+        membrane.chain(lp, compressor, gain, vol, limiter, Tone.Destination);  
+
         membrane.chain(meter2);
 
         console.log(membrane);
@@ -670,6 +672,8 @@ export function trachealSyrinx()
         const Ps = membrane.Ps;
     
         let num = meter.getValue();
+        let outputCheck = meter2.getValue();
+    
         let audioMax = 0.0;
         if (typeof num === "number")
         {
@@ -694,6 +698,9 @@ export function trachealSyrinx()
 
                 //console.log(num as number);
                 inputMusclePressure.setValueAtTime(m.y, 0.0);
+
+                outputCheck = meter2.getValue();
+                console.log(outputCheck as number);
                 
                 //const context = Tone.getContext(); 
             },
