@@ -629,6 +629,11 @@ function scaleElemansPsMaxWithScaledValues(tension : number, ps : number) : numb
     return psMax * ps;
 }
 
+function scaleElemeansPs_fromChuckCode() : number
+{
+    return m.x*0.05;
+}
+
 //now just a test of the syrinx
 let alreadyPressed = false; 
 let recordingMouseData = false;
@@ -647,8 +652,8 @@ export function trachealSyrinx()
 
         const limiter = new Tone.Limiter(); 
         const compressor = new Tone.Compressor();
-        const gain = new Tone.Gain(2); 
-        const lp = new Tone.Filter(250, "lowpass"); //smooth out some edges in the sound, perhaps as tissue would I don't know.
+        const gain = new Tone.Gain(1); 
+        const lp = new Tone.Filter(200, "lowpass"); //smooth out some edges in the sound, perhaps as tissue would I don't know.
         lp.Q.value = 10; //make it a bit more resonant
 
         const meter2 = new Tone.Meter();
@@ -658,6 +663,8 @@ export function trachealSyrinx()
 
         //membrane.chain(lp, compressor, limiter, gain, vol, Tone.Destination);  
         membrane.chain(lp, compressor, gain, vol, limiter, Tone.Destination);  
+        //membrane.chain(compressor, gain, vol, limiter, Tone.Destination);  
+
 
         membrane.chain(meter2);
 
@@ -690,7 +697,7 @@ export function trachealSyrinx()
                 //let p = m.x;
                 let p = scaleElemansPsMaxWithScaledValues(m.y, m.x); //for mouse control
                 //let p = scaleElemansPsMaxWithScaledValues(m.y, num as number); //for breath control
-                Ps.setValueAtTime(p, 0.0);
+                Ps.setValueAtTime(scaleElemeansPs_fromChuckCode(), 0.0);
 
                 //save the data
                 if( recordingMouseData )
@@ -700,7 +707,8 @@ export function trachealSyrinx()
                 inputMusclePressure.setValueAtTime(m.y, 0.0);
 
                 outputCheck = meter2.getValue();
-                console.log(outputCheck as number);
+                //console.log(outputCheck as number);
+                //console.log(m.y);
                 
                 //const context = Tone.getContext(); 
             },
@@ -817,4 +825,3 @@ export const downloadFile = () => {
 //random note here:
 //https://www.youtube.com/watch?v=Lz8GgoBZCPg - facetracking
 //https://blogs.igalia.com/llepage/webrtc-gstreamer-and-html5-part-1/
-

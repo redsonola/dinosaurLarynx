@@ -11,6 +11,9 @@ import "./SyrinxMembraneSynthesis.worklet";
 
 export const syrinxDoveMembraneGenerator = /* typescript */  `class RingDoveSyrinx extends SyrinxMembrane
 {
+    protected whichForce1 : number = 0;
+    protected whichForce2 : number = 0;
+    protected
     //difference in scale btw dove and dinosaur
     protected dinoScale : number = 4.5/0.15; //ratio based on trachea width ratio btw dove and dinosaur (Corythosaurus)
     protected kc : number;//coupling constant, table C.1 (before, 0.005)
@@ -39,10 +42,10 @@ export const syrinxDoveMembraneGenerator = /* typescript */  `class RingDoveSyri
     protected Qmax : number = 3; //1.2 for dove
     protected Q : number = this.Qmin; //F(t) = Q(t)F0
     protected pt : number = -0.3; //-1 to 0.5 using CTAS, normalized to 1, max but usually around 0.5 max -- from graph on p. 70, Pt = PICAS - PCTAS (max 3.5),
-    protected Psum : number; //Pt + ptl
-    protected minPsum : number;
-    protected maxPsum : number;
-    protected Qchange : number = this.Qmax - this.Qmin;
+    protected Psum : number;
+    protected minPsum : number = 0.0;
+    protected maxPsum : number = 40.0;
+    protected Qchange : number;
 
     protected goalPt : number;
     protected dPt : number;
@@ -79,11 +82,14 @@ export const syrinxDoveMembraneGenerator = /* typescript */  `class RingDoveSyri
     
     protected inputP : number = 0.0;
 
+    protected z0 : number;
+
     constructor()
     {
         super();
         this.c = this.c/100; //this algorithm is all in cm, not meters
         this.timeStep = (this.T*1000.0)/2.0; //this is for integrating smoothly, change from Smyth (eg.*1000) bc everything here is in ms not sec, so convert
+        this.timeStep = this.timeStep/2.0; //this seems off by an octave from chuck, so I'm doubling it -- not sure why -- this fixed it -- perhaps has something to do with stereo??
         this.F = [0.0, 0.0]; //membrane displacement force
         this.p = 0.00113; //air density, table C.1
 
@@ -105,10 +111,10 @@ export const syrinxDoveMembraneGenerator = /* typescript */  `class RingDoveSyri
         //I need to do more research. I've chosen a really conservative number
         this.d1 = 0.04 * 3; //1st mass height -- alligator is: d1=0.25, d2=0.05cm -- perhaps this actually doesn't scale up that much? leave alone for now.
         this.d2 = (0.24 - this.d1)* 3; //2nd mass displacement from first
-        this.d3 = (0.28 - (this.d1+this.d2))* 3; //3rd mass displacement from 2nd
+        this.d3 = (0.28 * 3 - (this.d1+this.d2)); //3rd mass displacement from 2nd
 
         //time-varying (control) tension parameters (introduced in ch 4 & appendix C)
-        this.ptl = 19.0; //stress due to the TL tracheolateralis (TL) - TL directly affects position in the LTM -- probably change in dinosaur.
+        this.ptl = 19; //stress due to the TL tracheolateralis (TL) - TL directly affects position in the LTM -- probably change in dinosaur.
         this.minPtl = 0.0; 
         this.maxPtl = 40.0; 
 
@@ -146,7 +152,7 @@ export const syrinxDoveMembraneGenerator = /* typescript */  `class RingDoveSyri
         this.Ps = 0.0045; //pressure in the syringeal lumen, 
 
          //changing Ps -- the input air pressure below syrinx
-        this.goalPs = this.Ps;//the tension to increase or decrease to    
+        this.goalPs = this.Ps; //the tension to increase or decrease to    
         this.dPs = 0.0; //change in tension per sample -- only a class variable so can check value. 
         this.modPs = 5.0; //a modifier for how quickly dx gets added
 
@@ -154,7 +160,7 @@ export const syrinxDoveMembraneGenerator = /* typescript */  `class RingDoveSyri
         //0.02 is the parameter for fig. C3 & does produce sound with the new time-varying tension/muscle pressure params
     
         //geometry
-        this.dM = this.d1 + (this.d2/2); //imaginary horizontal midline -- above act on upper mass, below on lower
+        this.dM = this.d1 + (this.d2 / 2); //imaginary horizontal midline -- above act on upper mass, below on lower
     
         this.z0 = (this.p*this.c*100)/(Math.PI*this.a*this.a); //impedence of brochus --small compared to trachea, trying this dummy value until more info 
         this.zG = this.z0/6;
@@ -284,18 +290,22 @@ export const syrinxDoveMembraneGenerator = /* typescript */  `class RingDoveSyri
          {
              if( ( this.a1 > 0 ) && this.a1 <= Math.abs(this.a2) )// && min0==cpo2 && cpo2 <= dM ) //case 3a
              {
+                 this.whichForce1 = 1;
                  return this.l*Ps*( this.d1 + this.d2*( this.a1/( this.a1-this.a2 ) ) );
              }
              else if( this.a1 > 0  && this.a1 > Math.abs(this.a2) )// && min0==cpo2 && cpo2 > dM  ) //case 3b
              {
+                 this.whichForce1 = 2;
                  return this.l*Ps*this.dM;
              }
              else if ( this.a1 <= 0)// && min0==cpo1 && cpo1 < d1) //case 4
              {
+                 this.whichForce1 = 3;
                  return this.l*Ps*this.d1*( this.a0/(this.a0-this.a1));
              }
              else 
              {
+                 this.whichForce1 = 4;
                  return (this.l*Ps*( Math.min(min0, this.d1)  - 0)) + (this.l*Ps*( Math.min(min0, this.dM)  - this.d1)); //check this
              }
          }
@@ -303,10 +313,12 @@ export const syrinxDoveMembraneGenerator = /* typescript */  `class RingDoveSyri
          {
              if (this.a2 > this.a1 )  //divergent - || ( zAMin == d1 )
              {
+                 this.whichForce1 = 5;
                  return this.l*Ps*this.d1*(1 - (( this.a1*this.a1 )/(this.a0*this.a1)) );
              }
             else //convergent
             {
+                 this.whichForce1 = 6;
                 let part1 = this.d1*(1 - ( (this.a2*this.a2)/(this.a0*this.a1) )  ); 
                 let part2 = (this.d2/2)*(1 - ( (this.a2*this.a2)/(this.aM*this.a1) ));
                 return this.l*Ps * ( part1 + part2 );
@@ -389,8 +401,7 @@ export const syrinxDoveMembraneGenerator = /* typescript */  `class RingDoveSyri
          min0 = Math.min(min0, this.cpo3); 
          
          this.F[0] = this.forceF1(min0, this.Ps - this.inputP);
-         this.F[1] =this.forceF2(min0, this.Ps - this.inputP); //modifying in terms of equation presented on (A.8) p.110
-
+         this.F[1] = this.forceF2(min0, this.Ps - this.inputP); //modifying in terms of equation presented on (A.8) p.110
      }
           
      //Calculate the forces for any vocal fold collisions (I[]), if any
@@ -511,39 +522,19 @@ export const syrinxDoveMembraneGenerator = /* typescript */  `class RingDoveSyri
         return param;        
     }
 
-
     //already mapped functions from chuck deployment -- has dove values in comments, but not using now.
     //0-1 -- input pressure to control, does mapping automatically for dove and dinosaur, only dino implemented
     public updateInputPressure(inPs : number) : void
     {
-        // if(whichDinosaur == dove)
-        // {
-        //     //input air pressure changes based on x screen position
-        //     //Ranges determined by Zaccarelli(2009) p. 73, Fig. 4.3, lower end increased for mouse playability 
-        //     membrane.changePs(inPs*0.037 + 0.001); //go up to 0.0692
-        // }
-        // else
-        // {
-            this.changePs(inPs*0.05);     
-        // }
+        this.changePs(inPs*0.05);     
     }
     
     //0-1 -- input to control muscle pressure 
     public updateInputMusclePressure(inPressure : number) : void
     {
-        // if(whichDinosaur == dove)
-        // {
-        //     //Ranges from same set of figures on p. 73 illustrating muscle pressures for coo sound
-        //     inPressure * 15 + 5 => float Ptl;
-        //     membrane.changePtl(Ptl); 
-        //     membrane.changePt(((1.0-inPressure)*2)  - 1.0);
-        // }
-        // else
-        // {
-            let Ptl : number = inPressure * 40;
-            this.changePtl(Ptl);
-            this.changePt((((1.0-inPressure)*2)  - 1.0)*2.0); //Pt is generally inverse of Ptl during dove calls -- well to the limited extent of the paper
-        // }
+        let Ptl : number = inPressure * 40;
+        this.changePtl(Ptl);
+        this.changePt((((1.0-inPressure)*2)- 1.0)*2.0); //Pt is generally inverse of Ptl during dove calls -- well to the limited extent of the paper
     } 
     
     //Main processing function of the chugen (plug-in). Everything that does stuff is called from here.
